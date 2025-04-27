@@ -131,7 +131,7 @@ function Header() {
                   className="block w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-3 rounded-md text-base font-medium text-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  Download
+                  Book A Demo
                 </a>
               </div>
             </div>

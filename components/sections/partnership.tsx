@@ -17,7 +17,6 @@ export default function Partnership() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission logic would go here
     alert('Partnership request submitted!');
     setFormData({
       name: '',
@@ -45,7 +44,7 @@ export default function Partnership() {
             <div className="bg-gray-800/50 backdrop-blur-sm p-8 rounded-2xl border border-gray-700">
               <h3 className="text-2xl font-semibold mb-6">Partnership Opportunities</h3>
               
-              <div className="space-y-6 py-4 ">
+              <div className="space-y-10 py-5 ">
                 <div className="flex gap-4">
                   <div className="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0">
                     <Handshake size={24} className="text-orange-500" />

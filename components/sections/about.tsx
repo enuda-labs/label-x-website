@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle, Shield, Target } from 'lucide-react';
+import Image from 'next/image';
 
 export default function About(){
   return (
@@ -66,30 +67,38 @@ export default function About(){
           <div className="flex-1 order-1 lg:order-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="aspect-square overflow-hidden rounded-lg">
-                <img 
+                <Image 
                   src="https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
-                  alt="Team working" 
+                  alt="Team working"
+                  width={400}
+                    height={400} 
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <div className="aspect-square overflow-hidden rounded-lg">
-                <img 
+                <Image 
                   src="https://images.pexels.com/photos/3182781/pexels-photo-3182781.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
-                  alt="AI development" 
+                  alt="AI development"
+                  width={400}
+                    height={400} 
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <div className="aspect-square overflow-hidden rounded-lg">
-                <img 
+                <Image 
                   src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
-                  alt="Data processing" 
+                  alt="Data processing"
+                  width={400}
+                    height={400} 
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                 />
               </div>
               <div className="aspect-square overflow-hidden rounded-lg">
-                <img 
+                <Image
                   src="https://images.pexels.com/photos/3182744/pexels-photo-3182744.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
                   alt="Team collaboration" 
+                  width={400}
+                  height={400}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -109,9 +118,11 @@ export default function About(){
             {['CEO & Founder', 'CTO', 'Head of AI Research', 'Head of Operations'].map((role, index) => (
               <div key={index} className="text-center">
                 <div className="w-24 h-24 rounded-full bg-gray-700 mx-auto mb-4 overflow-hidden">
-                  <img 
+                  <Image 
                     src={`https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`} 
                     alt={`Team member ${index + 1}`} 
+                    width={100}
+                    height={100}
                     className="w-full h-full object-cover"
                   />
                 </div>

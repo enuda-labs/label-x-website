@@ -26,7 +26,7 @@ const FloatingParticle = ({ delay = 0 }) => (
 const Hero: React.FC = () => {
   return (
     <section className="pt-28 md:pt-36 pb-12 relative overflow-hidden" id="home">
-      {/* Dynamic Background Animation */}
+      {/* Background Animation */}
       <div className="absolute inset-0">
         <motion.div 
           className="absolute top-0 left-0 w-full h-full"
@@ -48,7 +48,6 @@ const Hero: React.FC = () => {
           ))}
         </motion.div>
         
-        {/* Gradient Orbs */}
         <motion.div 
           className="absolute top-1/4 right-1/4 w-96 h-96 bg-orange-500/20 rounded-full blur-[100px]"
           animate={{
@@ -87,7 +86,7 @@ const Hero: React.FC = () => {
             </div>
             </AnimatedSection>
           <AnimatedSection delay={0.4}>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-orange-300">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-orange-300">
               AI-Powered Content Moderation with Human Precision
             </h1>
           </AnimatedSection>
