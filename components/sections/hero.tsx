@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 const FloatingParticle = ({ delay = 0 }) => (
   <motion.div
-    className="absolute w-2 h-2 bg-orange-500/30 rounded-full"
+    className="absolute w-2 h-2 bg-orange-500/50 rounded-full"
     initial={{ opacity: 0, scale: 0 }}
     animate={{
       opacity: [0, 1, 1, 0],
@@ -23,9 +23,9 @@ const FloatingParticle = ({ delay = 0 }) => (
   />
 );
 
-const Hero: React.FC = () => {
+const Hero = () => {
   return (
-    <section className="pt-28 md:pt-36 pb-12 relative overflow-hidden" id="home">
+    <section className="pt-28 background md:pt-36 pb-12 relative overflow-hidden" id="home">
       {/* Background Animation */}
       <div className="absolute inset-0">
         <motion.div 
@@ -86,7 +86,7 @@ const Hero: React.FC = () => {
             </div>
             </AnimatedSection>
           <AnimatedSection delay={0.4}>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-orange-300">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-orange-300">
               AI-Powered Content Moderation with Human Precision
             </h1>
           </AnimatedSection>

@@ -52,7 +52,7 @@ export default function Features(){
         }}
       />
       <motion.div 
-        className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"
+        className="absolute bottom-0 left-0 w-80 h-80 bg-background rounded-full blur-3xl"
         animate={{
           scale: [1, 1.3, 1],
           opacity: [0.1, 0.15, 0.1],

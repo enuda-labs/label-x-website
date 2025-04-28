@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export default function About(){
   return (
-    <section className="pb-16 relative" id="about">
+    <section className="py-16 background relative" id="about">
       <div className="absolute top-1/3 left-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl"></div>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -68,7 +68,7 @@ export default function About(){
             <div className="grid grid-cols-2 gap-4">
               <div className="aspect-square overflow-hidden rounded-lg">
                 <Image 
-                  src="https://images.pexels.com/photos/3182812/pexels-photo-3182812.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" 
+                  src="https://images.pexels.com/photos/3183186/pexels-photo-3183186.jpeg?auto=compress&cs=tinysrgb&w=600" 
                   alt="Team working"
                   width={400}
                     height={400} 
@@ -117,7 +117,7 @@ export default function About(){
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {['CEO & Founder', 'CTO', 'Head of AI Research', 'Head of Operations'].map((role, index) => (
               <div key={index} className="text-center">
-                <div className="w-24 h-24 rounded-full bg-gray-700 mx-auto mb-4 overflow-hidden">
+                <div className="w-24 h-24 rounded-full bg-gray-800/50 backdrop-blur-sm mx-auto mb-4 overflow-hidden">
                   <Image 
                     src={`https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`} 
                     alt={`Team member ${index + 1}`} 

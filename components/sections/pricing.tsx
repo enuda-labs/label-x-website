@@ -42,9 +42,9 @@ export default function Pricing() {
                 ))}
               </ul>
               
-              <button className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-300">
+              <a href='#contact' className="w-full flex items-center justify-center py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-300">
                 Start Free Trial
-              </button>
+              </a>
             </div>
           </div>
           
@@ -80,9 +80,9 @@ export default function Pricing() {
                 ))}
               </ul>
               
-              <button className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors duration-300 shadow-lg shadow-orange-500/20">
+              <a href='#contact' className="w-full flex items-center justify-center py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors duration-300 shadow-lg shadow-orange-500/20">
                 Contact Sales
-              </button>
+              </a>
             </div>
           </div>
           
@@ -115,9 +115,9 @@ export default function Pricing() {
                 ))}
               </ul>
               
-              <button className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-300">
+              <a href='#contact' className="w-full flex items-center justify-center py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-300">
                 Contact Sales
-              </button>
+              </a>
             </div>
           </div>
         </div>

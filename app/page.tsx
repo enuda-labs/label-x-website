@@ -9,7 +9,7 @@ import Pricing from "@/components/sections/pricing";
 
 export default function Home() {
   return (
-    <div className="flex flex-col  overflow-x-hidden">
+    <div className="flex flex-col overflow-x-hidden">
       <Hero />
       <Features />
       <Pricing />

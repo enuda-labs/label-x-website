@@ -28,8 +28,8 @@ export default function Partnership() {
   };
 
   return (
-    <section className="py-16 relative" id="partnership">
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    <section className="py-10 relative" id="partnership">
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
       
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto text-center mb-16">
@@ -87,7 +87,7 @@ export default function Partnership() {
                   <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white font-bold text-xl">
                     Lx
                   </div>
-                  <div>
+                  <div className='flex-1'>
                     <h4 className="font-medium">Partner Program</h4>
                     <p className="text-sm text-gray-400">Benefits include revenue sharing, dedicated support, and co-marketing</p>
                   </div>
