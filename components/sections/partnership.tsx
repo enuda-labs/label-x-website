@@ -29,8 +29,8 @@ export default function Partnership() {
     const calendlyUrl = new URL('https://calendly.com/enudalabs');
     if (name) calendlyUrl.searchParams.set('name', name);
     if (email) calendlyUrl.searchParams.set('email', email);
-
-    if (typeof window !== 'undefined' && (window as any).Calendly) {
+    
+    if (typeof window !== 'undefined' && window.Calendly) {
       ;(window as any).Calendly.initPopupWidget({ url: calendlyUrl.toString() });
     } else {
       console.warn('Calendly widget not loaded yet.');
