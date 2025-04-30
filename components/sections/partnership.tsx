@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Handshake, ArrowRight } from 'lucide-react';
-import Head from 'next/head';
 
 
 
