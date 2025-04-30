@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Handshake, ArrowRight } from 'lucide-react';
+import Head from 'next/head';
+
+
 
 export default function Partnership() {
   const [formData, setFormData] = useState({
@@ -10,21 +13,44 @@ export default function Partnership() {
     type: 'integration'
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!document.getElementById('calendly-script')) {
+      const script = document.createElement('script');
+      script.id = 'calendly-script';
+      script.src = 'https://assets.calendly.com/assets/external/widget.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  // Build and open the dynamic Calendly popup
+  const openCalendly = () => {
+    const { name, email } = formData;
+    const calendlyUrl = new URL('https://calendly.com/enudalabs');
+    if (name) calendlyUrl.searchParams.set('name', name);
+    if (email) calendlyUrl.searchParams.set('email', email);
+
+    if (typeof window !== 'undefined' && (window as any).Calendly) {
+      ;(window as any).Calendly.initPopupWidget({ url: calendlyUrl.toString() });
+    } else {
+      console.warn('Calendly widget not loaded yet.');
+    }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Partnership request submitted!');
-    setFormData({
-      name: '',
-      email: '',
-      company: '',
-      message: '',
-      type: 'integration'
-    });
+    openCalendly();
+    setFormData({ name: '', email: '', company: '', message: '', type: 'integration' });
   };
 
   return (

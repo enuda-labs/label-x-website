@@ -4,14 +4,13 @@ import "./globals.css";
 import Header from "@/components/shared/navbar";
 import Footer from "@/components/shared/footer";
 
-// Body font
+// Fonts
 const roboto = Roboto({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-roboto",
 });
 
-// Heading font
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -30,6 +29,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Calendly widget assets */}
+        <link
+          href="https://assets.calendly.com/assets/external/widget.css"
+          rel="stylesheet"
+        />
+        <script
+          src="https://assets.calendly.com/assets/external/widget.js"
+          type="text/javascript"
+          async
+        ></script>
+      </head>
       <body
         className={`${roboto.className} ${roboto.variable} ${spaceGrotesk.variable}`}
       >
