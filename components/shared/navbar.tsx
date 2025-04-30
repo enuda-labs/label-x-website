@@ -1,4 +1,5 @@
-'use client'
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 
@@ -7,67 +8,48 @@ function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleScrollToPartner = () => {
+    const section = document.getElementById('partnership');
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+    setIsMenuOpen(false);
+  };
+
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-gray-900/95 backdrop-blur-sm shadow-lg'
-          : 'bg-transparent'
-      }`}
-    >
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      isScrolled ? 'bg-gray-900/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
+    }`}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20">
           <div className="flex items-center">
             <a href="#" className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white font-bold text-xl">
-                Lx
-              </div>
-              <span className="text-xl font-bold tracking-tight">
-                Labelx
-              </span>
+              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white font-bold text-xl">Lx</div>
+              <span className="text-xl font-bold tracking-tight">Labelx</span>
             </a>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-8">
-            <a href="#features" className="nav-link">
-              Features
-            </a>
-            <a href="#pricing" className="nav-link">
-              Pricing
-            </a>
-            <a href="#partnership" className="nav-link">
-              Partnership
-            </a>
-            <a href="#about" className="nav-link">
-              About
-            </a>
-            <a href="#contact" className="nav-link">
-              Contact
-            </a>
+            <a href="#features" className="nav-link">Features</a>
+            <a href="#pricing" className="nav-link">Pricing</a>
+            <a href="#partnership" className="nav-link">Partnership</a>
+            <a href="#about" className="nav-link">About</a>
+            <a href="#contact" className="nav-link">Contact</a>
           </nav>
 
           <div className="hidden md:flex">
-            <a
-              href="#download"
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-300"
+            <button
+              onClick={handleScrollToPartner}
+              className="bg-orange-500 hover:bg-orange-600 cursor-pointer text-white px-6 py-2 rounded-lg font-medium transition-colors duration-300"
             >
               Book a Demo
-            </a>
+            </button>
           </div>
 
           {/* Mobile menu button */}
@@ -77,62 +59,27 @@ function Header() {
               className="text-gray-300 hover:text-white"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Nav */}
         {isMenuOpen && (
           <div className="md:hidden bg-gray-900 shadow-xl rounded-b-lg">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <a
-                href="#features"
-                className="block px-3 py-3 rounded-md text-base font-medium hover:bg-gray-800"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Features
-              </a>
-              <a
-                href="#pricing"
-                className="block px-3 py-3 rounded-md text-base font-medium hover:bg-gray-800"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Pricing
-              </a>
-              <a
-                href="#partnership"
-                className="block px-3 py-3 rounded-md text-base font-medium hover:bg-gray-800"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Partnership
-              </a>
-              <a
-                href="#about"
-                className="block px-3 py-3 rounded-md text-base font-medium hover:bg-gray-800"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                About
-              </a>
-              <a
-                href="#contact"
-                className="block px-3 py-3 rounded-md text-base font-medium hover:bg-gray-800"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Contact
-              </a>
+              <a href="#features" className="block px-3 py-3 rounded-md hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Features</a>
+              <a href="#pricing" className="block px-3 py-3 rounded-md hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Pricing</a>
+              <a href="#partnership" className="block px-3 py-3 rounded-md hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Partnership</a>
+              <a href="#about" className="block px-3 py-3 rounded-md hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>About</a>
+              <a href="#contact" className="block px-3 py-3 rounded-md hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>Contact</a>
               <div className="pt-2">
-                <a
-                  href="#download"
+                <button
+                  onClick={handleScrollToPartner}
                   className="block w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-3 rounded-md text-base font-medium text-center"
-                  onClick={() => setIsMenuOpen(false)}
                 >
                   Book A Demo
-                </a>
+                </button>
               </div>
             </div>
           </div>
@@ -140,6 +87,6 @@ function Header() {
       </div>
     </header>
   );
-};
+}
 
 export default Header;
