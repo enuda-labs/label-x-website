@@ -5,6 +5,7 @@ import Features from "@/components/sections/features";
 import Hero from "@/components/sections/hero";
 import Partnership from "@/components/sections/partnership";
 import Pricing from "@/components/sections/pricing";
+import Payment from "@/components/sections/paymentFlow";
 
 
 export default function Home() {
@@ -16,6 +17,7 @@ export default function Home() {
       <Partnership />
       <About />
       <Contact />
+      <Payment />
     </div>
   );
 }
