@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Roboto, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/shared/navbar";
-import Footer from "@/components/shared/footer";
+
 
 // Fonts
 const roboto = Roboto({
@@ -44,11 +43,11 @@ export default function RootLayout({
       <body
         className={`${roboto.className} ${roboto.variable} ${spaceGrotesk.variable}`}
       >
-        <Header />
+       
         <main className="min-h-screen bg-gradient-to-b from-[#191c21] via-[#1e1e1e] to-[#111418] text-gray-200">
           {children}
         </main>
-        <Footer />
+      
       </body>
     </html>
   );
