@@ -1,5 +1,5 @@
 'use client';
-import {LayoutDashboard, Clock, CreditCard, User, LogOut} from 'lucide-react';
+import {LayoutDashboard, Clock, Key, CreditCard, User, LogOut} from 'lucide-react';
 import Link from 'next/link';
 import {
 	Sidebar,
@@ -36,6 +36,11 @@ const items = [
 		title: 'Projects',
 		url: '/dashboard/projects',
 		icon: Clock,
+	},
+	{
+		title: 'Api Keys',
+		url: '/dashboard/api-keys',
+		icon:Key,
 	},
 	{
 		title: 'Payments',
@@ -89,7 +94,7 @@ export function AppSidebar() {
 		router.push('/');
 	};
 
-	// const isActivePath = (path: string) => pathname === path;
+	 const isActivePath = (path: string) => pathname === path;
 
 	if (!isAuthenticated) {
 		return null;
@@ -114,7 +119,7 @@ export function AppSidebar() {
 							{items.map(item => (
 								<SidebarMenuItem key={item.title}>
 									<SidebarMenuButton asChild>
-										<a href={item.url}>
+										<a href={item.url} className={`rounded-md transition-colors mb-2 ${isActivePath(item.url) ? 'bg-primary font-semibold text-white' : 'text-white/70 hover:bg-white/10'}`}>
 											<item.icon />
 											<span>{item.title}</span>
 										</a>
