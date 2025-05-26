@@ -2,8 +2,8 @@ import type {Metadata} from 'next';
 import {Roboto, Space_Grotesk} from 'next/font/google';
 import './globals.css';
 import {Providers} from './providers';
+import { Toaster } from "@/components/ui/sonner";
 
-// Fonts
 const roboto = Roboto({
 	subsets: ['latin'],
 	weight: ['400', '500', '600', '700'],
@@ -47,7 +47,9 @@ export default function RootLayout({
 					<main className="min-h-screen bg-gradient-to-b from-[#191c21] via-[#1e1e1e] to-[#111418] text-gray-200">
 						{children}
 					</main>
+
 				</Providers>
+				 <Toaster />
 			</body>
 		</html>
 	);
