@@ -1,3 +1,5 @@
+'use client'; 
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,14 +20,23 @@ export const TwoFactorSettings = () => {
   const [verificationCode, setVerificationCode] = useState("");
   const [secretCopied, setSecretCopied] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  
-  const userEmail = localStorage.getItem("userEmail") || "user@example.com";
+  const [userEmail, setUserEmail] = useState("user@example.com");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // temp - we can check this through api(not sure if its avaibale tho)
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const email = localStorage.getItem("userEmail") || "user@example.com";
+    setUserEmail(email);
+
+    
     const enabled = localStorage.getItem("2fa_enabled") === "true";
     setIs2FAEnabled(enabled);
-  }, []);
+  }, [mounted]);
 
   const handleEnable2FA = async () => {
     setIsSettingUp(true);
@@ -44,8 +55,10 @@ export const TwoFactorSettings = () => {
   };
 
   const handleDisable2FA = () => {
-    localStorage.removeItem("2fa_enabled");
-    localStorage.removeItem("2fa_secret");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("2fa_enabled");
+      localStorage.removeItem("2fa_secret");
+    }
     setIs2FAEnabled(false);
     setIsSettingUp(false);
     setSecret("");
@@ -87,8 +100,10 @@ export const TwoFactorSettings = () => {
       const isValid = verifyToken(verificationCode, secret);
       
       if (isValid) {
-        localStorage.setItem("2fa_enabled", "true");
-        localStorage.setItem("2fa_secret", secret);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("2fa_enabled", "true");
+          localStorage.setItem("2fa_secret", secret);
+        }
         setIs2FAEnabled(true);
         setIsSettingUp(false);
         setVerificationCode("");
@@ -116,6 +131,22 @@ export const TwoFactorSettings = () => {
     setQrCodeURL("");
     setVerificationCode("");
   };
+
+ 
+  if (!mounted) {
+    return (
+      <Card className="bg-white/5 border-white/10 p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <Shield className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-medium text-white">Two-Factor Authentication</h3>
+        </div>
+        <div className="animate-pulse">
+          <div className="h-4 bg-white/10 rounded mb-6"></div>
+          <div className="h-10 bg-white/10 rounded"></div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-white/5 border-white/10 p-6">
