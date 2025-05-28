@@ -1,4 +1,5 @@
 'use client'
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/shared/dashboard-layout";
 import { Card } from "@/components/ui/card";
@@ -39,42 +40,42 @@ const Profile = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   
-  //const { toast } = useToast();
   
-  useEffect(() => {
-    // Simulate API call to fetch user profile
-    const fetchProfile = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-        
-        // Mock data from localStorage (in a real app, this would come from an API)
-        const profileData = {
-          name: localStorage.getItem("userName") || "John Doe",
-          email: localStorage.getItem("userEmail") || "john@example.com",
-          company: "Acme Inc.",
-          plan: localStorage.getItem("userPlan") || "professional",
-          joinDate: "2024-05-15"
-        };
-        
-        setProfile(profileData);
-        setFormData({
-          name: profileData.name,
-          email: profileData.email,
-          company: profileData.company,
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: ""
-        });
-        
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        setLoading(false);
-      }
-    };
-    
-    fetchProfile();
-  }, []);
+useEffect(() => {
+  if (typeof window === "undefined") return;
+
+  const fetchProfile = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const profileData = {
+        name: localStorage.getItem("userName") || "John Doe",
+        email: localStorage.getItem("userEmail") || "john@example.com",
+        company: "Acme Inc.",
+        plan: localStorage.getItem("userPlan") || "professional",
+        joinDate: "2024-05-15"
+      };
+
+      setProfile(profileData);
+      setFormData({
+        name: profileData.name,
+        email: profileData.email,
+        company: profileData.company,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      setLoading(false);
+    }
+  };
+
+  fetchProfile();
+}, []);
+
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -89,7 +90,7 @@ const Profile = () => {
     setIsSaving(true);
     
     try {
-      // Simulate API call to update profile
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Update local storage (in a real app, this would be an API update)
@@ -132,7 +133,7 @@ const Profile = () => {
     }
     
     try {
-      // Simulate API call to update password
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Reset password fields
