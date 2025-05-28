@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {toast } from "sonner";
 import { Check } from "lucide-react";
+import { TwoFactorSettings } from "@/components/profile/two-factor-settings";
 
 interface UserProfile {
   name: string;
@@ -269,6 +270,8 @@ const Profile = () => {
               </form>
             )}
           </Card>
+
+            <TwoFactorSettings />
           
           {/* Password Settings */}
           <Card className="bg-white/5 border-white/10 p-6">
