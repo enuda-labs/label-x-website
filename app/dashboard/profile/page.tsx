@@ -14,6 +14,7 @@ import {useQuery} from '@tanstack/react-query';
 import {getUserDetails} from '@/services/apis/user';
 import {getMyPlan} from '@/services/apis/subscription';
 import {useRouter} from 'next/navigation';
+import {TwoFactorSettings} from '@/components/profile/two-factor-settings';
 
 interface UserProfile {
 	name: string;
@@ -303,6 +304,8 @@ const Profile = () => {
 							</form>
 						)}
 					</Card>
+
+					<TwoFactorSettings />
 
 					{/* Password Settings */}
 					<Card className="bg-white/5 border-white/10 p-6">
