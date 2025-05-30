@@ -98,7 +98,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="paymentflow-root container">
+    <div className="container">
       <div className="dashboard">
         <aside className="sidebar">
           <div className="logo">
