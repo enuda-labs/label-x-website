@@ -5,11 +5,14 @@ import Features from "@/components/sections/features";
 import Hero from "@/components/sections/hero";
 import Partnership from "@/components/sections/partnership";
 import Pricing from "@/components/sections/pricing";
-import Payment from "@/components/sections/paymentFlow";
-
+import Header from "@/components/shared/navbar";
+import Footer from "@/components/shared/footer";
 
 export default function Home() {
   return (
+    <>
+      <Header />
+  
     <div className="flex flex-col overflow-x-hidden">
       <Hero />
       <Features />
@@ -17,7 +20,8 @@ export default function Home() {
       <Partnership />
       <About />
       <Contact />
-      <Payment />
     </div>
+      <Footer />
+      </>
   );
 }
