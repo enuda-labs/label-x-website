@@ -41,7 +41,7 @@ const Profile = () => {
     confirmPassword: '',
   });
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const { data } = useQuery({
     queryKey: ['user'],
     queryFn: getUserDetails,
@@ -63,7 +63,7 @@ const Profile = () => {
         const profileData = {
           name: username,
           email,
-          company: 'Acme Inc.',
+          company: '',
           plan: myPlan?.plan.name || '',
         };
 
@@ -89,7 +89,6 @@ const Profile = () => {
     }
   }, [data?.user, myPlan?.plan.name]);
 
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -103,7 +102,6 @@ const Profile = () => {
     setIsSaving(true);
 
     try {
-      
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Update local storage (in a real app, this would be an API update)
@@ -144,7 +142,6 @@ const Profile = () => {
     }
 
     try {
-      
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Reset password fields
@@ -299,7 +296,6 @@ const Profile = () => {
               </form>
             )}
           </Card>
-
 
           <TwoFactorSettings />
 

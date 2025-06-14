@@ -8,6 +8,7 @@ const axiosClient = new AxiosClient();
 export interface LoginBody {
   username: string;
   password: string;
+  otp_code?: string;
 }
 
 export interface UserData {
@@ -25,10 +26,7 @@ export interface LoginResponse {
 }
 
 export const login = async (payload: LoginBody): Promise<LoginResponse> => {
-  const response = await axiosClient.post<LoginBody, LoginResponse>(
-    '/account/login/',
-    payload
-  );
+  const response = await axiosClient.post<LoginBody, LoginResponse>('/account/login/', payload);
   return response.data;
 };
 
@@ -47,16 +45,13 @@ export interface RegisterResponse {
   };
 }
 
-export const register = async (
-  payload: RegisterBody
-): Promise<RegisterResponse> => {
+export const register = async (payload: RegisterBody): Promise<RegisterResponse> => {
   const response = await axiosClient.post<RegisterBody, RegisterResponse>(
     '/account/register/',
     payload
   );
   return response.data;
 };
-
 
 /** ----- Two-Factor Authentication Setup & Verify ----- **/
 
@@ -79,9 +74,7 @@ interface TwoFASetupAPIResponse {
  * Fetches the QR code URL and secret key for setting up 2FA.
  */
 export const get2FASetup = async (): Promise<TwoFASetupData> => {
-  const resp = await axiosClient.get<TwoFASetupAPIResponse>(
-    '/account/2fa/setup/'
-  );
+  const resp = await axiosClient.get<TwoFASetupAPIResponse>('/account/2fa/setup/');
   return resp.data.data;
 };
 
@@ -99,12 +92,14 @@ interface Verify2FAAPIResponse {
  * Verifies the 6-digit OTP code against the secret on the server.
  * Returns true if the code is valid and 2FA is now enabled.
  */
-export const verify2FASetup = async (
-  otp_code: string
-): Promise<boolean> => {
-  const resp = await axiosClient.post<
-    { otp_code: string },
-    Verify2FAAPIResponse
-  >('/account/2fa/setup/', { otp_code });
-  return resp.data.data.is_verified;
+export const verify2FASetup = async (otp_code: string) => {
+  const resp = await axiosClient.post<{ otp_code: string }, Verify2FAAPIResponse>(
+    '/account/2fa/setup/',
+    { otp_code }
+  );
+  return resp.data;
+};
+export const disable2FASetup = async (password: string) => {
+  const resp = await axiosClient.post<{ password: string }>('/account/2fa/disable/', { password });
+  return resp.data;
 };
