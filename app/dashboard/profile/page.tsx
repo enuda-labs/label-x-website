@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -42,19 +43,16 @@ const Profile = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch user details
   const { data, isLoading: isUserLoading } = useQuery({
     queryKey: ['userDetail'],
     queryFn: getUserDetails,
   });
 
-  // Fetch subscription plan
   const { data: myPlan, isLoading: isCheckingPlan } = useQuery({
     queryKey: ['myPlan'],
     queryFn: getMyPlan,
   });
 
-  // Populate form when data loads
   useEffect(() => {
     if (data?.user) {
       setProfile({
@@ -73,22 +71,17 @@ const Profile = () => {
     }
   }, [data, myPlan]);
 
-  // Handle basic form field updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((f) => ({ ...f, [name]: value }));
   };
 
-  // ====== USERNAME UPDATE ======
   const handleUsernameUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const { username } = formData;
-      await updateUsername(username);
-     // ✅ new v5 signature: pass an object with your queryKey
-await qc.invalidateQueries({ queryKey: ['userDetail'] });
-
+      await updateUsername(formData.username);
+      await qc.invalidateQueries({ queryKey: ['userDetail'] });
       toast('Username updated', {
         description: 'Your username has been successfully updated.',
       });
@@ -100,7 +93,6 @@ await qc.invalidateQueries({ queryKey: ['userDetail'] });
     }
   };
 
-  // ====== PASSWORD UPDATE ======
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -114,18 +106,20 @@ await qc.invalidateQueries({ queryKey: ['userDetail'] });
     }
 
     try {
-      const { currentPassword, newPassword, confirmPassword } = formData;
-      await changePassword(currentPassword, newPassword, confirmPassword);
+      await changePassword(
+        formData.currentPassword,
+        formData.newPassword,
+        formData.confirmPassword
+      );
       toast('Password updated', {
         description: 'Your password has been successfully changed.',
       });
-      // Clear out fields
-      setFormData((f) => ({
-        ...f,
+      setFormData({
+        username: formData.username,
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-      }));
+      });
     } catch (err: any) {
       toast('Update failed', { description: err.message || 'Check console.' });
       console.error(err);
@@ -135,7 +129,6 @@ await qc.invalidateQueries({ queryKey: ['userDetail'] });
   };
 
   if (isUserLoading || loading) {
-    // you can show a full-page spinner or skeleton
     return (
       <DashboardLayout title="Profile">
         <div className="p-8">
@@ -149,7 +142,6 @@ await qc.invalidateQueries({ queryKey: ['userDetail'] });
   return (
     <DashboardLayout title="Profile">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Profile Summary */}
         <Card className="bg-white/5 border-white/10 p-6 md:col-span-1">
           <div className="flex flex-col items-center space-y-4">
             <Avatar className="h-24 w-24">
@@ -194,9 +186,7 @@ await qc.invalidateQueries({ queryKey: ['userDetail'] });
           </div>
         </Card>
 
-        {/* Settings */}
         <div className="md:col-span-2 space-y-8">
-          {/* Username Update */}
           <Card className="bg-white/5 border-white/10 p-6">
             <h3 className="text-lg font-medium text-white mb-4">Update Username</h3>
             <form onSubmit={handleUsernameUpdate}>
@@ -224,7 +214,6 @@ await qc.invalidateQueries({ queryKey: ['userDetail'] });
 
           <TwoFactorSettings />
 
-          {/* Password Update */}
           <Card className="bg-white/5 border-white/10 p-6">
             <h3 className="text-lg font-medium text-white mb-4">Change Password</h3>
             <form onSubmit={handlePasswordUpdate}>
