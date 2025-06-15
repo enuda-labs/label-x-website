@@ -1,4 +1,3 @@
-// components/TwoFactorSettings.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,11 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Shield, Copy, Check } from 'lucide-react';
-import { disable2FASetup, get2FASetup, verify2FASetup } from '@/services/apis/auth';
+import { get2FASetup, verify2FASetup, disable2FASetup } from '@/services/apis/auth';
 import { isAxiosError } from 'axios';
-import { Input } from '../ui/input';
 
 export const TwoFactorSettings = () => {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -25,6 +24,7 @@ export const TwoFactorSettings = () => {
   const [mounted, setMounted] = useState(false);
   const [password, setPassword] = useState('');
   const [showPasswordInput, setShowPasswordInput] = useState(false);
+
   useEffect(() => {
     setMounted(true);
     const enabled = localStorage.getItem('2fa_enabled') === 'true';
@@ -35,15 +35,11 @@ export const TwoFactorSettings = () => {
     setIsSettingUp(true);
     try {
       const result = await get2FASetup();
-      // 🔍 Log the full response so you can inspect it:
       console.log('get2FASetup result:', result);
-
-      // Mixed-content fix: ensure https
       const rawUrl = result.qr_code_url;
       const fixedUrl = rawUrl.startsWith('http://')
         ? rawUrl.replace('http://', 'https://')
         : rawUrl;
-
       setQrCodeURL(fixedUrl);
       setSecret(result.secret_key);
     } catch (err) {
@@ -54,11 +50,11 @@ export const TwoFactorSettings = () => {
   };
 
   const handleDisable2FA = async () => {
+    if (!password) {
+      setShowPasswordInput(true);
+      return;
+    }
     try {
-      if (!password) {
-        setShowPasswordInput(true);
-        return;
-      }
       await disable2FASetup(password);
       localStorage.removeItem('2fa_enabled');
       localStorage.removeItem('2fa_secret');
@@ -71,7 +67,7 @@ export const TwoFactorSettings = () => {
       toast('2FA Disabled', { description: 'Two-factor authentication has been disabled.' });
     } catch (error) {
       if (isAxiosError(error)) {
-        toast(error.response?.data?.error);
+        toast.error(error.response?.data?.error || 'Failed to disable 2FA');
       }
     }
   };
@@ -163,12 +159,15 @@ export const TwoFactorSettings = () => {
             ) : (
               <Switch
                 checked={is2FAEnabled}
-                onCheckedChange={checked => (checked ? handleEnable2FA() : handleDisable2FA())}
+                onCheckedChange={checked =>
+                  checked ? handleEnable2FA() : handleDisable2FA()
+                }
                 className="cursor-pointer"
               />
             )}
           </div>
-          {showPasswordInput ? (
+
+          {showPasswordInput && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -190,15 +189,15 @@ export const TwoFactorSettings = () => {
                 Disable
               </Button>
             </>
-          ) : (
-            is2FAEnabled && (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                <p className="text-green-400 text-sm flex items-center">
-                  <Check className="h-4 w-4 mr-2" />
-                  Two-factor authentication is active
-                </p>
-              </div>
-            )
+          )}
+
+          {is2FAEnabled && !showPasswordInput && (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <p className="text-green-400 text-sm flex items-center">
+                <Check className="h-4 w-4 mr-2" />
+                Two-factor authentication is active
+              </p>
+            </div>
           )}
         </div>
       ) : (
