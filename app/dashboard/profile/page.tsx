@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/shared/dashboard-layout';
 import { Card } from '@/components/ui/card';
@@ -10,8 +11,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Check, X } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getUserDetails } from '@/services/apis/user';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getUserDetails, updateUsername, changePassword } from '@/services/apis/user';
 import { getMyPlan } from '@/services/apis/subscription';
 import { useRouter } from 'next/navigation';
 import { TwoFactorSettings } from '@/components/profile/two-factor-settings';
@@ -25,6 +26,7 @@ interface UserProfile {
 
 const Profile = () => {
   const router = useRouter();
+  const qc = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
@@ -33,338 +35,243 @@ const Profile = () => {
     plan: '',
   });
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
+    username: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
   const [isSaving, setIsSaving] = useState(false);
-  
-  const { data } = useQuery({
-    queryKey: ['user'],
+
+  // Fetch user details
+  const { data, isLoading: isUserLoading } = useQuery({
+    queryKey: ['userDetail'],
     queryFn: getUserDetails,
   });
 
+  // Fetch subscription plan
   const { data: myPlan, isLoading: isCheckingPlan } = useQuery({
     queryKey: ['myPlan'],
     queryFn: getMyPlan,
   });
-  //const { toast } = useToast();
 
+  // Populate form when data loads
   useEffect(() => {
-    // Simulate API call to fetch user profile
-    const fetchProfile = async () => {
-      try {
-        if (!data?.user) return;
-        const { username, email } = data.user;
-
-        const profileData = {
-          name: username,
-          email,
-          company: 'Acme Inc.',
-          plan: myPlan?.plan.name || '',
-        };
-
-        setProfile(profileData);
-        setFormData({
-          name: profileData.name,
-          email: profileData.email,
-          company: profileData.company,
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
-        setLoading(false);
-      }
-    };
-
-    if (data?.user.id) {
-      fetchProfile();
+    if (data?.user) {
+      setProfile({
+        name: data.user.username,
+        email: data.user.email,
+        company: 'Acme Inc.',
+        plan: myPlan?.plan.name || '',
+      });
+      setFormData({
+        username: data.user.username,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      setLoading(false);
     }
-  }, [data?.user, myPlan?.plan.name]);
+  }, [data, myPlan]);
 
-
+  // Handle basic form field updates
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    setFormData((f) => ({ ...f, [name]: value }));
   };
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
+  // ====== USERNAME UPDATE ======
+  const handleUsernameUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-
     try {
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { username } = formData;
+      await updateUsername(username);
+     // ✅ new v5 signature: pass an object with your queryKey
+await qc.invalidateQueries({ queryKey: ['userDetail'] });
 
-      // Update local storage (in a real app, this would be an API update)
-      localStorage.setItem('userName', formData.name);
-      localStorage.setItem('userEmail', formData.email);
-
-      // Update local state
-      setProfile({
-        ...profile,
-        name: formData.name,
-        email: formData.email,
-        company: formData.company,
+      toast('Username updated', {
+        description: 'Your username has been successfully updated.',
       });
-
-      toast('Profile updated', {
-        description: 'Your profile has been successfully updated',
-      });
-    } catch {
-      toast('Update failed', {
-        description: 'There was an error updating your profile',
-      });
+    } catch (err: any) {
+      toast('Update failed', { description: err.message || 'Check console.' });
+      console.error(err);
     } finally {
       setIsSaving(false);
     }
   };
 
+  // ====== PASSWORD UPDATE ======
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
 
-    // Validate passwords
     if (formData.newPassword !== formData.confirmPassword) {
       toast("Passwords don't match", {
-        description: 'New password and confirmation must match',
+        description: 'New password and confirmation must match.',
       });
       setIsSaving(false);
       return;
     }
 
     try {
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Reset password fields
-      setFormData({
-        ...formData,
+      const { currentPassword, newPassword, confirmPassword } = formData;
+      await changePassword(currentPassword, newPassword, confirmPassword);
+      toast('Password updated', {
+        description: 'Your password has been successfully changed.',
+      });
+      // Clear out fields
+      setFormData((f) => ({
+        ...f,
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-      });
-
-      toast('Password updated', {
-        description: 'Your password has been successfully updated',
-      });
-    } catch {
-      toast('Update failed', {
-        description: 'There was an error updating your password',
-      });
+      }));
+    } catch (err: any) {
+      toast('Update failed', { description: err.message || 'Check console.' });
+      console.error(err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // const formatDate = (dateString: string) => {
-  // 	const date = new Date(dateString);
-  // 	return new Intl.DateTimeFormat('en-US', {
-  // 		month: 'long',
-  // 		day: 'numeric',
-  // 		year: 'numeric',
-  // 	}).format(date);
-  // };
+  if (isUserLoading || loading) {
+    // you can show a full-page spinner or skeleton
+    return (
+      <DashboardLayout title="Profile">
+        <div className="p-8">
+          <Skeleton className="h-8 w-2/3 mb-4" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Profile">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Profile Summary Card */}
+        {/* Profile Summary */}
         <Card className="bg-white/5 border-white/10 p-6 md:col-span-1">
-          {loading ? (
-            <div className="flex flex-col items-center space-y-4">
-              <Skeleton className="h-24 w-24 rounded-full bg-white/10" />
-              <Skeleton className="h-6 w-32 bg-white/10" />
-              <Skeleton className="h-4 w-40 bg-white/10" />
-              <Skeleton className="h-4 w-24 bg-white/10" />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className="bg-primary text-white text-xl">
-                  {profile.name
-                    .split(' ')
-                    .map(n => n[0])
-                    .join('')
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-
-              <h3 className="text-xl font-semibold text-white mt-4">{profile.name}</h3>
-              <p className="text-white/60 text-center">{profile.email}</p>
-
-              {!profile.plan ? (
-                <div className="bg-primary/20 px-4 py-1 rounded-full">
-                  <span className="text-primary text-sm font-medium capitalize">
-                    {profile.plan} Plan
-                  </span>
-                </div>
-              ) : (
-                <Button
-                  className="cursor-pointer bg-primary"
-                  onClick={() => router.push('/subscriptions')}
-                >
-                  Subscribe now
-                </Button>
-              )}
-
-              <div className="w-full mt-4 pt-4 border-t border-white/10">
-                <div className="flex items-start mb-3">
+          <div className="flex flex-col items-center space-y-4">
+            <Avatar className="h-24 w-24">
+              <AvatarFallback className="bg-primary text-white text-xl">
+                {profile.name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <h3 className="text-xl font-semibold text-white mt-4">{profile.name}</h3>
+            <p className="text-white/60 text-center">{profile.email}</p>
+            {!profile.plan ? (
+              <Button
+                className="cursor-pointer bg-primary"
+                onClick={() => router.push('/subscriptions')}
+              >
+                Subscribe now
+              </Button>
+            ) : (
+              <div className="bg-primary/20 px-4 py-1 rounded-full">
+                <span className="text-primary text-sm font-medium capitalize">
+                  {profile.plan} Plan
+                </span>
+              </div>
+            )}
+            <div className="w-full mt-4 pt-4 border-t border-white/10">
+              <div className="flex items-start mb-3">
+                <Check className="h-4 w-4 text-green-400 mr-2 mt-0.5" />
+                <span className="text-sm text-white/80">Email verified</span>
+              </div>
+              <div className="flex items-start">
+                {myPlan ? (
                   <Check className="h-4 w-4 text-green-400 mr-2 mt-0.5" />
-                  <span className="text-sm text-white/80">Email verified</span>
-                </div>
-                {!isCheckingPlan && (
-                  <div className="flex items-start">
-                    {myPlan ? (
-                      <Check className="h-4 w-4 text-green-400 mr-2 mt-0.5" />
-                    ) : (
-                      <X className="h-4 w-4 text-red-400 mr-2 mt-0.5" />
-                    )}
-                    <span className="text-sm text-white/80">Subscription active</span>
-                  </div>
+                ) : (
+                  <X className="h-4 w-4 text-red-400 mr-2 mt-0.5" />
                 )}
+                <span className="text-sm text-white/80">Subscription active</span>
               </div>
             </div>
-          )}
+          </div>
         </Card>
 
-        {/* Profile Settings */}
+        {/* Settings */}
         <div className="md:col-span-2 space-y-8">
-          {/* Account Information */}
+          {/* Username Update */}
           <Card className="bg-white/5 border-white/10 p-6">
-            <h3 className="text-lg font-medium text-white mb-4">Account Information</h3>
-
-            {loading ? (
+            <h3 className="text-lg font-medium text-white mb-4">Update Username</h3>
+            <form onSubmit={handleUsernameUpdate}>
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full bg-white/10" />
-                <Skeleton className="h-10 w-full bg-white/10" />
-                <Skeleton className="h-10 w-full bg-white/10" />
-                <Skeleton className="h-10 w-40 bg-white/10" />
-              </div>
-            ) : (
-              <form onSubmit={handleProfileUpdate}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="company">Company</Label>
-                    <Input
-                      id="company"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleInputChange}
-                      className="bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
                 </div>
-
                 <Button
                   type="submit"
-                  className="mt-6 bg-primary hover:bg-primary/90"
+                  className="mt-2 bg-primary hover:bg-primary/90"
                   disabled={isSaving}
                 >
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  {isSaving ? 'Saving...' : 'Save Username'}
                 </Button>
-              </form>
-            )}
+              </div>
+            </form>
           </Card>
-
 
           <TwoFactorSettings />
 
-          {/* Password Settings */}
+          {/* Password Update */}
           <Card className="bg-white/5 border-white/10 p-6">
             <h3 className="text-lg font-medium text-white mb-4">Change Password</h3>
-
-            {loading ? (
+            <form onSubmit={handlePasswordUpdate}>
               <div className="space-y-4">
-                <Skeleton className="h-10 w-full bg-white/10" />
-                <Skeleton className="h-10 w-full bg-white/10" />
-                <Skeleton className="h-10 w-full bg-white/10" />
-                <Skeleton className="h-10 w-40 bg-white/10" />
-              </div>
-            ) : (
-              <form onSubmit={handlePasswordUpdate}>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input
-                      id="currentPassword"
-                      name="currentPassword"
-                      type="password"
-                      value={formData.currentPassword}
-                      onChange={handleInputChange}
-                      className="bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
-
-                  <Separator className="bg-white/10" />
-
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      name="newPassword"
-                      type="password"
-                      value={formData.newPassword}
-                      onChange={handleInputChange}
-                      className="bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      className="bg-white/5 border-white/10 text-white"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input
+                    id="currentPassword"
+                    name="currentPassword"
+                    type="password"
+                    value={formData.currentPassword}
+                    onChange={handleInputChange}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
                 </div>
-
-                <Button
-                  type="submit"
-                  className="mt-6 bg-primary hover:bg-primary/90"
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Updating...' : 'Update Password'}
-                </Button>
-              </form>
-            )}
+                <Separator className="bg-white/10" />
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    name="newPassword"
+                    type="password"
+                    value={formData.newPassword}
+                    onChange={handleInputChange}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="bg-white/5 border-white/10 text-white"
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="mt-6 bg-primary hover:bg-primary/90"
+                disabled={isSaving}
+              >
+                {isSaving ? 'Updating...' : 'Update Password'}
+              </Button>
+            </form>
           </Card>
         </div>
       </div>
