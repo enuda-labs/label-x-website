@@ -2,6 +2,11 @@ import { AxiosClient } from '@/utils/axios';
 
 const axiosClient = new AxiosClient();
 
+interface ProjectResponse {
+  status: string;
+  projects: Project[];
+}
+
 export interface Project {
   id: number;
   name: string;
@@ -19,7 +24,7 @@ export interface StatsResponse {
   };
 }
 export const getProjects = async () => {
-  const response = await axiosClient.get<Project[]>('account/organization/project/list/');
+  const response = await axiosClient.get<ProjectResponse>('account/projects/list/');
   return response.data;
 };
 export const getStats = async () => {

@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Check } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   getMyPlan,
@@ -20,6 +20,7 @@ import { planFeats } from '@/utils';
 import { getProjects, getStats, Project } from '@/services/apis/project';
 
 const Dashboard = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [showPlans, setShowPlans] = useState(false);
@@ -43,7 +44,7 @@ const Dashboard = () => {
     queryKey: ['stats'],
     queryFn: getStats,
   });
-  const { data: projects } = useQuery({
+  const { data: projectsData } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
   });
@@ -52,7 +53,7 @@ const Dashboard = () => {
     // Simulate API call to fetch dashboard data
     const fetchData = async () => {
       try {
-        if (projects?.length) setRecentProjects(projects);
+        if (projectsData?.projects.length) setRecentProjects(projectsData.projects);
 
         setLoading(false);
       } catch (error) {
@@ -62,7 +63,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [projects]);
+  }, [projectsData?.projects]);
 
   useEffect(() => {
     if (statsData) {
@@ -94,14 +95,14 @@ const Dashboard = () => {
   //   }
   // };
 
-  // const formatDate = (dateString: string) => {
-  //   const date = new Date(dateString);
-  //   return new Intl.DateTimeFormat('en-US', {
-  //     month: 'short',
-  //     day: 'numeric',
-  //     year: 'numeric',
-  //   }).format(date);
-  // };
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  };
 
   return (
     <DashboardLayout title="Dashboard">
@@ -181,20 +182,21 @@ const Dashboard = () => {
               <div className="flex flex-col md:flex-row md:items-center justify-between">
                 <div className="mb-3 md:mb-0">
                   <h3 className="font-medium text-white">{project.name}</h3>
-                  {/* <div className="flex items-center mt-1">
-                    <span className={`text-xs ${getStatusColor(project.status)}`}>
-                      {project.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  <div className="flex items-center mt-1">
+                    <span className="text-white/60 text-xs">
+                      Created on {formatDate(project.created_at)}
                     </span>
-                    <span className="text-white/40 text-xs mx-2">•</span>
-                    <span className="text-white/60 text-xs">Due {formatDate(project.dueDate)}</span>
-                  </div> */}
+                  </div>
                 </div>
 
-                {/* <div className="flex items-center space-x-4 w-full md:w-auto">
-                  <div className="flex-1 md:w-32">
-                    <Progress value={project.progress} className="h-2 bg-white/10" />
+                <div className="flex items-center space-x-4 w-full md:w-auto">
+                  {/* <div className="flex-1 md:w-32">
+                    <Progress
+                      value={statsData?.data.find(p => p.id === project.id)}
+                      className="h-2 bg-white/10"
+                    />
                     <span className="text-xs text-white/60 mt-1">{project.progress}% complete</span>
-                  </div>
+                  </div> */}
 
                   <Button
                     variant="ghost"
@@ -203,12 +205,15 @@ const Dashboard = () => {
                   >
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                </div> */}
+                </div>
               </div>
             </Card>
           ))}
 
-          <Button className="px-10 mt-4 mb-4 flex items-center justify-center mx-auto">
+          <Button
+            onClick={() => router.push('dashboard/projects')}
+            className="px-10 mt-4 mb-4 flex items-center justify-center mx-auto cursor-pointer"
+          >
             View All Projects
           </Button>
         </div>

@@ -27,7 +27,6 @@ interface Project {
   description: string;
   status: 'pending' | 'in_progress' | 'completed';
   progress: number;
-  dueDate: string;
   createdAt: string;
   dataPoints: number;
 }
@@ -54,14 +53,13 @@ const Projects = () => {
         if (projectsData)
           // Mock data
           setProjects(
-            projectsData.map(project => ({
+            projectsData.projects.map(project => ({
               id: project.id,
               name: project.name,
               description: project.description,
               status: 'in_progress',
               progress: 65,
-              dueDate: '2024-05-25',
-              createdAt: '2024-05-15',
+              createdAt: project.created_at,
               dataPoints: 10000,
             }))
           );
@@ -234,23 +232,16 @@ const Projects = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-white/40 text-xs mb-1">Progress</p>
+                    <p className="text-white/40 text-xs mb-1 grid">Progress</p>
                     <div className="flex items-center">
                       <Progress value={project.progress} className="h-2 flex-1 bg-white/10" />
                       <span className="ml-2 text-xs text-white/60">{project.progress}%</span>
                     </div>
                   </div>
-
-                  <div>
-                    <p className="text-white/40 text-xs mb-1">Data Points</p>
-                    <p className="text-sm text-white">{project.dataPoints.toLocaleString()}</p>
-                  </div>
-
+                  <div></div>
                   <div>
                     <p className="text-white/40 text-xs mb-1">Timeline</p>
-                    <p className="text-sm text-white">
-                      Created: {formatDate(project.createdAt)} • Due: {formatDate(project.dueDate)}
-                    </p>
+                    <p className="text-sm text-white">Created: {formatDate(project.createdAt)}</p>
                   </div>
                 </div>
               </div>
