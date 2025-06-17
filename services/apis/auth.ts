@@ -8,6 +8,7 @@ const axiosClient = new AxiosClient();
 export interface LoginBody {
   username: string;
   password: string;
+  otp_code?: string;          // allow optional OTP for 2FA flows
 }
 
 export interface UserData {
@@ -57,17 +58,16 @@ export const register = async (
   return response.data;
 };
 
-
 /** ----- Two-Factor Authentication Setup & Verify ----- **/
 
-// the inner shape of the data property
+// Data returned by the setup endpoint
 export interface TwoFASetupData {
   qr_code_url: string;
   secret_key: string;
   is_verified: boolean;
 }
 
-// what the API actually returns at the top level
+// Full API response for setup
 interface TwoFASetupAPIResponse {
   status: string;
   data: TwoFASetupData;
@@ -85,9 +85,7 @@ export const get2FASetup = async (): Promise<TwoFASetupData> => {
   return resp.data.data;
 };
 
-/**
- * What the verify endpoint returns
- */
+// API response for verify
 interface Verify2FAAPIResponse {
   status: string;
   data: { is_verified: boolean };
@@ -107,4 +105,16 @@ export const verify2FASetup = async (
     Verify2FAAPIResponse
   >('/account/2fa/setup/', { otp_code });
   return resp.data.data.is_verified;
+};
+
+/**
+ * Disables two-factor authentication by validating the user password.
+ */
+export const disable2FASetup = async (
+  password: string
+): Promise<void> => {
+  await axiosClient.post<{ password: string }>(
+    '/account/2fa/disable/',
+    { password }
+  );
 };

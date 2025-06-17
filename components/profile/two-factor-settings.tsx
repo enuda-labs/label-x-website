@@ -1,4 +1,3 @@
-// components/TwoFactorSettings.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,9 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Shield, Copy, Check } from 'lucide-react';
-import { get2FASetup, verify2FASetup } from '@/services/apis/auth';
+import { get2FASetup, verify2FASetup, disable2FASetup } from '@/services/apis/auth';
+import { isAxiosError } from 'axios';
 
 export const TwoFactorSettings = () => {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -21,6 +22,8 @@ export const TwoFactorSettings = () => {
   const [secretCopied, setSecretCopied] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -32,15 +35,11 @@ export const TwoFactorSettings = () => {
     setIsSettingUp(true);
     try {
       const result = await get2FASetup();
-      // 🔍 Log the full response so you can inspect it:
       console.log('get2FASetup result:', result);
-
-      // Mixed-content fix: ensure https
       const rawUrl = result.qr_code_url;
       const fixedUrl = rawUrl.startsWith('http://')
         ? rawUrl.replace('http://', 'https://')
         : rawUrl;
-
       setQrCodeURL(fixedUrl);
       setSecret(result.secret_key);
     } catch (err) {
@@ -50,15 +49,27 @@ export const TwoFactorSettings = () => {
     }
   };
 
-  const handleDisable2FA = () => {
-    localStorage.removeItem('2fa_enabled');
-    localStorage.removeItem('2fa_secret');
-    setIs2FAEnabled(false);
-    setIsSettingUp(false);
-    setSecret('');
-    setQrCodeURL('');
-    setVerificationCode('');
-    toast('2FA Disabled', { description: 'Two-factor authentication has been disabled.' });
+  const handleDisable2FA = async () => {
+    if (!password) {
+      setShowPasswordInput(true);
+      return;
+    }
+    try {
+      await disable2FASetup(password);
+      localStorage.removeItem('2fa_enabled');
+      localStorage.removeItem('2fa_secret');
+      setIs2FAEnabled(false);
+      setIsSettingUp(false);
+      setShowPasswordInput(false);
+      setSecret('');
+      setQrCodeURL('');
+      setVerificationCode('');
+      toast('2FA Disabled', { description: 'Two-factor authentication has been disabled.' });
+    } catch (error) {
+      if (isAxiosError(error)) {
+        toast.error(error.response?.data?.error || 'Failed to disable 2FA');
+      }
+    }
   };
 
   const copySecret = async () => {
@@ -143,15 +154,44 @@ export const TwoFactorSettings = () => {
                   : 'Two-factor authentication is disabled'}
               </p>
             </div>
-            <Switch
-              checked={is2FAEnabled}
-              onCheckedChange={(checked) =>
-                checked ? handleEnable2FA() : handleDisable2FA()
-              }
-            />
+            {showPasswordInput ? (
+              <div className="w-[24px] h-[24px] border-[3px] border-solid border-[rgba(0,0,0,0.2)] border-t-primary rounded-full animate-spin ml-auto"></div>
+            ) : (
+              <Switch
+                checked={is2FAEnabled}
+                onCheckedChange={checked =>
+                  checked ? handleEnable2FA() : handleDisable2FA()
+                }
+                className="cursor-pointer"
+              />
+            )}
           </div>
 
-          {is2FAEnabled && (
+          {showPasswordInput && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="bg-white/5 border-white/10 text-white"
+                />
+              </div>
+              <Button
+                variant="outline"
+                className="flex-1 cursor-pointer bg-primary"
+                onClick={handleDisable2FA}
+              >
+                Disable
+              </Button>
+            </>
+          )}
+
+          {is2FAEnabled && !showPasswordInput && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
               <p className="text-green-400 text-sm flex items-center">
                 <Check className="h-4 w-4 mr-2" />
@@ -196,11 +236,7 @@ export const TwoFactorSettings = () => {
           <div className="space-y-4">
             <h4 className="text-white font-medium">Step 3: Verify Code</h4>
             <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
-                value={verificationCode}
-                onChange={setVerificationCode}
-              >
+              <InputOTP maxLength={6} value={verificationCode} onChange={setVerificationCode}>
                 <InputOTPGroup>
                   {[...Array(6)].map((_, i) => (
                     <InputOTPSlot
