@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { Shield, Copy, Check } from 'lucide-react';
 import { disable2FASetup, get2FASetup, verify2FASetup } from '@/services/apis/auth';
 import { isAxiosError } from 'axios';
-import { Input } from '../ui/input';
 
 export const TwoFactorSettings = () => {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);

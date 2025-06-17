@@ -3,11 +3,11 @@
 import { useState, useEffect, FC } from 'react';
 import DashboardLayout from '@/components/shared/dashboard-layout';
 import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+// import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ArrowRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   getMyPlan,
@@ -17,24 +17,17 @@ import {
 } from '@/services/apis/subscription';
 import { useRouter } from 'next/navigation';
 import { planFeats } from '@/utils';
-
-interface ProjectSummary {
-  id: string;
-  name: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  progress: number;
-  dueDate: string;
-}
+import { getProjects, getStats, Project } from '@/services/apis/project';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
-  const [recentProjects, setRecentProjects] = useState<ProjectSummary[]>([]);
+  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [showPlans, setShowPlans] = useState(false);
   const [stats, setStats] = useState({
     pending: 0,
     inProgress: 0,
     completed: 0,
-    totalDataPoints: 0,
+    completionPercentage: 0,
   });
 
   const { data: myPlan, isLoading: isCheckingPlan } = useQuery({
@@ -46,48 +39,20 @@ const Dashboard = () => {
     queryKey: ['plan'],
     queryFn: getSubscriptionPlans,
   });
-  // const {data: projects} = useQuery({
-  // 	queryKey: ['projects'],
-  // 	queryFn: getProjects,
-  // });
+  const { data: statsData } = useQuery({
+    queryKey: ['stats'],
+    queryFn: getStats,
+  });
+  const { data: projects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: getProjects,
+  });
 
   useEffect(() => {
     // Simulate API call to fetch dashboard data
     const fetchData = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-
-        // Mock data
-        setRecentProjects([
-          {
-            id: 'proj-001',
-            name: 'Twitter Sentiment Analysis',
-            status: 'in_progress',
-            progress: 65,
-            dueDate: '2024-05-25',
-          },
-          {
-            id: 'proj-002',
-            name: 'Customer Feedback Classification',
-            status: 'pending',
-            progress: 0,
-            dueDate: '2024-05-30',
-          },
-          {
-            id: 'proj-003',
-            name: 'Product Image Classification',
-            status: 'completed',
-            progress: 100,
-            dueDate: '2024-05-15',
-          },
-        ]);
-
-        setStats({
-          pending: 2,
-          inProgress: 3,
-          completed: 5,
-          totalDataPoints: 48750,
-        });
+        if (projects?.length) setRecentProjects(projects);
 
         setLoading(false);
       } catch (error) {
@@ -97,29 +62,46 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, [projects]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'text-yellow-400';
-      case 'in_progress':
-        return 'text-blue-400';
-      case 'completed':
-        return 'text-green-400';
-      default:
-        return 'text-white/60';
+  useEffect(() => {
+    if (statsData) {
+      setStats({
+        pending: 2,
+        inProgress: 3,
+        completed: 5,
+        completionPercentage: 48750,
+      });
+      setStats({
+        completed: statsData.data.completed_tasks,
+        pending: statsData.data.total_tasks - statsData.data.completed_tasks,
+        inProgress: statsData.data.completed_tasks - statsData.data.completed_tasks,
+        completionPercentage: statsData.data.completion_percentage,
+      });
     }
-  };
+  }, [statsData]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }).format(date);
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case 'pending':
+  //       return 'text-yellow-400';
+  //     case 'in_progress':
+  //       return 'text-blue-400';
+  //     case 'completed':
+  //       return 'text-green-400';
+  //     default:
+  //       return 'text-white/60';
+  //   }
+  // };
+
+  // const formatDate = (dateString: string) => {
+  //   const date = new Date(dateString);
+  //   return new Intl.DateTimeFormat('en-US', {
+  //     month: 'short',
+  //     day: 'numeric',
+  //     year: 'numeric',
+  //   }).format(date);
+  // };
 
   return (
     <DashboardLayout title="Dashboard">
@@ -168,15 +150,13 @@ const Dashboard = () => {
             </Card>
 
             <Card className="bg-white/5 border-white/10 p-4">
-              <div className="text-white/60 text-sm mb-1">Total Data Points</div>
-              <div className="text-3xl font-bold text-white">
-                {stats.totalDataPoints.toLocaleString()}
-              </div>
+              <div className="text-white/60 text-sm mb-1">Completion Percentage</div>
+              <div className="text-3xl font-bold text-white">{stats.completionPercentage}%</div>
               <div className="h-1 w-full bg-white/10 mt-3">
                 <div
                   className="h-1 bg-primary"
                   style={{
-                    width: `${Math.min((stats.totalDataPoints / 100000) * 100, 100)}%`,
+                    width: `${stats.completionPercentage}%`,
                   }}
                 />
               </div>
@@ -201,16 +181,16 @@ const Dashboard = () => {
               <div className="flex flex-col md:flex-row md:items-center justify-between">
                 <div className="mb-3 md:mb-0">
                   <h3 className="font-medium text-white">{project.name}</h3>
-                  <div className="flex items-center mt-1">
+                  {/* <div className="flex items-center mt-1">
                     <span className={`text-xs ${getStatusColor(project.status)}`}>
                       {project.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                     <span className="text-white/40 text-xs mx-2">•</span>
                     <span className="text-white/60 text-xs">Due {formatDate(project.dueDate)}</span>
-                  </div>
+                  </div> */}
                 </div>
 
-                <div className="flex items-center space-x-4 w-full md:w-auto">
+                {/* <div className="flex items-center space-x-4 w-full md:w-auto">
                   <div className="flex-1 md:w-32">
                     <Progress value={project.progress} className="h-2 bg-white/10" />
                     <span className="text-xs text-white/60 mt-1">{project.progress}% complete</span>
@@ -223,7 +203,7 @@ const Dashboard = () => {
                   >
                     <ArrowRight className="h-4 w-4" />
                   </Button>
-                </div>
+                </div> */}
               </div>
             </Card>
           ))}
