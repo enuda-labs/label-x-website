@@ -18,6 +18,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { planFeats } from '@/utils';
 import { getProjects, getStats, Project } from '@/services/apis/project';
+import { Progress } from '@/components/ui/progress';
 
 const Dashboard = () => {
   const router = useRouter();
@@ -190,13 +191,15 @@ const Dashboard = () => {
                 </div>
 
                 <div className="flex items-center space-x-4 w-full md:w-auto">
-                  {/* <div className="flex-1 md:w-32">
+                  <div className="flex-1 md:w-32">
                     <Progress
-                      value={statsData?.data.find(p => p.id === project.id)}
+                      value={project.task_stats.completion_percentage}
                       className="h-2 bg-white/10"
                     />
-                    <span className="text-xs text-white/60 mt-1">{project.progress}% complete</span>
-                  </div> */}
+                    <span className="text-xs text-white/60 mt-1">
+                      {project.task_stats.completion_percentage}% complete
+                    </span>
+                  </div>
 
                   <Button
                     variant="ghost"

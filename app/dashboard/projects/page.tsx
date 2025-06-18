@@ -50,21 +50,26 @@ const Projects = () => {
     // Simulate API call to fetch projects
     const fetchProjects = async () => {
       try {
-        if (projectsData)
+        if (projectsData) {
           // Mock data
           setProjects(
             projectsData.projects.map(project => ({
               id: project.id,
               name: project.name,
               description: project.description,
-              status: 'in_progress',
-              progress: 65,
+              status: project.task_stats.completion_percentage
+                ? project.task_stats.completion_percentage === 100
+                  ? 'completed'
+                  : 'in_progress'
+                : 'pending',
+              progress: project.task_stats.completion_percentage,
               createdAt: project.created_at,
               dataPoints: 10000,
             }))
           );
 
-        setLoading(false);
+          setLoading(false);
+        }
       } catch (error) {
         console.error('Error fetching projects:', error);
         setLoading(false);
@@ -220,13 +225,13 @@ const Projects = () => {
                   </div>
 
                   <div className="mt-3 md:mt-0">
-                    <Button
+                    {/* <Button
                       variant="outline"
                       size="sm"
                       className="h-8 border-white/10 hover:bg-white/5"
                     >
                       View Details
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
 
@@ -247,11 +252,11 @@ const Projects = () => {
               </div>
             </Card>
           ))
-        ) : (
+        ) : projects.length ? (
           <div className="text-center py-8">
             <p className="text-white/60">{`No projects found matching "{searchQuery}"`}</p>
           </div>
-        )}
+        ) : null}
       </div>
     </DashboardLayout>
   );
