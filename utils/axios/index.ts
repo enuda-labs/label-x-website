@@ -64,7 +64,6 @@ export class AxiosClient {
     this._axiosClient.interceptors.request.use(async config => {
       const tokenExists = localStorage.getItem(ACCESS_TOKEN_KEY) != null;
       const url = config.url || '';
-      console.log('token', localStorage.getItem(ACCESS_TOKEN_KEY));
       if (tokenExists && !this.isPublicRoute(url)) {
         config.headers.Authorization = `Bearer ${localStorage.getItem(ACCESS_TOKEN_KEY)}`;
       }
