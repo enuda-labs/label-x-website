@@ -10,7 +10,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Shield, Copy, Check } from 'lucide-react';
-import { get2FASetup, verify2FASetup, disable2FASetup } from '@/services/apis/auth';
+import { disable2FASetup, get2FASetup, verify2FASetup } from '@/services/apis/auth';
 import { isAxiosError } from 'axios';
 
 export const TwoFactorSettings = () => {
@@ -159,9 +159,7 @@ export const TwoFactorSettings = () => {
             ) : (
               <Switch
                 checked={is2FAEnabled}
-                onCheckedChange={checked =>
-                  checked ? handleEnable2FA() : handleDisable2FA()
-                }
+                onCheckedChange={checked => (checked ? handleEnable2FA() : handleDisable2FA())}
                 className="cursor-pointer"
               />
             )}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,6 +16,7 @@ import { getUserDetails, updateUsername, changePassword } from '@/services/apis/
 import { getMyPlan } from '@/services/apis/subscription';
 import { useRouter } from 'next/navigation';
 import { TwoFactorSettings } from '@/components/profile/two-factor-settings';
+import { isAxiosError } from 'axios';
 
 interface UserProfile {
   name: string;
@@ -43,24 +43,42 @@ const Profile = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  const { data, isLoading: isUserLoading } = useQuery({
-    queryKey: ['userDetail'],
+  const { data } = useQuery({
+    queryKey: ['user'],
     queryFn: getUserDetails,
   });
 
-  const { data: myPlan, isLoading: isCheckingPlan } = useQuery({
+  const { data: myPlan } = useQuery({
     queryKey: ['myPlan'],
     queryFn: getMyPlan,
   });
 
   useEffect(() => {
-    if (data?.user) {
-      setProfile({
-        name: data.user.username,
-        email: data.user.email,
-        company: 'Acme Inc.',
-        plan: myPlan?.plan.name || '',
-      });
+    // Simulate API call to fetch user profile
+    const fetchProfile = async () => {
+      try {
+        if (!data?.user) return;
+        const { username, email } = data.user;
+
+        const profileData = {
+          name: username,
+          email,
+          company: '',
+          plan: myPlan?.plan.name || '',
+        };
+
+        setProfile(profileData);
+
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        setLoading(false);
+      }
+    };
+
+    if (data?.user.id) {
+      fetchProfile();
+
       setFormData({
         username: data.user.username,
         currentPassword: '',
@@ -69,11 +87,11 @@ const Profile = () => {
       });
       setLoading(false);
     }
-  }, [data, myPlan]);
+  }, [data?.user, myPlan?.plan.name]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((f) => ({ ...f, [name]: value }));
+    setFormData(f => ({ ...f, [name]: value }));
   };
 
   const handleUsernameUpdate = async (e: React.FormEvent) => {
@@ -85,8 +103,9 @@ const Profile = () => {
       toast('Username updated', {
         description: 'Your username has been successfully updated.',
       });
-    } catch (err: any) {
-      toast('Update failed', { description: err.message || 'Check console.' });
+    } catch (err) {
+      if (isAxiosError(err))
+        toast('Update failed', { description: err.message || 'Check console.' });
       console.error(err);
     } finally {
       setIsSaving(false);
@@ -106,6 +125,9 @@ const Profile = () => {
     }
 
     try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Reset password fields
       await changePassword(
         formData.currentPassword,
         formData.newPassword,
@@ -120,15 +142,16 @@ const Profile = () => {
         newPassword: '',
         confirmPassword: '',
       });
-    } catch (err: any) {
-      toast('Update failed', { description: err.message || 'Check console.' });
+    } catch (err) {
+      if (isAxiosError(err))
+        toast('Update failed', { description: err.message || 'Check console.' });
       console.error(err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isUserLoading || loading) {
+  if (loading) {
     return (
       <DashboardLayout title="Profile">
         <div className="p-8">
@@ -148,7 +171,7 @@ const Profile = () => {
               <AvatarFallback className="bg-primary text-white text-xl">
                 {profile.name
                   .split(' ')
-                  .map((n) => n[0])
+                  .map(n => n[0])
                   .join('')
                   .toUpperCase()}
               </AvatarFallback>
