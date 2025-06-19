@@ -14,8 +14,8 @@ import { useGlobalStore } from '@/context/store';
 
 export const Login = () => {
   const { setIsLoggedIn } = useGlobalStore();
-  const [email, setEmail] = useState('Jane');
-  const [password, setPassword] = useState('@Password01');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [show2fa, setShow2fa] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
