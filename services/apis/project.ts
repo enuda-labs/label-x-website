@@ -2,6 +2,10 @@ import { AxiosClient } from '@/utils/axios';
 
 const axiosClient = new AxiosClient();
 
+interface CreateProjectPayload {
+  name: string;
+  description: string;
+}
 interface ProjectResponse {
   status: string;
   projects: Project[];
@@ -31,6 +35,13 @@ export interface StatsResponse {
     completion_percentage: number;
   };
 }
+export const createProject = async (payload: CreateProjectPayload) => {
+  const response = await axiosClient.post<CreateProjectPayload, Project>(
+    'account/organization/project/',
+    payload
+  );
+  return response.data;
+};
 export const getProjects = async () => {
   const response = await axiosClient.get<ProjectResponse>('account/projects/list/');
   return response.data;
