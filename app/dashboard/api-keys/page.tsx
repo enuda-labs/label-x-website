@@ -85,7 +85,7 @@ export default function ApiKeys() {
           (raw: {
             id: string;
             name: string;
-            api_key: string;
+            plain_api_key: string;
             created: string;
             lastUsed: string;
             revoked: string;
@@ -93,7 +93,7 @@ export default function ApiKeys() {
           }) => ({
             id: raw.id,
             name: raw.name,
-            api_key: raw.api_key,
+            api_key: raw.plain_api_key,
             created: raw.created,
             lastUsed: raw.lastUsed ?? null,
             revoked: raw.revoked ?? false,
