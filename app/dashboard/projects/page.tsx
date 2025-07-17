@@ -16,10 +16,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Search, Plus, Calendar } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import DashboardLayout from '@/components/shared/dashboard-layout';
-import { useQuery } from '@tanstack/react-query';
-import { getProjects } from '@/services/apis/project';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createProject, getProjects } from '@/services/apis/project';
+import { isAxiosError } from 'axios';
+import { useRouter } from 'next/navigation';
 
 interface Project {
   id: number;
@@ -32,15 +34,17 @@ interface Project {
 }
 
 const Projects = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [newProject, setNewProject] = useState({
     name: '',
     description: '',
-    dueDate: '',
   });
-
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const { data: projectsData } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
@@ -107,21 +111,25 @@ const Projects = () => {
     }).format(date);
   };
 
-  const handleCreateProject = () => {
-    // In a real app, this would send data to an API
-    console.log('Creating new project:', newProject);
+  const { mutate: createMutation, isPending } = useMutation({
+    mutationFn: createProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setNewProject({ name: '', description: '' });
+      setOpen(false);
+      setError('');
+    },
+    onError: err => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      if (isAxiosError(err)) setError(err.response?.data.detail || err.message);
+    },
+  });
 
-    // Reset form
-    setNewProject({
-      name: '',
-      description: '',
-      dueDate: '',
-    });
-  };
+  console.log();
 
   return (
     <DashboardLayout title="My Projects">
-      {/* Search and Create Section */}
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
         <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -133,7 +141,7 @@ const Projects = () => {
           />
         </div>
 
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90 w-full md:w-auto">
               <Plus className="h-4 w-4 mr-2" />
@@ -168,28 +176,16 @@ const Projects = () => {
                   onChange={e => setNewProject({ ...newProject, description: e.target.value })}
                 />
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Due Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
-                  <Input
-                    type="date"
-                    className="pl-9 bg-white/5 border-white/10 text-white"
-                    value={newProject.dueDate}
-                    onChange={e => setNewProject({ ...newProject, dueDate: e.target.value })}
-                  />
-                </div>
-              </div>
+              <span className="text-red-500 text-sm">{error}</span>
             </div>
 
             <DialogFooter>
               <Button
                 type="submit"
                 className="bg-primary hover:bg-primary/90"
-                onClick={handleCreateProject}
+                onClick={() => createMutation(newProject)}
               >
-                Create Project
+                {isPending ? 'Creating Project...' : 'Create Project'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -207,7 +203,7 @@ const Projects = () => {
           </>
         ) : filteredProjects.length > 0 ? (
           filteredProjects.map(project => (
-            <Card key={project.id} className="bg-white/5 border-white/10 p-5">
+            <Card key={project.id} className="bg-white/5 border-white/10 p-5 cursor-pointer" onClick={() => router.push(`/dashboard/projects/${project.id}`)}>
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between">
                   <div>
@@ -225,13 +221,13 @@ const Projects = () => {
                   </div>
 
                   <div className="mt-3 md:mt-0">
-                    {/* <Button
+                    <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 border-white/10 hover:bg-white/5"
+                      className="h-8 border-white/10 hover:bg-primary"
                     >
                       View Details
-                    </Button> */}
+                    </Button>
                   </div>
                 </div>
 
@@ -256,7 +252,11 @@ const Projects = () => {
           <div className="text-center py-8">
             <p className="text-white/60">{`No projects found matching "{searchQuery}"`}</p>
           </div>
-        ) : null}
+        ) : (
+          <div className="my-20 flex justify-center items-center">
+            No project has been created for this account
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

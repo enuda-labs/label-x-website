@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import { planFeats } from '@/utils';
 import { getProjects, getStats, Project } from '@/services/apis/project';
 import { Progress } from '@/components/ui/progress';
+import Link from 'next/link';
 
 const Dashboard = () => {
   const router = useRouter();
@@ -54,7 +55,7 @@ const Dashboard = () => {
     // Simulate API call to fetch dashboard data
     const fetchData = async () => {
       try {
-        if (projectsData?.projects.length) setRecentProjects(projectsData.projects);
+        if (projectsData?.projects.length) setRecentProjects(projectsData.projects.slice(0, 4));
 
         setLoading(false);
       } catch (error) {
@@ -178,47 +179,57 @@ const Dashboard = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {recentProjects.map(project => (
-            <Card key={project.id} className="bg-white/5 border-white/10 p-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between">
-                <div className="mb-3 md:mb-0">
-                  <h3 className="font-medium text-white">{project.name}</h3>
-                  <div className="flex items-center mt-1">
-                    <span className="text-white/60 text-xs">
-                      Created on {formatDate(project.created_at)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-4 w-full md:w-auto">
-                  <div className="flex-1 md:w-32">
-                    <Progress
-                      value={project.task_stats.completion_percentage}
-                      className="h-2 bg-white/10"
-                    />
-                    <span className="text-xs text-white/60 mt-1">
-                      {project.task_stats.completion_percentage}% complete
-                    </span>
+          {recentProjects.length ? (
+            recentProjects.slice(0, 3).map(project => (
+              <Card key={project.id} className="bg-white/5 border-white/10 p-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between">
+                  <div className="mb-3 md:mb-0">
+                    <h3 className="font-medium text-white">{project.name}</h3>
+                    <div className="flex items-center mt-1">
+                      <span className="text-white/60 text-xs">
+                        Created on {formatDate(project.created_at)}
+                      </span>
+                    </div>
                   </div>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-white/60 hover:text-white"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+                  <div className="flex items-center space-x-4 w-full md:w-auto">
+                    <div className="flex-1 md:w-32">
+                      <Progress
+                        value={project.task_stats.completion_percentage}
+                        className="h-2 bg-white/10"
+                      />
+                      <span className="text-xs text-white/60 mt-1">
+                        {project.task_stats.completion_percentage}% complete
+                      </span>
+                    </div>
 
-          <Button
-            onClick={() => router.push('dashboard/projects')}
-            className="px-10 mt-4 mb-4 flex items-center justify-center mx-auto cursor-pointer"
-          >
-            View All Projects
-          </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-white/60 hover:text-white"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))
+          ) : (
+            <div className="my-10 flex items-center">
+              No project has been created for this account
+              <Link href={'/dashboard/projects'} className="ml-3 underline text-primary">
+                Create now
+              </Link>
+            </div>
+          )}
+          {recentProjects.length > 3 && (
+            <Button
+              onClick={() => router.push('dashboard/projects')}
+              className="px-10 mt-4 mb-4 flex items-center justify-center mx-auto cursor-pointer"
+            >
+              View All Projects
+            </Button>
+          )}
         </div>
       )}
 
