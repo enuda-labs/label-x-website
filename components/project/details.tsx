@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarDays, Activity, Database, Clock } from 'lucide-react';
+import { CalendarDays, Clock } from 'lucide-react';
 import { ProjectStats } from './stats';
 import { ProjectCharts } from './charts';
 import { ProjectLogs } from './logs';
@@ -24,6 +23,7 @@ interface ProjectLog {
     status: 'pending' | 'in_progress' | 'completed';
     created_by: number;
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   task: any;
 }
 
