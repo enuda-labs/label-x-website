@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
-interface ProjectChartsProps {
-  projectId: number;
-}
+// interface ProjectChartsProps {
+//   projectId: number;
+// }
 
 const chartConfig = {
   dataPoints: {
@@ -27,9 +27,9 @@ const chartConfig = {
   },
 };
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+//const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-export const ProjectCharts = ({ projectId }: ProjectChartsProps) => {
+export const ProjectCharts = () => {
   const [dateFilter, setDateFilter] = useState<"7d" | "30d" | "90d">("30d");
 
   
@@ -90,7 +90,9 @@ export const ProjectCharts = ({ projectId }: ProjectChartsProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+       
         {/* Daily Progress Chart */}
+        
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
             <CardTitle className="text-white">Daily Progress</CardTitle>
@@ -127,7 +129,7 @@ export const ProjectCharts = ({ projectId }: ProjectChartsProps) => {
           </CardContent>
         </Card>
 
-        {/* Accuracy Trend */}
+        {/* Accuracy Trend Chart */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
             <CardTitle className="text-white">Accuracy Trend</CardTitle>
@@ -170,7 +172,7 @@ export const ProjectCharts = ({ projectId }: ProjectChartsProps) => {
         </Card>
       </div>
 
-      {/* Status Distribution */}
+      {/* Task Status Distribution (Pie chart) */}
       <Card className="bg-white/5 border-white/10">
         <CardHeader>
           <CardTitle className="text-white">Task Status Distribution</CardTitle>
