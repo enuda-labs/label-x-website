@@ -21,6 +21,7 @@ import DashboardLayout from '@/components/shared/dashboard-layout';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createProject, getProjects } from '@/services/apis/project';
 import { isAxiosError } from 'axios';
+import { useRouter } from 'next/navigation';
 
 interface Project {
   id: number;
@@ -33,6 +34,7 @@ interface Project {
 }
 
 const Projects = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -127,7 +129,7 @@ const Projects = () => {
 
   return (
     <DashboardLayout title="My Projects">
-      {/* Search and Create Section */}
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
         <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
@@ -201,7 +203,7 @@ const Projects = () => {
           </>
         ) : filteredProjects.length > 0 ? (
           filteredProjects.map(project => (
-            <Card key={project.id} className="bg-white/5 border-white/10 p-5">
+            <Card key={project.id} className="bg-white/5 border-white/10 p-5 cursor-pointer" onClick={() => router.push(`/dashboard/projects/${project.id}`)}>
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between">
                   <div>
@@ -219,13 +221,13 @@ const Projects = () => {
                   </div>
 
                   <div className="mt-3 md:mt-0">
-                    {/* <Button
+                    <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 border-white/10 hover:bg-white/5"
+                      className="h-8 border-white/10 hover:bg-primary"
                     >
                       View Details
-                    </Button> */}
+                    </Button>
                   </div>
                 </div>
 
