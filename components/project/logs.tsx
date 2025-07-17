@@ -16,6 +16,7 @@ interface ProjectLog {
     status: "pending" | "in_progress" | "completed";
     created_by: number;
   };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   task: any;
 }
 
