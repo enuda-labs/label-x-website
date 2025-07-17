@@ -31,6 +31,7 @@ const Dashboard = () => {
     inProgress: 0,
     completed: 0,
     completionPercentage: 0,
+    total: 0,
   });
 
   const { data: myPlan, isLoading: isCheckingPlan } = useQuery({
@@ -69,17 +70,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (statsData) {
-      setStats({
-        pending: 2,
-        inProgress: 3,
-        completed: 5,
-        completionPercentage: 48750,
-      });
+      // setStats({
+      //   pending: 2,
+      //   inProgress: 3,
+      //   completed: 5,
+      //   completionPercentage: 48750,
+      // });
       setStats({
         completed: statsData.data.completed_tasks,
         pending: statsData.data.total_tasks - statsData.data.completed_tasks,
-        inProgress: statsData.data.completed_tasks - statsData.data.completed_tasks,
+        inProgress: statsData.data.completed_tasks - statsData.data.pending_projects,
         completionPercentage: statsData.data.completion_percentage,
+        total: statsData.data.total_tasks,
       });
     }
   }, [statsData]);
@@ -129,18 +131,17 @@ const Dashboard = () => {
         ) : (
           <>
             <Card className="bg-white/5 border-white/10 p-4">
-              <div className="text-white/60 text-sm mb-1">Pending Projects</div>
-              <div className="text-3xl font-bold text-white">{stats.pending}</div>
+              <div className="text-white/60 text-sm mb-1">Total Projects</div>
+              <div className="text-3xl font-bold text-white">{stats.total}</div>
               <div className="h-1 w-full bg-white/10 mt-3">
                 <div className="h-1 bg-yellow-400" style={{ width: `${stats.pending * 10}%` }} />
               </div>
             </Card>
-
             <Card className="bg-white/5 border-white/10 p-4">
-              <div className="text-white/60 text-sm mb-1">In Progress</div>
-              <div className="text-3xl font-bold text-white">{stats.inProgress}</div>
+              <div className="text-white/60 text-sm mb-1">Pending Projects</div>
+              <div className="text-3xl font-bold text-white">{stats.pending}</div>
               <div className="h-1 w-full bg-white/10 mt-3">
-                <div className="h-1 bg-blue-400" style={{ width: `${stats.inProgress * 10}%` }} />
+                <div className="h-1 bg-yellow-400" style={{ width: `${stats.pending * 10}%` }} />
               </div>
             </Card>
 
@@ -207,6 +208,7 @@ const Dashboard = () => {
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-white/60 hover:text-white"
+                      onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                     >
                       <ArrowRight className="h-4 w-4" />
                     </Button>

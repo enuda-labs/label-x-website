@@ -8,6 +8,8 @@ import { ProjectStats } from './stats';
 import { ProjectCharts } from './charts';
 import { ProjectLogs } from './logs';
 import DashboardLayout from '../shared/dashboard-layout';
+import { useQuery } from '@tanstack/react-query';
+import { getProjects } from '@/services/apis/project';
 
 interface ProjectLog {
   id: number;
@@ -42,6 +44,12 @@ interface ProjectDetail {
 const ProjectDetail = ({ id }: { id: number }) => {
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<ProjectDetail | null>(null);
+  const { data: projectsData } = useQuery({
+    queryKey: ['projects'],
+    queryFn: getProjects,
+  });
+
+  console.log(projectsData?.projects.find(project => project.id === id));
 
   useEffect(() => {
     const fetchProjectDetail = async () => {

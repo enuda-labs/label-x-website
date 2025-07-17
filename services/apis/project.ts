@@ -30,6 +30,7 @@ export interface Project {
 export interface StatsResponse {
   status: string;
   data: {
+    pending_projects: number;
     total_tasks: number;
     completed_tasks: number;
     completion_percentage: number;
