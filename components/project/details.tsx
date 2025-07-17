@@ -39,7 +39,7 @@ interface ProjectDetail {
   project_logs: ProjectLog[];
 }
 
-const ProjectDetail = ({id}: {id:string}) => {
+const ProjectDetail = ({id}: {id:number}) => {
  
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -51,7 +51,7 @@ const ProjectDetail = ({id}: {id:string}) => {
         
         
         const mockProject: ProjectDetail = {
-          id: parseInt(id || "6"),
+          id: id,
           name: "HabitLock",
           description: "Change description",
           status: "pending",

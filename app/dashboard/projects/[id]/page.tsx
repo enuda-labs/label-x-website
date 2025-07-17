@@ -6,11 +6,11 @@ import { Suspense } from 'react';
 import { useParams } from 'next/navigation';
 
 function ProjectDetailsPage() {
-    const { id } = useParams<{ id: number |string }>();
+    const { id } = useParams();
     
     return (
         <Suspense fallback={<div className='py-10'><DetailsSkeleton /></div>}>
-            <ProjectDetail id={id} />
+            <ProjectDetail id={typeof id === 'string' ? Number(id) : 0} />
         </Suspense>
     )
 }
