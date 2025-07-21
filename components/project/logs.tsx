@@ -1,24 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Activity, User, FileText, Database } from "lucide-react";
-
-interface ProjectLog {
-  id: number;
-  created_at: string;
-  updated_at: string;
-  message: string;
-  project: {
-    id: number;
-    name: string;
-    description: string;
-    created_at: string;
-    updated_at: string;
-    status: "pending" | "in_progress" | "completed";
-    created_by: number;
-  };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  task: any;
-}
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Activity, User, FileText, Database } from 'lucide-react';
+import { ProjectLog } from '@/services/apis/project';
 
 interface ProjectLogsProps {
   logs: ProjectLog[];
@@ -27,12 +10,12 @@ interface ProjectLogsProps {
 export const ProjectLogs = ({ logs }: ProjectLogsProps) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     }).format(date);
   };
 
@@ -44,9 +27,12 @@ export const ProjectLogs = ({ logs }: ProjectLogsProps) => {
   };
 
   const getLogType = (message: string) => {
-    if (message.includes('updated')) return { label: 'Update', color: 'bg-blue-400/20 text-blue-400' };
-    if (message.includes('completed')) return { label: 'Completed', color: 'bg-green-400/20 text-green-400' };
-    if (message.includes('uploaded')) return { label: 'Upload', color: 'bg-purple-400/20 text-purple-400' };
+    if (message.includes('updated'))
+      return { label: 'Update', color: 'bg-blue-400/20 text-blue-400' };
+    if (message.includes('completed'))
+      return { label: 'Completed', color: 'bg-green-400/20 text-green-400' };
+    if (message.includes('uploaded'))
+      return { label: 'Upload', color: 'bg-purple-400/20 text-purple-400' };
     return { label: 'Activity', color: 'bg-white/20 text-white/60' };
   };
 
@@ -61,26 +47,25 @@ export const ProjectLogs = ({ logs }: ProjectLogsProps) => {
       <CardContent>
         <div className="space-y-4">
           {logs.length > 0 ? (
-            logs.map((log) => {
+            logs.map(log => {
               const logType = getLogType(log.message);
               return (
-                <div key={log.id} className="flex items-start space-x-4 p-4 bg-white/5 rounded-lg border border-white/10">
+                <div
+                  key={log.id}
+                  className="flex items-start space-x-4 p-4 bg-white/5 rounded-lg border border-white/10"
+                >
                   <div className="flex-shrink-0 p-2 bg-white/10 rounded-full text-white/60">
                     {getLogIcon(log.message)}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-2">
-                      <Badge className={logType.color}>
-                        {logType.label}
-                      </Badge>
-                      <span className="text-xs text-white/50">
-                        {formatDate(log.created_at)}
-                      </span>
+                      <Badge className={logType.color}>{logType.label}</Badge>
+                      <span className="text-xs text-white/50">{formatDate(log.created_at)}</span>
                     </div>
-                    
+
                     <p className="text-white/80 text-sm mb-2">{log.message}</p>
-                    
+
                     <div className="text-xs text-white/50">
                       <span>Project: {log.project.name}</span>
                       {log.project.created_by && (

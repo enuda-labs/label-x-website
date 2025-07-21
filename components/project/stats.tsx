@@ -1,20 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Activity, Database, TrendingUp, Clock } from "lucide-react";
-
-interface ProjectDetail {
-  id: number;
-  name: string;
-  description: string;
-  status: "pending" | "in_progress" | "completed";
-  progress: number;
-  dueDate: string;
-  createdAt: string;
-  dataPoints: number;
-}
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { ProjectData } from '@/services/apis/project';
+import { Activity, Database, TrendingUp, Clock } from 'lucide-react';
 
 interface ProjectStatsProps {
-  project: ProjectDetail;
+  project: ProjectData;
 }
 
 export const ProjectStats = ({ project }: ProjectStatsProps) => {
@@ -37,7 +27,9 @@ export const ProjectStats = ({ project }: ProjectStatsProps) => {
           <Database className="h-4 w-4 text-white/40" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-white">{project.dataPoints.toLocaleString()}</div>
+          <div className="text-2xl font-bold text-white">
+            {project.total_used_data_points.toLocaleString()}
+          </div>
           <p className="text-xs text-white/50 mt-1">Total processed</p>
         </CardContent>
       </Card>
@@ -62,7 +54,10 @@ export const ProjectStats = ({ project }: ProjectStatsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-white">
-            {Math.ceil((new Date().getTime() - new Date(project.createdAt).getTime()) / (1000 * 60 * 60 * 24))}
+            {Math.ceil(
+              (new Date().getTime() - new Date(project.created_at).getTime()) /
+                (1000 * 60 * 60 * 24)
+            )}
           </div>
           <p className="text-xs text-white/50 mt-1">Since creation</p>
         </CardContent>

@@ -86,18 +86,18 @@ const Dashboard = () => {
     }
   }, [statsData]);
 
-  // const getStatusColor = (status: string) => {
-  //   switch (status) {
-  //     case 'pending':
-  //       return 'text-yellow-400';
-  //     case 'in_progress':
-  //       return 'text-blue-400';
-  //     case 'completed':
-  //       return 'text-green-400';
-  //     default:
-  //       return 'text-white/60';
-  //   }
-  // };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'text-yellow-400';
+      case 'in_progress':
+        return 'text-blue-400';
+      case 'completed':
+        return 'text-green-400';
+      default:
+        return 'text-white/60';
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -186,6 +186,11 @@ const Dashboard = () => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between">
                   <div className="mb-3 md:mb-0">
                     <h3 className="font-medium text-white">{project.name}</h3>
+                    <div className="flex items-center mt-1">
+                      <span className={`text-xs ${getStatusColor(project.status)}`}>
+                        {project.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </span>
+                    </div>
                     <div className="flex items-center mt-1">
                       <span className="text-white/60 text-xs">
                         Created on {formatDate(project.created_at)}

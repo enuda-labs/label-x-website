@@ -1,134 +1,38 @@
-import { useState, useEffect } from 'react';
-
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarDays, Clock } from 'lucide-react';
-import { ProjectStats } from './stats';
 import { ProjectCharts } from './charts';
 import { ProjectLogs } from './logs';
 import DashboardLayout from '../shared/dashboard-layout';
-import { useQuery } from '@tanstack/react-query';
-import { getProjects } from '@/services/apis/project';
-
-interface ProjectLog {
-  id: number;
-  created_at: string;
-  updated_at: string;
-  message: string;
-  project: {
-    id: number;
-    name: string;
-    description: string;
-    created_at: string;
-    updated_at: string;
-    status: 'pending' | 'in_progress' | 'completed';
-    created_by: number;
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  task: any;
-}
-
-interface ProjectDetail {
-  id: number;
-  name: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  progress: number;
-  dueDate: string;
-  createdAt: string;
-  dataPoints: number;
-  project_logs: ProjectLog[];
-}
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getProject, updateProject } from '@/services/apis/project';
+import { ProjectStats } from './stats';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 const ProjectDetail = ({ id }: { id: number }) => {
-  const [loading, setLoading] = useState(true);
-  const [project, setProject] = useState<ProjectDetail | null>(null);
-  const { data: projectsData } = useQuery({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+  const queryClient = useQueryClient();
+  const { data: project, isPending } = useQuery({
+    queryKey: ['project', id],
+    queryFn: () => getProject(id),
   });
 
-  console.log(projectsData?.projects.find(project => project.id === id));
-
-  useEffect(() => {
-    const fetchProjectDetail = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        const mockProject: ProjectDetail = {
-          id: id,
-          name: 'HabitLock',
-          description: 'Change description',
-          status: 'pending',
-          progress: 35,
-          dueDate: '2024-06-15',
-          createdAt: '2025-07-15T15:48:19.235889Z',
-          dataPoints: 15000,
-          project_logs: [
-            {
-              id: 1,
-              created_at: '2025-07-15T16:47:34.922132Z',
-              updated_at: '2025-07-15T16:47:34.922161Z',
-              message: 'Project details updated by Kyrian. Fields changed: description',
-              project: {
-                id: 6,
-                name: 'HabitLock',
-                description: 'Change description',
-                created_at: '2025-07-15T15:48:19.235889Z',
-                updated_at: '2025-07-15T16:47:34.902082Z',
-                status: 'pending',
-                created_by: 1,
-              },
-              task: null,
-            },
-            {
-              id: 2,
-              created_at: '2025-07-15T14:30:00.000000Z',
-              updated_at: '2025-07-15T14:30:00.000000Z',
-              message: 'Data annotation task completed for batch #001',
-              project: {
-                id: 6,
-                name: 'HabitLock',
-                description: 'Change description',
-                created_at: '2025-07-15T15:48:19.235889Z',
-                updated_at: '2025-07-15T16:47:34.902082Z',
-                status: 'pending',
-                created_by: 1,
-              },
-              task: null,
-            },
-            {
-              id: 3,
-              created_at: '2025-07-15T12:15:00.000000Z',
-              updated_at: '2025-07-15T12:15:00.000000Z',
-              message: 'New data batch uploaded - 5,000 data points added',
-              project: {
-                id: 6,
-                name: 'HabitLock',
-                description: 'Change description',
-                created_at: '2025-07-15T15:48:19.235889Z',
-                updated_at: '2025-07-15T16:47:34.902082Z',
-                status: 'pending',
-                created_by: 1,
-              },
-              task: null,
-            },
-          ],
-        };
-
-        setProject(mockProject);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching project details:', error);
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchProjectDetail();
-    }
-  }, [id]);
+  const { mutate: updateStatus } = useMutation({
+    mutationFn: (status: string) => updateProject(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      toast.success('Project status updated successfully');
+    },
+    onError: () => {
+      toast.error('Failed to update project status');
+    },
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -154,7 +58,7 @@ const ProjectDetail = ({ id }: { id: number }) => {
     }).format(date);
   };
 
-  if (loading) {
+  if (isPending) {
     return (
       <DashboardLayout title="Project Details">
         <div className="space-y-6">
@@ -187,28 +91,67 @@ const ProjectDetail = ({ id }: { id: number }) => {
           <div>
             <div className="flex items-center mb-2">
               <h2 className="text-2xl font-bold text-white mr-3">{project.name}</h2>
-              <Badge className={`${getStatusColor(project.status)}`}>
-                {project.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </Badge>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Badge className={`${getStatusColor(project.status)} cursor-pointer`}>
+                    {project.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </Badge>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => updateStatus('pending')}>
+                    Pending
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateStatus('in_progress')}>
+                    In Progress
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateStatus('completed')}>
+                    Completed
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <p className="text-white/70 mb-4">{project.description}</p>
 
             <div className="flex flex-wrap gap-4 text-sm text-white/60">
               <div className="flex items-center">
                 <CalendarDays className="h-4 w-4 mr-1" />
-                Created: {formatDate(project.createdAt)}
+                Created: {formatDate(project.created_at)}
               </div>
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
-                Due: {formatDate(project.dueDate)}
+                {formatDate(
+                  new Date(
+                    new Date(project.created_at).setFullYear(
+                      new Date(project.created_at).getFullYear() + 1
+                    )
+                  ).toISOString()
+                )}
               </div>
             </div>
           </div>
+          {/* <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Update Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => updateStatus('pending')}>
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => updateStatus('in_progress')}>
+                In Progress
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => updateStatus('completed')}>
+                Completed
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu> */}
         </div>
       </Card>
 
       <ProjectStats project={project} />
-      <ProjectCharts />
+      <ProjectCharts projectId={project.id} />
       <ProjectLogs logs={project.project_logs} />
     </DashboardLayout>
   );
