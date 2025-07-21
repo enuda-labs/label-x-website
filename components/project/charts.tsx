@@ -50,7 +50,7 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
 
   const { data: chartData, isPending: isChartPending } = useQuery({
     queryKey: ['projectChart', projectId, dateFilter],
-    queryFn: () => getProjectChart(projectId, Number(dateFilter.at(0))),
+    queryFn: () => getProjectChart(projectId, Number(dateFilter.split('d')[0])),
   });
 
   if (isChartPending) {
