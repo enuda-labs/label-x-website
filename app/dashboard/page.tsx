@@ -131,11 +131,8 @@ const Dashboard = () => {
         ) : (
           <>
             <Card className="bg-white/5 border-white/10 p-4">
-              <div className="text-white/60 text-sm mb-1">Total Projects</div>
+              <div className="text-white/60 text-sm mb-1">Total Tasks</div>
               <div className="text-3xl font-bold text-white">{stats.total}</div>
-              <div className="h-1 w-full bg-white/10 mt-3">
-                <div className="h-1 bg-yellow-400" style={{ width: `${stats.pending * 10}%` }} />
-              </div>
             </Card>
             <Card className="bg-white/5 border-white/10 p-4">
               <div className="text-white/60 text-sm mb-1">Pending Projects</div>
