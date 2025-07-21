@@ -17,19 +17,9 @@ export const ProjectStats = ({ project }: ProjectStatsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-white mb-2">
-            {
-              // project.progress
-              0
-            }
-            %
+            {project.task_stats.completion_percentage}%
           </div>
-          <Progress
-            value={
-              // project.progress
-              0
-            }
-            className="h-2 bg-white/10"
-          />
+          <Progress value={project.task_stats.completion_percentage} className="h-2 bg-white/10" />
         </CardContent>
       </Card>
 
@@ -40,7 +30,7 @@ export const ProjectStats = ({ project }: ProjectStatsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-white">
-            {project.total_used_data_points.toLocaleString()}
+            {project.user_data_points.used_data_points?.toLocaleString()}
           </div>
           <p className="text-xs text-white/50 mt-1">Total processed</p>
         </CardContent>

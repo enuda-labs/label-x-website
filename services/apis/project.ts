@@ -99,7 +99,9 @@ export interface ProjectData {
   project_logs: ProjectLog[];
   user_subscription: UserSubscription;
   user_data_points: UserDataPoints;
-  total_used_data_points: number;
+  task_stats: { completion_percentage: 0; total_used_data_points: number };
+  completion_percentage: 0;
+  total_used_data_points: null;
   name: string;
   description: string;
   created_at: string;
@@ -114,10 +116,35 @@ interface PieChartData {
   in_progress: number;
 }
 
+interface DailyProgress {
+  date: string;
+  task_count: number;
+  total_data_points: number;
+  human_reviewed_count: number;
+}
+
+interface AccuracyTrend {
+  date: string;
+  average_ai_confidence: number;
+}
+
 interface ProjectChartsData {
-  daily_progress: []; // Update with specific type when you have sample data
+  daily_progress: DailyProgress[];
   pie_chart_data: PieChartData;
-  accuracy_trend: []; // Update with specific type when you have sample data
+  accuracy_trend: AccuracyTrend[];
+}
+
+interface ProjectChartsResponse {
+  status: string;
+  data: ProjectChartsData;
+  message: string;
+  success: boolean;
+}
+
+interface ProjectChartsData {
+  daily_progress: DailyProgress[];
+  pie_chart_data: PieChartData;
+  accuracy_trend: AccuracyTrend[];
 }
 
 interface ProjectChartsResponse {

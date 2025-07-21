@@ -162,6 +162,13 @@ const Dashboard = () => {
                 />
               </div>
             </Card>
+            {/* <Card className="bg-white/5 border-white/10 p-4">
+              <div className="text-white/60 text-sm mb-1">Data Points Balance</div>
+              <div className="text-3xl font-bold text-white">{stats.dataPointsBalance}</div>
+              <div className="h-1 w-full bg-white/10 mt-3">
+                <div className="h-1 bg-green-400" style={{ width: `${stats.dataPointsBalance * 5}%` }} />
+              </div>
+            </Card> */}
           </>
         )}
       </div>

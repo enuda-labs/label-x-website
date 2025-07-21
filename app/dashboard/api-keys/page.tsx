@@ -21,6 +21,7 @@ import { Copy, Eye, EyeOff, Trash2, Plus, Key } from 'lucide-react';
 import { ACCESS_TOKEN_KEY } from '../../../constants/index';
 import { BASE_API_URL } from '../../../constants/env-vars';
 import { isAxiosError } from 'axios';
+import DeleteConfirmationModal from '@/components/ui/delete-confirm';
 
 interface ApiKey {
   id: string;
@@ -42,6 +43,9 @@ export default function ApiKeys() {
   const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedKey, setGeneratedKey] = useState<ApiKey | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [apiKeyToDelete, setApiKeyToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const buildHeaders = (): Record<string, string> => {
     const headers: Record<string, string> = {
@@ -169,6 +173,7 @@ export default function ApiKeys() {
 
   const deleteApiKey = async (keyId: string) => {
     try {
+      setIsDeleting(true);
       const headers = buildHeaders();
       const res = await fetch(`${BASE_API_URL}/keys/delete/${keyId}`, {
         method: 'DELETE',
@@ -187,6 +192,8 @@ export default function ApiKeys() {
       console.error('Delete API key error:', err);
       if (isAxiosError(err))
         toast('Error', { description: err.message || 'Failed to delete API key' });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -396,14 +403,20 @@ export default function ApiKeys() {
                   <TableCell className="text-white/80 font-mono text-sm">
                     <div className="flex items-center space-x-2">
                       <span>{showKeys[key.id] ? key.api_key : maskApiKey(key.api_key)}</span>
-                      <button onClick={() => toggleKeyVisibility(key.id)}>
+                      <button
+                        onClick={() => toggleKeyVisibility(key.id)}
+                        className="cursor-pointer"
+                      >
                         {showKeys[key.id] ? (
                           <EyeOff className="w-4 h-4 text-white/50" />
                         ) : (
                           <Eye className="w-4 h-4 text-white/50" />
                         )}
                       </button>
-                      <button onClick={() => copyToClipboard(key.api_key)}>
+                      <button
+                        onClick={() => copyToClipboard(key.api_key)}
+                        className="cursor-pointer"
+                      >
                         <Copy className="w-4 h-4 text-white/50" />
                       </button>
                     </div>
@@ -432,15 +445,18 @@ export default function ApiKeys() {
                       {!key.revoked && (
                         <button
                           onClick={() => revokeApiKey(key.id)}
-                          className="hover:text-yellow-500 transition-colors"
+                          className="hover:text-yellow-500 transition-colors cursor-pointer"
                           aria-label="Revoke Key"
                         >
                           <Key className="w-4 h-4 text-yellow-400" />
                         </button>
                       )}
                       <button
-                        onClick={() => deleteApiKey(key.id)}
-                        className="hover:text-red-600 transition-colors"
+                        onClick={() => {
+                          setShowDeleteModal(true);
+                          setApiKeyToDelete(key.id);
+                        }}
+                        className="hover:text-red-600 transition-colors cursor-pointer"
                         aria-label="Delete Key"
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
@@ -449,6 +465,20 @@ export default function ApiKeys() {
                   </TableCell>
                 </TableRow>
               ))}
+
+              {apiKeyToDelete && (
+                <DeleteConfirmationModal
+                  isOpen={showDeleteModal}
+                  onClose={() => setShowDeleteModal(false)}
+                  onConfirm={() => {
+                    deleteApiKey(apiKeyToDelete);
+                    setApiKeyToDelete(null);
+                    setShowDeleteModal(false);
+                  }}
+                  title="Delete API Key"
+                  isLoading={isDeleting}
+                />
+              )}
             </TableBody>
           </Table>
         )}
