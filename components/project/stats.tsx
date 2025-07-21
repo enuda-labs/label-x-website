@@ -16,8 +16,20 @@ export const ProjectStats = ({ project }: ProjectStatsProps) => {
           <Activity className="h-4 w-4 text-white/40" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-white mb-2">{project.progress}%</div>
-          <Progress value={project.progress} className="h-2 bg-white/10" />
+          <div className="text-2xl font-bold text-white mb-2">
+            {
+              // project.progress
+              0
+            }
+            %
+          </div>
+          <Progress
+            value={
+              // project.progress
+              0
+            }
+            className="h-2 bg-white/10"
+          />
         </CardContent>
       </Card>
 
