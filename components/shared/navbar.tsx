@@ -17,10 +17,8 @@ function Header() {
   });
 
   useEffect(() => {
-    if (data) {
-      if (isLoggedIn) {
-        setUser(data.user);
-      }
+    if (data?.user) {
+      setUser(data.user);
     }
   }, [data, isLoggedIn, setUser]);
 
@@ -57,31 +55,31 @@ function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-8">
-            <a href="#features" className="nav-link">
+            <Link href="/#features" className="nav-link">
               Features
-            </a>
-            <a href="#pricing" className="nav-link">
+            </Link>
+            <Link href="/#pricing" className="nav-link">
               Pricing
-            </a>
-            <a href="#partnership" className="nav-link">
+            </Link>
+            <Link href="/#partnership" className="nav-link">
               Partnership
-            </a>
-            <a href="#about" className="nav-link">
+            </Link>
+            <Link href="/#about" className="nav-link">
               About
-            </a>
+            </Link>
             <Link href="/subscriptions" className="nav-link">
               Subscriptions
             </Link>
-            <a href="#contact" className="nav-link">
+            <Link href="/#contact" className="nav-link">
               Contact
-            </a>
+            </Link>
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
             {user?.id ? (
               <Link href="/dashboard">
                 <span className="block w-full  hover:text-orange-500 text-white px-3 py-3 rounded-md text-base font-medium text-center">
-                  Go to Dashboard
+                  Dashboard
                 </span>
               </Link>
             ) : (

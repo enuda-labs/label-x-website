@@ -8,7 +8,7 @@ import axios, {
 
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../../constants';
 import { BASE_API_URL } from '../../constants/env-vars';
-import { AxiosClientProps, PUBLIC_ROUTES } from './axios.types';
+import { AxiosClientProps, PUBLIC_PAGES, PUBLIC_ROUTES } from './axios.types';
 import { redirect } from 'next/navigation';
 
 export class AxiosClient {
@@ -27,6 +27,9 @@ export class AxiosClient {
 
   private isPublicRoute(url: string): boolean {
     return PUBLIC_ROUTES.some(route => url.includes(route));
+  }
+  private isPublicPage(url: string): boolean {
+    return PUBLIC_PAGES.some(route => url === route);
   }
 
   private async defaultOnAccessTokenExpire(error: AxiosError) {
@@ -55,7 +58,10 @@ export class AxiosClient {
     } catch (error) {
       console.log('Error refreshing access token:', error);
       localStorage.removeItem(ACCESS_TOKEN_KEY);
-      redirect('/auth');
+      const pathname = window.location.pathname;
+      if (!this.isPublicPage(pathname)) {
+        redirect('/auth');
+      }
     } finally {
     }
   }
