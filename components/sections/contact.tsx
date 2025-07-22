@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Mail, Phone, Send, MessageSquare } from 'lucide-react'
-
+import {toast} from 'sonner';
 export default function Contact() {
   const [formData, setFormData] = useState({
     name: '',
@@ -18,7 +18,7 @@ export default function Contact() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    alert('Message sent!')
+    toast.success('Message have been recieved. Thank you for reaching out!')
     setFormData({
       name: '',
       email: '',
