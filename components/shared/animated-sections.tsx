@@ -1,22 +1,22 @@
-import type React from 'react';
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
 
 interface AnimatedSectionProps {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
+  children: React.ReactNode
+  className?: string
+  delay?: number
 }
 
-export const AnimatedSection= ({ 
-  children, 
-  className = '', 
-  delay = 0 
+export const AnimatedSection = ({
+  children,
+  className = '',
+  delay = 0,
 }: AnimatedSectionProps) => {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
-  });
+  })
 
   return (
     <motion.div
@@ -28,18 +28,18 @@ export const AnimatedSection= ({
     >
       {children}
     </motion.div>
-  );
-};
+  )
+}
 
-export const AnimatedCard: React.FC<AnimatedSectionProps> = ({ 
-  children, 
-  className = '', 
-  delay = 0 
+export const AnimatedCard: React.FC<AnimatedSectionProps> = ({
+  children,
+  className = '',
+  delay = 0,
 }) => {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
-  });
+  })
 
   return (
     <motion.div
@@ -52,18 +52,18 @@ export const AnimatedCard: React.FC<AnimatedSectionProps> = ({
     >
       {children}
     </motion.div>
-  );
-};
+  )
+}
 
-export const AnimatedText: React.FC<AnimatedSectionProps> = ({ 
-  children, 
-  className = '', 
-  delay = 0 
+export const AnimatedText: React.FC<AnimatedSectionProps> = ({
+  children,
+  className = '',
+  delay = 0,
 }) => {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
-  });
+  })
 
   return (
     <motion.div
@@ -75,14 +75,12 @@ export const AnimatedText: React.FC<AnimatedSectionProps> = ({
     >
       {children}
     </motion.div>
-  );
-};
+  )
+}
 
-export const AnimatedButton: React.FC<AnimatedSectionProps & { onClick?: () => void }> = ({ 
-  children, 
-  className = '', 
-  onClick 
-}) => {
+export const AnimatedButton: React.FC<
+  AnimatedSectionProps & { onClick?: () => void }
+> = ({ children, className = '', onClick }) => {
   return (
     <motion.button
       whileHover={{ scale: 1.05 }}
@@ -93,5 +91,5 @@ export const AnimatedButton: React.FC<AnimatedSectionProps & { onClick?: () => v
     >
       {children}
     </motion.button>
-  );
-};
+  )
+}

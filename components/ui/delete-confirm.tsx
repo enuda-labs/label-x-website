@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { useState } from 'react'
+import { Trash2, AlertTriangle } from 'lucide-react'
 
 import {
   Dialog,
@@ -10,21 +10,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface DeleteConfirmationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  title?: string;
-  description?: string;
-  itemName?: string;
-  requireConfirmation?: boolean;
-  confirmationText?: string;
-  isLoading?: boolean;
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  title?: string
+  description?: string
+  itemName?: string
+  requireConfirmation?: boolean
+  confirmationText?: string
+  isLoading?: boolean
 }
 
 export default function DeleteConfirmationModal({
@@ -38,23 +38,23 @@ export default function DeleteConfirmationModal({
   confirmationText = 'DELETE',
   isLoading = false,
 }: DeleteConfirmationModalProps) {
-  const [confirmationInput, setConfirmationInput] = useState('');
+  const [confirmationInput, setConfirmationInput] = useState('')
 
   const handleConfirm = () => {
     if (requireConfirmation && confirmationInput !== confirmationText) {
-      return;
+      return
     }
-    onConfirm();
-  };
+    onConfirm()
+  }
 
   const handleClose = () => {
-    setConfirmationInput('');
-    onClose();
-  };
+    setConfirmationInput('')
+    onClose()
+  }
 
   const isConfirmDisabled = requireConfirmation
     ? confirmationInput !== confirmationText || isLoading
-    : isLoading;
+    : isLoading
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -65,9 +65,11 @@ export default function DeleteConfirmationModal({
               <AlertTriangle className="h-6 w-6 text-red-600" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-semibold text-white">{title}</DialogTitle>
+              <DialogTitle className="text-lg font-semibold text-white">
+                {title}
+              </DialogTitle>
               {itemName && (
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="mt-1 text-sm text-gray-500">
                   Item: <span className="font-medium">{itemName}</span>
                 </p>
               )}
@@ -75,20 +77,26 @@ export default function DeleteConfirmationModal({
           </div>
         </DialogHeader>
 
-        <DialogDescription className="text-sm text-gray-600 leading-relaxed">
+        <DialogDescription className="text-sm leading-relaxed text-gray-600">
           {description}
         </DialogDescription>
 
         {requireConfirmation && (
           <div className="space-y-2">
-            <Label htmlFor="confirmation" className="text-sm font-medium text-gray-700">
-              Type <span className="font-mono font-bold text-red-600">{confirmationText}</span> to
-              confirm:
+            <Label
+              htmlFor="confirmation"
+              className="text-sm font-medium text-gray-700"
+            >
+              Type{' '}
+              <span className="font-mono font-bold text-red-600">
+                {confirmationText}
+              </span>{' '}
+              to confirm:
             </Label>
             <Input
               id="confirmation"
               value={confirmationInput}
-              onChange={e => setConfirmationInput(e.target.value)}
+              onChange={(e) => setConfirmationInput(e.target.value)}
               placeholder={confirmationText}
               className="font-mono"
               autoComplete="off"
@@ -96,12 +104,12 @@ export default function DeleteConfirmationModal({
           </div>
         )}
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+        <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button
             variant="outline"
             onClick={handleClose}
             disabled={isLoading}
-            className="w-full sm:w-auto bg-transparent"
+            className="w-full bg-transparent sm:w-auto"
           >
             Cancel
           </Button>
@@ -126,5 +134,5 @@ export default function DeleteConfirmationModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
