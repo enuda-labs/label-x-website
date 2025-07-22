@@ -33,7 +33,6 @@ function Header() {
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' })
     }
-    // setIsMenuOpen(false);
   }
 
   return (

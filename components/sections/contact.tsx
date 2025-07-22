@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Mail, Phone, Send, MessageSquare } from 'lucide-react'
-import {toast} from 'sonner';
+import { toast } from 'sonner'
 export default function Contact() {
   const [formData, setFormData] = useState({
     name: '',
