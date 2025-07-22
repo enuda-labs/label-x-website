@@ -1,12 +1,15 @@
-import QRCode from 'qrcode';
-import { Secret, TOTP } from 'otpauth';
+import QRCode from 'qrcode'
+import { Secret, TOTP } from 'otpauth'
 
 export const generateSecret = (): string => {
-  const secret = new Secret();
-  return secret.base32;
-};
+  const secret = new Secret()
+  return secret.base32
+}
 
-export const generateQRCodeURL = async (secret: string, userEmail: string): Promise<string> => {
+export const generateQRCodeURL = async (
+  secret: string,
+  userEmail: string
+): Promise<string> => {
   const totp = new TOTP({
     issuer: 'Label X',
     label: userEmail,
@@ -14,11 +17,11 @@ export const generateQRCodeURL = async (secret: string, userEmail: string): Prom
     digits: 6,
     period: 30,
     secret: secret,
-  });
+  })
 
-  const qrCodeDataURL = await QRCode.toDataURL(totp.toString());
-  return qrCodeDataURL;
-};
+  const qrCodeDataURL = await QRCode.toDataURL(totp.toString())
+  return qrCodeDataURL
+}
 
 export const verifyToken = (token: string, secret: string): boolean => {
   const totp = new TOTP({
@@ -27,8 +30,8 @@ export const verifyToken = (token: string, secret: string): boolean => {
     digits: 6,
     period: 30,
     secret: secret,
-  });
+  })
 
-  const delta = totp.validate({ token, window: 1 });
-  return delta !== null;
-};
+  const delta = totp.validate({ token, window: 1 })
+  return delta !== null
+}

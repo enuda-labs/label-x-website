@@ -1,9 +1,9 @@
-import React from 'react';
+import React from 'react'
 
 export const GridBackground = () => {
   return (
     <div className="absolute inset-0 -z-10">
-      <div 
+      <div
         className="absolute inset-0"
         style={{
           backgroundImage: `
@@ -11,15 +11,17 @@ export const GridBackground = () => {
             linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
           `,
           backgroundSize: '4rem 4rem',
-          maskImage: 'radial-gradient(circle at center, black, transparent 80%)',
+          maskImage:
+            'radial-gradient(circle at center, black, transparent 80%)',
         }}
       />
-      <div 
-        className="absolute inset-0 bg-gradient-to-b from-bg-orange-500 via-transparent to-transparent"
+      <div
+        className="from-bg-orange-500 absolute inset-0 bg-gradient-to-b via-transparent to-transparent"
         style={{
-          maskImage: 'radial-gradient(circle at center, black, transparent 80%)',
+          maskImage:
+            'radial-gradient(circle at center, black, transparent 80%)',
         }}
       />
     </div>
-  );
-};
+  )
+}

@@ -1,12 +1,12 @@
-/ types/calendly.d.ts
+;/ types/acdellny.d.ts
 // Place this file under a `types/` folder and ensure it’s included in tsconfig.json
-export {};
+export {}
 
 declare global {
   interface Window {
     // Calendly widget method
     Calendly?: {
-      initPopupWidget(options: { url: string }): void;
-    };
+      initPopupWidget(options: { url: string }): void
+    }
   }
 }

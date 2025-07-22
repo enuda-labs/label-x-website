@@ -1,54 +1,53 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
-import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { getUserDetails } from '@/services/apis/user';
-import { useGlobalStore } from '@/context/store';
+import React, { useState, useEffect } from 'react'
+import { Menu, X } from 'lucide-react'
+import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
+import { getUserDetails } from '@/services/apis/user'
+import { useGlobalStore } from '@/context/store'
 
 function Header() {
-  const { user, setUser, isLoggedIn } = useGlobalStore();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const { user, setUser, isLoggedIn } = useGlobalStore()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const { data } = useQuery({
     queryKey: ['user'],
     queryFn: getUserDetails,
-  });
+  })
 
   useEffect(() => {
-    if (data) {
-      if (isLoggedIn) {
-        setUser(data.user);
-      }
+    if (data?.user) {
+      setUser(data.user)
     }
-  }, [data, isLoggedIn, setUser]);
+  }, [data, isLoggedIn, setUser])
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    const handleScroll = () => setIsScrolled(window.scrollY > 50)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const handleScrollToPartner = () => {
-    const section = document.getElementById('partnership');
+    const section = document.getElementById('partnership')
     if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
+      section.scrollIntoView({ behavior: 'smooth' })
     }
-    // setIsMenuOpen(false);
-  };
+  }
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-gray-900/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'
+      className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? 'bg-gray-900/95 shadow-lg backdrop-blur-sm'
+          : 'bg-transparent'
       }`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="flex h-16 items-center justify-between md:h-20">
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white font-bold text-xl">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-xl font-bold text-white">
                 Lx
               </div>
               <span className="text-xl font-bold tracking-tight">Labelx</span>
@@ -56,44 +55,44 @@ function Header() {
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex space-x-8">
-            <a href="#features" className="nav-link">
+          <nav className="hidden space-x-8 md:flex">
+            <Link href="/#features" className="nav-link">
               Features
-            </a>
-            <a href="#pricing" className="nav-link">
+            </Link>
+            <Link href="/#pricing" className="nav-link">
               Pricing
-            </a>
-            <a href="#partnership" className="nav-link">
+            </Link>
+            <Link href="/#partnership" className="nav-link">
               Partnership
-            </a>
-            <a href="#about" className="nav-link">
+            </Link>
+            <Link href="/#about" className="nav-link">
               About
-            </a>
+            </Link>
             <Link href="/subscriptions" className="nav-link">
               Subscriptions
             </Link>
-            <a href="#contact" className="nav-link">
+            <Link href="/#contact" className="nav-link">
               Contact
-            </a>
+            </Link>
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             {user?.id ? (
               <Link href="/dashboard">
-                <span className="block w-full  hover:text-orange-500 text-white px-3 py-3 rounded-md text-base font-medium text-center">
-                  Go to Dashboard
+                <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
+                  Dashboard
                 </span>
               </Link>
             ) : (
               <Link href={`/auth?returnTo=%2Fdashboard`}>
-                <span className="block text-white hover:text-orange-500  px-3 py-2 rounded-md text-base font-medium text-center">
+                <span className="block rounded-md px-3 py-2 text-center text-base font-medium text-white hover:text-orange-500">
                   Get Started
                 </span>
               </Link>
             )}
             <button
               onClick={handleScrollToPartner}
-              className="bg-orange-500 hover:bg-orange-600 cursor-pointer text-white px-6 py-2 rounded-lg font-medium transition-colors duration-300"
+              className="cursor-pointer rounded-lg bg-orange-500 px-6 py-2 font-medium text-white transition-colors duration-300 hover:bg-orange-600"
             >
               Book a Demo
             </button>
@@ -106,46 +105,50 @@ function Header() {
               className="text-gray-300 hover:text-white"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
 
         {/* Mobile Nav */}
         {isMenuOpen && (
-          <div className="md:hidden bg-gray-900 shadow-xl rounded-b-lg">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+          <div className="rounded-b-lg bg-gray-900 shadow-xl md:hidden">
+            <div className="space-y-1 px-2 pt-2 pb-3 sm:px-3">
               <a
                 href="#features"
-                className="block px-3 py-3 rounded-md hover:bg-gray-800"
+                className="block rounded-md px-3 py-3 hover:bg-gray-800"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Features
               </a>
               <a
                 href="#pricing"
-                className="block px-3 py-3 rounded-md hover:bg-gray-800"
+                className="block rounded-md px-3 py-3 hover:bg-gray-800"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
               </a>
               <a
                 href="#partnership"
-                className="block px-3 py-3 rounded-md hover:bg-gray-800"
+                className="block rounded-md px-3 py-3 hover:bg-gray-800"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Partnership
               </a>
               <a
                 href="#about"
-                className="block px-3 py-3 rounded-md hover:bg-gray-800"
+                className="block rounded-md px-3 py-3 hover:bg-gray-800"
                 onClick={() => setIsMenuOpen(false)}
               >
                 About
               </a>
               <a
                 href="#contact"
-                className="block px-3 py-3 rounded-md hover:bg-gray-800"
+                className="block rounded-md px-3 py-3 hover:bg-gray-800"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Contact
@@ -153,20 +156,20 @@ function Header() {
               <div className="pt-2">
                 {user?.id ? (
                   <Link href="/dashboard">
-                    <span className="block w-full  hover:text-orange-500 text-white px-3 py-3 rounded-md text-base font-medium text-center">
+                    <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
                       Go to Dashboard
                     </span>
                   </Link>
                 ) : (
                   <Link href={`/auth?returnTo=%2Fdashboard`}>
-                    <span className="block w-full  hover:text-orange-500 text-white px-3 py-3 rounded-md text-base font-medium text-center">
+                    <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
                       Get Started
                     </span>
                   </Link>
                 )}
                 <button
                   onClick={handleScrollToPartner}
-                  className="block w-full bg-orange-500 hover:bg-orange-600 text-white px-3 py-3 rounded-md text-base font-medium text-center"
+                  className="block w-full rounded-md bg-orange-500 px-3 py-3 text-center text-base font-medium text-white hover:bg-orange-600"
                 >
                   Book A Demo
                 </button>
@@ -176,7 +179,7 @@ function Header() {
         )}
       </div>
     </header>
-  );
+  )
 }
 
-export default Header;
+export default Header
