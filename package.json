@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "format": "prettier --write './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc.js",
+    "format-check": "prettier --check './**/*.{js,jsx,ts,tsx,css,md,json}' --config ./.prettierrc.js"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.9",
