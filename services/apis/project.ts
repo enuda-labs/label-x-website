@@ -1,195 +1,204 @@
-import { AxiosClient } from '@/utils/axios';
+import { AxiosClient } from '@/utils/axios'
 
-const axiosClient = new AxiosClient();
+const axiosClient = new AxiosClient()
 
 interface CreateProjectPayload {
-  name: string;
-  description: string;
+  name: string
+  description: string
 }
 interface ProjectResponse {
-  status: string;
-  projects: Project[];
+  status: string
+  projects: Project[]
 }
 
 export interface Project {
-  id: number;
-  name: string;
-  created_by: number;
-  description: string;
-  created_at: string;
-  members: { id: number; username: string; email: string }[];
-  status: string;
+  id: number
+  name: string
+  created_by: number
+  description: string
+  created_at: string
+  members: { id: number; username: string; email: string }[]
+  status: string
   task_stats: {
-    total_tasks: number;
-    completed_tasks: number;
-    pending_review: number;
-    in_progress: number;
-    completion_percentage: number;
-  };
+    total_tasks: number
+    completed_tasks: number
+    pending_review: number
+    in_progress: number
+    completion_percentage: number
+  }
 }
 
 export interface StatsResponse {
-  status: string;
+  status: string
   data: {
-    pending_projects: number;
-    total_tasks: number;
-    completed_tasks: number;
-    completion_percentage: number;
-  };
+    pending_projects: number
+    total_tasks: number
+    completed_tasks: number
+    completion_percentage: number
+  }
 }
 
 interface User {
-  id: number;
-  last_login: string;
-  username: string;
-  pid: string;
-  email: string;
-  password: string;
-  is_active: boolean;
-  is_reviewer: boolean;
-  is_admin: boolean;
-  date_joined: string;
-  last_activity: string;
-  is_staff: boolean;
-  is_superuser: boolean;
-  project: null | number;
-  groups: string[];
-  user_permissions: string[];
+  id: number
+  last_login: string
+  username: string
+  pid: string
+  email: string
+  password: string
+  is_active: boolean
+  is_reviewer: boolean
+  is_admin: boolean
+  date_joined: string
+  last_activity: string
+  is_staff: boolean
+  is_superuser: boolean
+  project: null | number
+  groups: string[]
+  user_permissions: string[]
 }
 
 interface Plan {
-  id: number;
-  name: string;
-  monthly_fee: string;
-  included_data_points: number;
-  included_requests: number;
-  cost_per_extra_request: string;
-  stripe_monthly_plan_id: string;
+  id: number
+  name: string
+  monthly_fee: string
+  included_data_points: number
+  included_requests: number
+  cost_per_extra_request: string
+  stripe_monthly_plan_id: string
 }
 
 interface UserSubscription {
-  id: number;
-  requests_used: number;
-  subscribed_at: string;
-  expires_at: string;
-  renews_at: string;
-  user: User;
-  plan: Plan;
+  id: number
+  requests_used: number
+  subscribed_at: string
+  expires_at: string
+  renews_at: string
+  user: User
+  plan: Plan
 }
 
 interface UserDataPoints {
-  id: number;
-  used_data_points: number;
-  data_points_balance: number;
-  created_at: string;
-  updated_at: string;
-  user: number;
+  id: number
+  used_data_points: number
+  data_points_balance: number
+  created_at: string
+  updated_at: string
+  user: number
 }
 export interface ProjectLog {
-  id: number;
-  created_at: string;
-  updated_at: string;
-  message: string;
-  project: Project;
-  task: null | number;
+  id: number
+  created_at: string
+  updated_at: string
+  message: string
+  project: Project
+  task: null | number
 }
 
 export interface ProjectData {
-  id: number;
-  project_logs: ProjectLog[];
-  user_subscription: UserSubscription;
-  user_data_points: UserDataPoints;
-  task_stats: { completion_percentage: 0; total_used_data_points: number };
-  completion_percentage: 0;
-  total_used_data_points: null;
-  name: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-  status: string;
-  created_by: number;
+  id: number
+  project_logs: ProjectLog[]
+  user_subscription: UserSubscription
+  user_data_points: UserDataPoints
+  task_stats: { completion_percentage: 0; total_used_data_points: number }
+  completion_percentage: 0
+  total_used_data_points: null
+  name: string
+  description: string
+  created_at: string
+  updated_at: string
+  status: string
+  created_by: number
 }
 
 interface PieChartData {
-  completed: number;
-  pending: number;
-  in_progress: number;
+  completed: number
+  pending: number
+  in_progress: number
 }
 
 interface DailyProgress {
-  date: string;
-  task_count: number;
-  total_data_points: number;
-  human_reviewed_count: number;
+  date: string
+  task_count: number
+  total_data_points: number
+  human_reviewed_count: number
 }
 
 interface AccuracyTrend {
-  date: string;
-  average_ai_confidence: number;
+  date: string
+  average_ai_confidence: number
 }
 
 interface ProjectChartsData {
-  daily_progress: DailyProgress[];
-  pie_chart_data: PieChartData;
-  accuracy_trend: AccuracyTrend[];
+  daily_progress: DailyProgress[]
+  pie_chart_data: PieChartData
+  accuracy_trend: AccuracyTrend[]
 }
 
 interface ProjectChartsResponse {
-  status: string;
-  data: ProjectChartsData;
-  message: string;
-  success: boolean;
+  status: string
+  data: ProjectChartsData
+  message: string
+  success: boolean
 }
 
 interface ProjectChartsData {
-  daily_progress: DailyProgress[];
-  pie_chart_data: PieChartData;
-  accuracy_trend: AccuracyTrend[];
+  daily_progress: DailyProgress[]
+  pie_chart_data: PieChartData
+  accuracy_trend: AccuracyTrend[]
 }
 
 interface ProjectChartsResponse {
-  status: string;
-  data: ProjectChartsData;
-  message: string;
-  success: boolean;
+  status: string
+  data: ProjectChartsData
+  message: string
+  success: boolean
 }
 export const createProject = async (payload: CreateProjectPayload) => {
   const response = await axiosClient.post<CreateProjectPayload, Project>(
     'account/organization/project/',
     payload
-  );
-  return response.data;
-};
+  )
+  return response.data
+}
 export const getProjects = async () => {
-  const response = await axiosClient.get<ProjectResponse>('account/projects/list/');
-  return response.data;
-};
+  const response = await axiosClient.get<ProjectResponse>(
+    'account/projects/list/'
+  )
+  return response.data
+}
 export const getProject = async (projectId: number) => {
-  const response = await axiosClient.get<ProjectData>(`account/projects/${projectId}/`);
-  return response.data;
-};
+  const response = await axiosClient.get<ProjectData>(
+    `account/projects/${projectId}/`
+  )
+  return response.data
+}
 export const getProjectChart = async (projectId: number, days: number) => {
   const response = await axiosClient.get<ProjectChartsResponse>(
     `account/project/chart/${projectId}/days/${days}/`
-  );
-  return response.data;
-};
-
-interface UpdateProjectPayload {
-  status?: string;
-  name?: string;
-  description?: string;
+  )
+  return response.data
 }
 
-export const updateProject = async (projectId: number, payload: UpdateProjectPayload) => {
+interface UpdateProjectPayload {
+  status?: string
+  name?: string
+  description?: string
+}
+
+export const updateProject = async (
+  projectId: number,
+  payload: UpdateProjectPayload
+) => {
   const response = await axiosClient.patch<UpdateProjectPayload, ProjectData>(
     `account/projects/edit/${projectId}/`,
     payload
-  );
-  return response.data;
-};
+  )
+  return response.data
+}
 
 export const getStats = async () => {
-  const response = await axiosClient.get<StatsResponse>('tasks/completion-stats/');
-  return response.data;
-};
+  const response = await axiosClient.get<StatsResponse>(
+    'tasks/completion-stats/'
+  )
+  return response.data
+}

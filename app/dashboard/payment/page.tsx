@@ -1,8 +1,8 @@
-'use client';
-import { useState } from 'react';
-import DashboardLayout from '@/components/shared/dashboard-layout';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card } from '@/components/ui/card';
+'use client'
+import { useState } from 'react'
+import DashboardLayout from '@/components/shared/dashboard-layout'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Card } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -10,94 +10,98 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Download, ChevronsUpDown } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { gePaymentHistory, PaymentHistory } from '@/services/apis/subscription';
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { Download, ChevronsUpDown } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { gePaymentHistory, PaymentHistory } from '@/services/apis/subscription'
 
 const Payments = () => {
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof PaymentHistory;
-    direction: 'ascending' | 'descending';
-  }>({ key: 'created_at', direction: 'descending' });
+    key: keyof PaymentHistory
+    direction: 'ascending' | 'descending'
+  }>({ key: 'created_at', direction: 'descending' })
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ['history'],
     queryFn: gePaymentHistory,
-  });
+  })
 
-  if (!payments) return;
+  if (!payments) return
 
   const sortedPayments = [...payments].sort((a, b) => {
     if (sortConfig.key === 'created_at') {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
+      const dateA = new Date(a.created_at).getTime()
+      const dateB = new Date(b.created_at).getTime()
 
       if (sortConfig.direction === 'ascending') {
-        return dateA - dateB;
+        return dateA - dateB
       } else {
-        return dateB - dateA;
+        return dateB - dateA
       }
     } else if (sortConfig.key === 'amount') {
       if (sortConfig.direction === 'ascending') {
-        return Number(a.amount) - Number(b.amount);
+        return Number(a.amount) - Number(b.amount)
       } else {
-        return Number(b.amount) - Number(a.amount);
+        return Number(b.amount) - Number(a.amount)
       }
     } else {
       if (sortConfig.direction === 'ascending') {
-        return String(a[sortConfig.key] ?? '').localeCompare(String(b[sortConfig.key] ?? ''));
+        return String(a[sortConfig.key] ?? '').localeCompare(
+          String(b[sortConfig.key] ?? '')
+        )
       } else {
-        return String(b[sortConfig.key] ?? '').localeCompare(String(a[sortConfig.key] ?? ''));
+        return String(b[sortConfig.key] ?? '').localeCompare(
+          String(a[sortConfig.key] ?? '')
+        )
       }
     }
-  });
+  })
 
   const requestSort = (key: keyof PaymentHistory) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
+    let direction: 'ascending' | 'descending' = 'ascending'
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
+      direction = 'descending'
     }
-    setSortConfig({ key, direction });
-  };
+    setSortConfig({ key, direction })
+  }
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case 'paid':
-        return 'bg-green-400/20 text-green-400';
+        return 'bg-green-400/20 text-green-400'
       case 'pending':
-        return 'bg-yellow-400/20 text-yellow-400';
+        return 'bg-yellow-400/20 text-yellow-400'
       case 'failed':
-        return 'bg-red-400/20 text-red-400';
+        return 'bg-red-400/20 text-red-400'
       default:
-        return 'bg-white/10 text-white/60';
+        return 'bg-white/10 text-white/60'
     }
-  };
+  }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = new Date(dateString)
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-    }).format(date);
-  };
+    }).format(date)
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
-  };
+    }).format(amount)
+  }
 
   return (
     <DashboardLayout title="Payment History">
       {/* Payment History */}
 
-      <Card className="bg-white/5 border-white/10 overflow-hidden">
+      <Card className="overflow-hidden border-white/10 bg-white/5">
         {isLoading ? (
-          <div className="p-4 space-y-4">
+          <div className="space-y-4 p-4">
             <div className="flex justify-between">
               <Skeleton className="h-8 w-32 bg-white/10" />
               <Skeleton className="h-8 w-24 bg-white/10" />
@@ -111,9 +115,9 @@ const Payments = () => {
         ) : (
           <Table>
             <TableHeader className="bg-white/5">
-              <TableRow className="hover:bg-white/5 border-white/10">
+              <TableRow className="border-white/10 hover:bg-white/5">
                 <TableHead
-                  className="text-white/80 cursor-pointer"
+                  className="cursor-pointer text-white/80"
                   onClick={() => requestSort('created_at')}
                 >
                   <div className="flex items-center">
@@ -122,7 +126,7 @@ const Payments = () => {
                   </div>
                 </TableHead>
                 <TableHead
-                  className="text-white/80 cursor-pointer"
+                  className="cursor-pointer text-white/80"
                   onClick={() => requestSort('amount')}
                 >
                   <div className="flex items-center">
@@ -130,28 +134,38 @@ const Payments = () => {
                     <ChevronsUpDown className="ml-1 h-4 w-4 text-white/40" />
                   </div>
                 </TableHead>
-                <TableHead className="text-white/80 hidden md:table-cell">Description</TableHead>
+                <TableHead className="hidden text-white/80 md:table-cell">
+                  Description
+                </TableHead>
                 <TableHead className="text-white/80">Status</TableHead>
-                <TableHead className="text-white/80 text-right">Invoice</TableHead>
+                <TableHead className="text-right text-white/80">
+                  Invoice
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedPayments.map(payment => (
-                <TableRow key={payment.id} className="hover:bg-white/5 border-white/10">
-                  <TableCell className="text-white">{formatDate(payment.created_at)}</TableCell>
+              {sortedPayments.map((payment) => (
+                <TableRow
+                  key={payment.id}
+                  className="border-white/10 hover:bg-white/5"
+                >
+                  <TableCell className="text-white">
+                    {formatDate(payment.created_at)}
+                  </TableCell>
                   <TableCell className="font-medium text-white">
                     {formatCurrency(Number(payment.amount))}
                   </TableCell>
-                  <TableCell className="text-white/70 hidden md:table-cell">
+                  <TableCell className="hidden text-white/70 md:table-cell">
                     {payment.description}
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeClass(
+                      className={`rounded-full px-2 py-1 text-xs ${getStatusBadgeClass(
                         payment.status
                       )}`}
                     >
-                      {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                      {payment.status.charAt(0).toUpperCase() +
+                        payment.status.slice(1)}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -170,7 +184,7 @@ const Payments = () => {
         )}
       </Card>
     </DashboardLayout>
-  );
-};
+  )
+}
 
-export default Payments;
+export default Payments

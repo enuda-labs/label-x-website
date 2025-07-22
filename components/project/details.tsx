@@ -1,69 +1,69 @@
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarDays, Clock } from 'lucide-react';
-import { ProjectCharts } from './charts';
-import { ProjectLogs } from './logs';
-import DashboardLayout from '../shared/dashboard-layout';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProject, updateProject } from '@/services/apis/project';
-import { ProjectStats } from './stats';
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { CalendarDays, Clock } from 'lucide-react'
+import { ProjectCharts } from './charts'
+import { ProjectLogs } from './logs'
+import DashboardLayout from '../shared/dashboard-layout'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getProject, updateProject } from '@/services/apis/project'
+import { ProjectStats } from './stats'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { toast } from 'sonner';
+} from '@/components/ui/dropdown-menu'
+import { toast } from 'sonner'
 
 const ProjectDetail = ({ id }: { id: number }) => {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   const { data: project, isPending } = useQuery({
     queryKey: ['project', id],
     queryFn: () => getProject(id),
-  });
+  })
 
   const { mutate: updateStatus } = useMutation({
     mutationFn: (status: string) => updateProject(id, { status }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project', id] });
-      toast.success('Project status updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['project', id] })
+      toast.success('Project status updated successfully')
     },
     onError: () => {
-      toast.error('Failed to update project status');
+      toast.error('Failed to update project status')
     },
-  });
+  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-400/20 text-yellow-400';
+        return 'bg-yellow-400/20 text-yellow-400'
       case 'in_progress':
-        return 'bg-blue-400/20 text-blue-400';
+        return 'bg-blue-400/20 text-blue-400'
       case 'completed':
-        return 'bg-green-400/20 text-green-400';
+        return 'bg-green-400/20 text-green-400'
       default:
-        return 'bg-white/10 text-white/60';
+        return 'bg-white/10 text-white/60'
     }
-  };
+  }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = new Date(dateString)
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
-  };
+    }).format(date)
+  }
 
   if (isPending) {
     return (
       <DashboardLayout title="Project Details">
         <div className="space-y-6">
           <Skeleton className="h-32 bg-white/5" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <Skeleton className="h-40 bg-white/5" />
             <Skeleton className="h-40 bg-white/5" />
             <Skeleton className="h-40 bg-white/5" />
@@ -71,30 +71,36 @@ const ProjectDetail = ({ id }: { id: number }) => {
           <Skeleton className="h-96 bg-white/5" />
         </div>
       </DashboardLayout>
-    );
+    )
   }
 
   if (!project) {
     return (
       <DashboardLayout title="Project Not Found">
-        <div className="text-center py-8">
+        <div className="py-8 text-center">
           <p className="text-white/60">Project not found</p>
         </div>
       </DashboardLayout>
-    );
+    )
   }
 
   return (
     <DashboardLayout title={project.name}>
-      <Card className="bg-white/5 border-white/10 p-6 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between">
+      <Card className="mb-6 border-white/10 bg-white/5 p-6">
+        <div className="flex flex-col justify-between md:flex-row md:items-center">
           <div>
-            <div className="flex items-center mb-2">
-              <h2 className="text-2xl font-bold text-white mr-3">{project.name}</h2>
+            <div className="mb-2 flex items-center">
+              <h2 className="mr-3 text-2xl font-bold text-white">
+                {project.name}
+              </h2>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Badge className={`${getStatusColor(project.status)} cursor-pointer`}>
-                    {project.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  <Badge
+                    className={`${getStatusColor(project.status)} cursor-pointer`}
+                  >
+                    {project.status
+                      .replace('_', ' ')
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
                   </Badge>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
@@ -110,15 +116,15 @@ const ProjectDetail = ({ id }: { id: number }) => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <p className="text-white/70 mb-4">{project.description}</p>
+            <p className="mb-4 text-white/70">{project.description}</p>
 
             <div className="flex flex-wrap gap-4 text-sm text-white/60">
               <div className="flex items-center">
-                <CalendarDays className="h-4 w-4 mr-1" />
+                <CalendarDays className="mr-1 h-4 w-4" />
                 Created: {formatDate(project.created_at)}
               </div>
               <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
+                <Clock className="mr-1 h-4 w-4" />
                 {formatDate(
                   new Date(
                     new Date(project.created_at).setFullYear(
@@ -154,7 +160,7 @@ const ProjectDetail = ({ id }: { id: number }) => {
       <ProjectCharts projectId={project.id} />
       <ProjectLogs logs={project.project_logs} />
     </DashboardLayout>
-  );
-};
+  )
+}
 
-export default ProjectDetail;
+export default ProjectDetail

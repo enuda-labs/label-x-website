@@ -1,8 +1,19 @@
 {
-  "semi": true,
-  "singleQuote": true,
-  "tabWidth": 2,
-  "trailingComma": "es5",
-  "printWidth": 100,
-  "arrowParens": "avoid"
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "printWidth": 80,
+    "tabWidth": 2,
+    "useTabs": false,
+    "plugins": [
+        "prettier-plugin-tailwindcss"
+    ],
+    "tailwindAttributes": [
+        "class",
+        "className"
+    ],
+    "tailwindFunctions": [
+        "clsx",
+        "cn"
+    ]
 }

@@ -65,7 +65,7 @@ body {
 }
 
 .background {
-  @apply bg-gradient-to-b bg-background bg-cover bg-center bg-no-repeat text-foreground antialiased;
+  @apply bg-background text-foreground bg-gradient-to-b bg-cover bg-center bg-no-repeat antialiased;
   background-image: url('/grid-pattern.png');
 }
 
