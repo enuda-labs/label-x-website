@@ -43,7 +43,7 @@ export const TwoFactorSettings = () => {
     setIsSettingUp(true)
     try {
       const result = await get2FASetup()
-      console.log('get2FASetup result:', result)
+      //console.log('get2FASetup result:', result)
       const rawUrl = result.qr_code_url
       const fixedUrl = rawUrl.startsWith('http://')
         ? rawUrl.replace('http://', 'https://')
@@ -100,11 +100,11 @@ export const TwoFactorSettings = () => {
       toast.error('Please enter a 6-digit verification code')
       return
     }
-    console.log('Submitted OTP code:', verificationCode)
+    //console.log('Submitted OTP code:', verificationCode)
     setIsVerifying(true)
     try {
       const ok = await verify2FASetup(verificationCode)
-      console.log('Server verification result:', ok)
+      ///console.log('Server verification result:', ok)
       if (ok) {
         localStorage.setItem('2fa_enabled', 'true')
         localStorage.setItem('2fa_secret', secret)
