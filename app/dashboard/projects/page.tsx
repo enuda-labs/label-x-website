@@ -122,7 +122,6 @@ const Projects = () => {
     },
   })
 
-
   return (
     <DashboardLayout title="My Projects">
       <div className="mb-6 flex flex-col items-start justify-between space-y-4 md:flex-row md:items-center md:space-y-0">

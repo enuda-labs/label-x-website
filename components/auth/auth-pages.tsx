@@ -12,22 +12,25 @@ import { ArrowLeft } from 'lucide-react'
 
 const AuthPages = () => {
   return (
-    <div className="min-h-screen relative bg-[#0A0A0A] bg-cover bg-[url(/auth-bg.jpg)] lg:overflow-hidden bg-center bg-fixed text-white">
-      <div className='absolute inset-0 bg-black/85' />
+    <div className="relative min-h-screen bg-[#0A0A0A] bg-[url(/auth-bg.jpg)] bg-cover bg-fixed bg-center text-white lg:overflow-hidden">
+      <div className="absolute inset-0 bg-black/85" />
       <FloatingElements />
-      
-      <Link href="/" className="relative z-50 top-4 hover:text-primary hover:underline left-3 flex items-center gap-x-2">
+
+      <Link
+        href="/"
+        className="hover:text-primary relative top-4 left-3 z-50 flex items-center gap-x-2 hover:underline"
+      >
         <ArrowLeft /> Back
       </Link>
-      
-      <section className="relative lg:overflow-y-hidden min-h-screen px-4 pt-5 md:pt-8 pb-20">
+
+      <section className="relative min-h-screen px-4 pt-5 pb-20 md:pt-8 lg:overflow-y-hidden">
         <GridBackground />
         <WelcomeHeader />
         <div className="container mx-auto -mt-5 md:mt-5">
           <div className="mx-auto max-w-md">
-            <Card className="border-white/10 bg-white/15 p-6 backdrop-blur-sm max-h-[80vh] md:max-h-none lg:overflow-y-hidden">
+            <Card className="max-h-[80vh] border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
               <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-white/30 sticky top-0 z-10">
+                <TabsList className="sticky top-0 z-10 grid w-full grid-cols-2 bg-white/30">
                   <TabsTrigger value="login">Login</TabsTrigger>
                   <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
