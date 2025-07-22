@@ -18,7 +18,6 @@ export default function Contact() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission logic would go here
     alert('Message sent!')
     setFormData({
       name: '',

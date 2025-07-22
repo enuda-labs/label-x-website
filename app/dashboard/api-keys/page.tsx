@@ -446,17 +446,14 @@ export default function ApiKeys() {
                     </div>
                   </TableCell>
 
-                  {/* Created */}
                   <TableCell className="text-white/60">
                     {new Date(key.created).toLocaleDateString()}
                   </TableCell>
 
-                  {/* Last Used */}
                   <TableCell className="text-white/60">
                     {key.lastUsed || 'Never'}
                   </TableCell>
 
-                  {/* Status */}
                   <TableCell className="text-white/60">
                     {key.revoked ? (
                       <span className="text-red-500">Revoked</span>
@@ -465,7 +462,6 @@ export default function ApiKeys() {
                     )}
                   </TableCell>
 
-                  {/* Actions */}
                   <TableCell className="text-white/60">
                     <div className="flex items-center gap-3">
                       {!key.revoked && (

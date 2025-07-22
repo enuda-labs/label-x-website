@@ -3,7 +3,6 @@
 import { useState, useEffect, FC } from 'react'
 import DashboardLayout from '@/components/shared/dashboard-layout'
 import { Card } from '@/components/ui/card'
-// import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -53,7 +52,6 @@ const Dashboard = () => {
   })
 
   useEffect(() => {
-    // Simulate API call to fetch dashboard data
     const fetchData = async () => {
       try {
         if (projectsData?.projects.length)
@@ -71,12 +69,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (statsData) {
-      // setStats({
-      //   pending: 2,
-      //   inProgress: 3,
-      //   completed: 5,
-      //   completionPercentage: 48750,
-      // });
       setStats({
         completed: statsData.data.completed_tasks,
         pending: statsData.data.total_tasks - statsData.data.completed_tasks,

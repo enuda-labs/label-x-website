@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-//import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -51,11 +50,9 @@ const Projects = () => {
   })
 
   useEffect(() => {
-    // Simulate API call to fetch projects
     const fetchProjects = async () => {
       try {
         if (projectsData) {
-          // Mock data
           setProjects(
             projectsData.projects.map((project) => ({
               id: project.id,
@@ -125,7 +122,6 @@ const Projects = () => {
     },
   })
 
-  console.log()
 
   return (
     <DashboardLayout title="My Projects">

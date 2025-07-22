@@ -97,7 +97,6 @@ const Payments = () => {
 
   return (
     <DashboardLayout title="Payment History">
-      {/* Payment History */}
 
       <Card className="overflow-hidden border-white/10 bg-white/5">
         {isLoading ? (

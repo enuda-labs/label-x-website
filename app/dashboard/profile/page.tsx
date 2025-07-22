@@ -58,7 +58,6 @@ const Profile = () => {
   })
 
   useEffect(() => {
-    // Simulate API call to fetch user profile
     const fetchProfile = async () => {
       try {
         if (!data?.user) return
@@ -130,8 +129,6 @@ const Profile = () => {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Reset password fields
       await changePassword(
         formData.currentPassword,
         formData.newPassword,
