@@ -2,18 +2,18 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
+  // ChartContainer,
+  // ChartTooltip,
+  // ChartTooltipContent,
 } from '@/components/ui/chart'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  LineChart,
-  Line,
+  // BarChart,
+  // Bar,
+  // XAxis,
+  // YAxis,
+  // CartesianGrid,
+  // LineChart,
+  // Line,
   PieChart,
   Pie,
   Cell,
@@ -28,24 +28,24 @@ import { useQuery } from '@tanstack/react-query'
 //   projectId: number;
 // }
 
-const chartConfig = {
-  dataPoints: {
-    label: 'Data Points',
-    color: 'hsl(var(--chart-1))',
-  },
-  annotations: {
-    label: 'Annotations',
-    color: 'hsl(var(--chart-2))',
-  },
-  reviews: {
-    label: 'Reviews',
-    color: 'hsl(var(--chart-3))',
-  },
-  accuracy: {
-    label: 'Accuracy',
-    color: 'hsl(var(--chart-4))',
-  },
-}
+// const chartConfig = {
+//   dataPoints: {
+//     label: 'Data Points',
+//     color: 'hsl(var(--chart-1))',
+//   },
+//   annotations: {
+//     label: 'Annotations',
+//     color: 'hsl(var(--chart-2))',
+//   },
+//   reviews: {
+//     label: 'Reviews',
+//     color: 'hsl(var(--chart-3))',
+//   },
+//   accuracy: {
+//     label: 'Accuracy',
+//     color: 'hsl(var(--chart-4))',
+//   },
+// }
 
 //const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -74,25 +74,25 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
     )
   }
 
-  const dailyProgressData = [
-    { date: 'Jul 10', dataPoints: 1200, annotations: 980, reviews: 850 },
-    { date: 'Jul 11', dataPoints: 1500, annotations: 1200, reviews: 1100 },
-    { date: 'Jul 12', dataPoints: 1800, annotations: 1400, reviews: 1300 },
-    { date: 'Jul 13', dataPoints: 2200, annotations: 1800, reviews: 1600 },
-    { date: 'Jul 14', dataPoints: 1900, annotations: 1500, reviews: 1400 },
-    { date: 'Jul 15', dataPoints: 2100, annotations: 1700, reviews: 1550 },
-    { date: 'Jul 16', dataPoints: 2400, annotations: 1900, reviews: 1750 },
-  ]
+  // const dailyProgressData = [
+  //   { date: 'Jul 10', dataPoints: 1200, annotations: 980, reviews: 850 },
+  //   { date: 'Jul 11', dataPoints: 1500, annotations: 1200, reviews: 1100 },
+  //   { date: 'Jul 12', dataPoints: 1800, annotations: 1400, reviews: 1300 },
+  //   { date: 'Jul 13', dataPoints: 2200, annotations: 1800, reviews: 1600 },
+  //   { date: 'Jul 14', dataPoints: 1900, annotations: 1500, reviews: 1400 },
+  //   { date: 'Jul 15', dataPoints: 2100, annotations: 1700, reviews: 1550 },
+  //   { date: 'Jul 16', dataPoints: 2400, annotations: 1900, reviews: 1750 },
+  // ]
 
-  const accuracyData = [
-    { date: 'Jul 10', accuracy: 92 },
-    { date: 'Jul 11', accuracy: 94 },
-    { date: 'Jul 12', accuracy: 91 },
-    { date: 'Jul 13', accuracy: 96 },
-    { date: 'Jul 14', accuracy: 93 },
-    { date: 'Jul 15', accuracy: 95 },
-    { date: 'Jul 16', accuracy: 97 },
-  ]
+  // const accuracyData = [
+  //   { date: 'Jul 10', accuracy: 92 },
+  //   { date: 'Jul 11', accuracy: 94 },
+  //   { date: 'Jul 12', accuracy: 91 },
+  //   { date: 'Jul 13', accuracy: 96 },
+  //   { date: 'Jul 14', accuracy: 93 },
+  //   { date: 'Jul 15', accuracy: 95 },
+  //   { date: 'Jul 16', accuracy: 97 },
+  // ]
 
   let statusDistribution = [
     {
@@ -158,10 +158,11 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
         </Button>
       </div>
 
+        {/*
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Daily Progress Chart */}
+        //  Daily Progress Chart
 
-        <Card className="border-white/10 bg-white/5">
+        {/* <Card className="border-white/10 bg-white/5">
           <CardHeader>
             <CardTitle className="text-white">Daily Progress</CardTitle>
           </CardHeader>
@@ -200,7 +201,7 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
           </CardContent>
         </Card>
 
-        {/* Accuracy Trend Chart */}
+        //  Accuracy Trend Chart 
         <Card className="border-white/10 bg-white/5">
           <CardHeader>
             <CardTitle className="text-white">Accuracy Trend</CardTitle>
@@ -249,6 +250,8 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
           </CardContent>
         </Card>
       </div>
+
+      */}
 
       {/* Task Status Distribution (Pie chart) */}
       <Card className="border-white/10 bg-white/5">
