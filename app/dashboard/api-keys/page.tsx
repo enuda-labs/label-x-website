@@ -284,11 +284,12 @@ export default function ApiKeys() {
                 id="environment"
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value as Environment)}
-                className="mt-1 rounded border-white/10 bg-white/5 p-2 text-white"
+                className="mt-1 rounded border border-white/10 bg-gray-800 p-2 text-white"
               >
-                <option value="test">Test</option>
-                <option value="production">Production</option>
+                <option value="test" className="bg-gray-800 text-white">Test</option>
+                <option value="production" className="bg-gray-800 text-white">Production</option>
               </select>
+
             </div>
           </div>
 
@@ -312,7 +313,7 @@ export default function ApiKeys() {
       </Card>
 
       {/* Display Generated Key */}
-      {generatedKey && (
+      {/* {generatedKey && (
         <Card className="mb-8 border-white/10 bg-white/5">
           <div className="border-b border-white/10 p-6">
             <h2 className="text-xl font-semibold text-white">
@@ -377,7 +378,7 @@ export default function ApiKeys() {
             </TableBody>
           </Table>
         </Card>
-      )}
+      )} */}
 
       {/* Display All API Keys */}
       <Card className="border-white/10 bg-white/5">
