@@ -20,12 +20,12 @@ const AuthPages = ({children}:{children: ReactNode}) => {
         <ArrowLeft /> Back
       </Link>
 
-      <section className="relative  px-4 pt-5 pb-20 md:pt-8 lg:overflow-y-hidden">
+      <section className="relative px-4 pt-5 pb-20 md:pt-16 lg:overflow-y-hidden">
         <GridBackground />
         <WelcomeHeader />
         <div className="container mx-auto -mt-5 md:mt-5">
           <div className="mx-auto max-w-[550px]">
- <Card className="max-h-[80vh] border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
+ <Card className="max-h-[80vh]  border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
  {children}
             </Card> 
           </div>

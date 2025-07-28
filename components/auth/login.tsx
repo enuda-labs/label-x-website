@@ -140,7 +140,7 @@ export const Login = () => {
       </Button>
     </form>
     <div className='pb-5 flex items-end justify-end'>
-      Don&#39;t have an acoount? <Link href='/auth/signup' className='text-primary font-semibold hover:underline ml-2'>Register</Link>
+      Don&#39;t have an account? <Link href='/auth/role' className='text-primary font-semibold hover:underline ml-2'>Register</Link>
     </div>
     </>
   )
