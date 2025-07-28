@@ -6,5 +6,5 @@ export interface AxiosClientProps {
   onAccessTokenExpire?: (error: AxiosError) => void
 }
 
-export const PUBLIC_ROUTES = ['/auth']
-export const PUBLIC_PAGES = ['/', '/subscriptions', '/auth']
+export const PUBLIC_ROUTES = ['/auth/login','/auth/role', '/auth/signup']
+export const PUBLIC_PAGES = ['/', '/subscriptions', '/auth/login','/auth/role', '/auth/signup']

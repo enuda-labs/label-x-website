@@ -84,7 +84,7 @@ export function AppSidebar() {
     setIsAuthenticated(!!token)
 
     if (!token) {
-      router.push(`/auth?returnTo=${encodeURIComponent(pathname)}`)
+      router.push(`/auth/login?returnTo=${encodeURIComponent(pathname)}`)
     }
   }, [router, pathname])
 
