@@ -84,7 +84,7 @@ function Header() {
                 </span>
               </Link>
             ) : (
-              <Link href={`/auth?returnTo=%2Fdashboard`}>
+              <Link href={`/auth/role?returnTo=%2Fdashboard`}>
                 <span className="block rounded-md px-3 py-2 text-center text-base font-medium text-white hover:text-orange-500">
                   Get Started
                 </span>
@@ -161,7 +161,7 @@ function Header() {
                     </span>
                   </Link>
                 ) : (
-                  <Link href={`/auth?returnTo=%2Fdashboard`}>
+                  <Link href={`/auth/role?returnTo=%2Fdashboard`}>
                     <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
                       Get Started
                     </span>

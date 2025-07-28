@@ -68,7 +68,7 @@ export class AxiosClient {
       localStorage.removeItem(ACCESS_TOKEN_KEY)
       const pathname = window.location.pathname
       if (!this.isPublicPage(pathname)) {
-        redirect('/auth')
+        redirect('/auth/login')
       }
     } finally {
     }

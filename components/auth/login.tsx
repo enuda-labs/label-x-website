@@ -11,6 +11,7 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
 import { AxiosError } from 'axios'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp'
 import { useGlobalStore } from '@/context/store'
+import Link from 'next/link'
 
 export const Login = () => {
   const { setIsLoggedIn } = useGlobalStore()
@@ -77,7 +78,8 @@ export const Login = () => {
   }
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4">
+    <>
+    <form onSubmit={handleLogin} className="space-y-4 pt-5">
       <div className="space-y-2">
         <Label htmlFor="email">Username</Label>
         <Input
@@ -131,12 +133,16 @@ export const Login = () => {
       <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
       <Button
         type="submit"
-        className="bg-primary hover:bg-primary/90 w-full"
+        className="bg-primary hover:bg-primary/90 w-full h-12 mt-3"
         disabled={loginMutation.isPending}
       >
         {loginMutation.isPending ? 'Logging in...' : 'Login'}
       </Button>
     </form>
+    <div className='pb-5 flex items-end justify-end'>
+      Don&#39;t have an account? <Link href='/auth/role' className='text-primary font-semibold hover:underline ml-2'>Register</Link>
+    </div>
+    </>
   )
 }
 

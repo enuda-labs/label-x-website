@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { register } from '@/services/apis/auth'
 import { AxiosError } from 'axios'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
+import Link from 'next/link'
 
 export const Signup = () => {
   const [email, setEmail] = useState('')
@@ -19,7 +20,7 @@ export const Signup = () => {
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const plan = searchParams.get('plan') || 'basic'
+  const plan = searchParams.get('plan') || 'free'
   const returnTo = searchParams.get('returnTo') || '/dashboard'
 
   const signupMutation = useMutation({
@@ -69,7 +70,9 @@ export const Signup = () => {
   }
 
   return (
+    <>
     <form onSubmit={handleSignup} className="space-y-4">
+      <div className='grid grid-cols-2 gap-3 w-full'> 
       <div className="space-y-2">
         <Label htmlFor="name">Username</Label>
         <Input
@@ -81,6 +84,20 @@ export const Signup = () => {
           required
           className="border-white/10 bg-white/5 text-white"
         />
+        </div>
+        <div className="space-y-2">
+        <Label htmlFor="signupEmail">Email</Label>
+        <Input
+          id="signupEmail"
+          type="email"
+          placeholder="your@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="border-white/10 bg-white/5 text-white"
+        />
+      
+      </div>
       </div>
 
       <div className="space-y-2">
@@ -91,19 +108,6 @@ export const Signup = () => {
           placeholder="Acme Inc."
           value={company}
           onChange={(e) => setCompany(e.target.value)}
-          className="border-white/10 bg-white/5 text-white"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="signupEmail">Email</Label>
-        <Input
-          id="signupEmail"
-          type="email"
-          placeholder="your@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
           className="border-white/10 bg-white/5 text-white"
         />
       </div>
@@ -131,12 +135,16 @@ export const Signup = () => {
       <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
       <Button
         type="submit"
-        className="bg-primary hover:bg-primary/90 w-full"
+        className="bg-primary hover:bg-primary/90 w-full h-12"
         disabled={signupMutation.isPending}
       >
         {signupMutation.isPending ? 'Creating account...' : 'Create Account'}
       </Button>
     </form>
+     <div className='flex items-end justify-end'>
+      Have an account? <Link href='/auth/login' className='text-primary font-semibold hover:underline ml-2'>Login</Link>
+    </div>
+    </>
   )
 }
 
