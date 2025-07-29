@@ -19,10 +19,15 @@ import { planFeats } from '@/utils'
 import { getProjects, getStats, Project } from '@/services/apis/project'
 import { Progress } from '@/components/ui/progress'
 import Link from 'next/link'
+import { fetchDataPoints } from '@/services/apis/datapoints'
+
+
+
 
 const Dashboard = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [dataPoints, setDataPoints] = useState<number | null>(null);
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [showPlans, setShowPlans] = useState(false)
   const [stats, setStats] = useState({
@@ -102,6 +107,30 @@ const Dashboard = () => {
     }).format(date)
   }
 
+
+   useEffect(() => {
+    const loadDataPoints = async () => {
+      try {
+        const balance = await fetchDataPoints()
+        setDataPoints(balance)
+
+        if (balance <= 0) {
+          localStorage.removeItem('accessToken')
+          router.push('/auth') // or '/login'
+        }
+      } catch (err) {
+        console.error('Error fetching data points', err)
+        localStorage.removeItem('accessToken')
+        router.push('/auth')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDataPoints()
+  }, [router])
+
+
   return (
     <DashboardLayout title="Dashboard">
       <Alert className="mb-8 border-white/10 bg-white/5">
@@ -124,10 +153,14 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-            <Card className="border-white/10 bg-white/5 p-4">
-              <div className="mb-1 text-sm text-white/60">Total Tasks</div>
-              <div className="text-3xl font-bold text-white">{stats.total}</div>
-            </Card>
+       <Card className="border-white/10 bg-white/5 p-4">
+  <div className="mb-1 text-sm text-white/60">Data Points</div>
+  <div className="text-3xl font-bold text-white">
+    {dataPoints ?? '...'}
+  </div>
+</Card>
+
+
             <Card className="border-white/10 bg-white/5 p-4">
               <div className="mb-1 text-sm text-white/60">Pending Projects</div>
               <div className="text-3xl font-bold text-white">
