@@ -20,6 +20,15 @@ import { getProjects, getStats, Project } from '@/services/apis/project'
 import { Progress } from '@/components/ui/progress'
 import Link from 'next/link'
 import { fetchDataPoints } from '@/services/apis/datapoints'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
 
 
 
@@ -30,6 +39,8 @@ const Dashboard = () => {
   const [dataPoints, setDataPoints] = useState<number | null>(null);
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [showPlans, setShowPlans] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+
   const [stats, setStats] = useState({
     pending: 0,
     inProgress: 0,
@@ -115,13 +126,11 @@ const Dashboard = () => {
         setDataPoints(balance)
 
         if (balance <= 0) {
-          localStorage.removeItem('accessToken')
-          router.push('/auth') // or '/login'
+          setShowModal(true)
         }
       } catch (err) {
         console.error('Error fetching data points', err)
-        localStorage.removeItem('accessToken')
-        router.push('/auth')
+        setShowModal(true)
       } finally {
         setLoading(false)
       }
@@ -133,6 +142,26 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout title="Dashboard">
+       <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>No Data Points Available</DialogTitle>
+            <DialogDescription>
+              You have no data points remaining. Please subscribe to a plan to continue using the service.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => router.push('/subscriptions')}>
+              Go to Subscription
+            </Button>
+            <DialogClose asChild>
+              <Button variant="ghost" className="ml-2">
+                Cancel
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Alert className="mb-8 border-white/10 bg-white/5">
         <AlertTitle className="font-medium text-white">
           Welcome to your data review dashboard!
