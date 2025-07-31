@@ -10,7 +10,7 @@ import FloatingElements from '@/components/auth/auth-floating-elements'
 const RoleSelection = () => {
   const router = useRouter()
 
-  const handleRoleSelect = (role: 'individual' | 'company') => {
+  const handleRoleSelect = (role: 'individual' | 'organization') => {
     router.push(`/auth/signup?role=${role}`)
   }
 
@@ -64,13 +64,13 @@ const RoleSelection = () => {
               {/* Company Card */}
               <Card
                 className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
-                onClick={() => handleRoleSelect('company')}
+                onClick={() => handleRoleSelect('organization')}
               >
                 <div className="space-y-4 text-center">
                   <div className="from-primary to-primary-glow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r transition-transform duration-300 group-hover:scale-110">
                     <Building2 className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white">Company</h3>
+                  <h3 className="text-2xl font-bold text-white">Organization</h3>
                   <p className="text-sm leading-relaxed text-white/70">
                     Ideal for organizations, teams, and enterprises that need
                     collaborative annotation workflows and advanced project
@@ -80,10 +80,10 @@ const RoleSelection = () => {
                     className="mt-6 h-11 w-full transition-all duration-300"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRoleSelect('company')
+                      handleRoleSelect('organization')
                     }}
                   >
-                    Continue as Company
+                    Continue as Organization
                   </Button>
                 </div>
               </Card>

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,13 @@ export const Signup = () => {
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') || 'free'
   const returnTo = searchParams.get('returnTo') || '/dashboard'
+  const role = searchParams.get('role')
+
+    useEffect(() => {
+      if (!role || role !== 'individual'&& role !== 'organization') {
+        router.push('/auth/role')
+      }
+  }, [ router, role])
 
   const signupMutation = useMutation({
     mutationFn: async (userData: {
@@ -34,6 +41,7 @@ export const Signup = () => {
         username: userData.name,
         email: userData.email,
         password: userData.password,
+        role: role || '',
       })
       return response
     },
@@ -64,6 +72,7 @@ export const Signup = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!role) return router.push('/auth/role');
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
     signupMutation.mutate({ email, password, name, company })
