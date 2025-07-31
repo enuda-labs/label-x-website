@@ -6,8 +6,8 @@ export default function SignupPage() {
   return (
     <Suspense fallback={null}>
       <AuthPages>
-      <Signup />
-        </AuthPages>
+        <Signup />
+      </AuthPages>
     </Suspense>
   )
 }
