@@ -42,7 +42,7 @@ export default function ApiKeys() {
   const [environment, setEnvironment] = useState<Environment>('production')
   const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({})
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedKey, setGeneratedKey] = useState<ApiKey | null>(null)
+  // const [generatedKey, setGeneratedKey] = useState<ApiKey | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [apiKeyToDelete, setApiKeyToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -126,7 +126,7 @@ export default function ApiKeys() {
     }
 
     setIsGenerating(true)
-    setGeneratedKey(null)
+    // setGeneratedKey(null)
 
     try {
       const headers = buildHeaders()
@@ -159,7 +159,7 @@ export default function ApiKeys() {
         key_type: data.key_type ?? '',
       }
 
-      setGeneratedKey(keyObj)
+      // setGeneratedKey(keyObj)
       setApiKeys((prev) => [keyObj, ...prev])
       setNewKeyName('')
       toast('API Key Generated', { description: 'Key created successfully' })
