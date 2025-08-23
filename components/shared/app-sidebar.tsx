@@ -37,7 +37,7 @@ const items = [
   },
   {
     title: 'Projects',
-    url: '/dashboard/projects',
+    url: '/dashboard/client/projects',
     icon: Clock,
   },
   {
