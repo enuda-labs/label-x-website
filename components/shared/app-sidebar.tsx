@@ -67,8 +67,8 @@ const LabelerItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Projects',
-    url: '/label/projects',
+    title: 'Tasks',
+    url: '/label/tasks',
     icon: Clock,
   },
   // {
