@@ -29,35 +29,65 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getUserDetails } from '@/services/apis/user'
 import { useGlobalStore } from '@/context/store'
-const items = [
+
+
+export function AppSidebar({userRole}:{userRole:string}) {
+  const clientItems = [
   {
     title: 'Dashboard',
-    url: '/dashboard',
+    url: '/client/overview',
     icon: LayoutDashboard,
   },
   {
     title: 'Projects',
-    url: '/dashboard/client/projects',
+    url: '/client/projects',
     icon: Clock,
   },
   {
     title: 'Api Keys',
-    url: '/dashboard/api-keys',
+    url: '/client/api-keys',
     icon: Key,
   },
   {
     title: 'Payments',
-    url: '/dashboard/payment',
+    url: '/client/payment',
     icon: CreditCard,
   },
   {
     title: 'Profile',
-    url: '/dashboard/profile',
+    url: '/client/profile',
     icon: User,
   },
 ]
 
-export function AppSidebar() {
+const LabelerItems = [
+  {
+    title: 'Dashboard',
+    url: '/label/overview',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Tasks',
+    url: '/label/tasks',
+    icon: Clock,
+  },
+  // {
+  //   title: 'Api Keys',
+  //   url: '/label/api-keys',
+  //   icon: Key,
+  // },
+  // {
+  //   title: 'Payments',
+  //   url: '/dashboard/payment',
+  //   icon: CreditCard,
+  // },
+  {
+    title: 'Profile',
+    url: '/label/profile',
+    icon: User,
+  },
+]
+const items = userRole === 'client' ? clientItems : LabelerItems
   const { setUser, setIsLoggedIn } = useGlobalStore()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userName, setUserName] = useState('')
