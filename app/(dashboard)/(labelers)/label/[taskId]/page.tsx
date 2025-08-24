@@ -162,6 +162,7 @@ const LabelTask = () => {
         ? `Item labeled as "${selectedCategory}"`
         : "Your response has been saved",
     });
+    
 
     setCompletedItems(prev => prev + 1);
     
@@ -208,6 +209,7 @@ const LabelTask = () => {
       description: "All your labels have been submitted. Thank you for your work!",
     });
     setShowConfirmDialog(false);
+    //TODO: If submission is successful route user back to their projects to see more tasks
     
   };
 
@@ -407,7 +409,7 @@ const LabelTask = () => {
 
       {/* Submission Confirmation Modal */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
+        <DialogContent className='py-8 border shadow-sm'>
           <DialogHeader>
             <DialogTitle>Confirm Task Completion</DialogTitle>
             <DialogDescription>
