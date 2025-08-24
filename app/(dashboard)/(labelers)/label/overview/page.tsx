@@ -116,7 +116,6 @@ const LabelerDashboard = () => {
           </Card>
         </div>
 
-        {/* Task List */}
         <div className="space-y-6">
           <h2 className="text-xl font-semibold">Current Tasks</h2>
           
@@ -144,7 +143,6 @@ const LabelerDashboard = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  {/* task Progress */}
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span>Progress</span>

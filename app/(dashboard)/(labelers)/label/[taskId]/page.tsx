@@ -1,4 +1,5 @@
-'use client'
+'use client';
+
 import React, { useState } from 'react';
 import {useParams } from 'next/navigation';
 import { ArrowLeft, Check, Save, Eye, AlertCircle, FileText, Image as ImageIcon, Database, Video } from 'lucide-react';
@@ -152,7 +153,6 @@ const LabelTask = () => {
       return;
     }
 
-    // Save the current response
     const newResponses = [...responses];
     newResponses[currentItemIndex] = { answer: selectedCategory, notes };
     setResponses(newResponses);
@@ -237,7 +237,6 @@ const LabelTask = () => {
         </div>
       </header>
 
-      {/* Progress Bar */}
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-2">
@@ -299,7 +298,7 @@ const LabelTask = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-6 bg-muted/40 rounded-lg">
+                  <div className="p-6 bg-muted/50 rounded-lg">
                     <p className="text-lg leading-relaxed">{currentItem.data}</p>
                     {currentItem.file && (
                       <div className="mt-4 text-sm text-muted-foreground">
@@ -313,7 +312,6 @@ const LabelTask = () => {
           </div>
 
           <div className="space-y-6">
-            {/* Instructions */}
             <Card className='bg-card/20 border border-primary'>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -393,7 +391,7 @@ const LabelTask = () => {
                 onClick={handlePrevious}
                 disabled={currentItemIndex === 0}
                 variant="ghost"
-                className="flex-1 bg-card/40"
+                className="flex-1 bg-card/20"
               >
                 Previous
               </Button>
