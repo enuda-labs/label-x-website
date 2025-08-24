@@ -23,7 +23,8 @@ export const Login = () => {
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnTo = searchParams.get('returnTo') || '/dashboard'
+  //TODO: Implement return USERS based on their roles (client or labeler)
+  const returnTo = searchParams.get('returnTo') || '/client/overview'
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginBody) => {
