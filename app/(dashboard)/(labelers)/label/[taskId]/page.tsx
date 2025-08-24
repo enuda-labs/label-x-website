@@ -249,7 +249,6 @@ const LabelTask = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
          <div className="flex items-start gap-2 mb-4">
           <div className='pt-1'>
@@ -263,7 +262,6 @@ const LabelTask = () => {
                 </div>
               </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Content to Label */}
           <div className="lg:col-span-2">
             <Card className="shadow-soft bg-card/20">
               <CardHeader>
@@ -329,7 +327,7 @@ const LabelTask = () => {
             <Card className='bg-card/20'>
               <CardHeader>
                 <CardTitle className="text-base">
-                  {taskData.input_type === 'multiple_choice' ? 'Select Category *' : 'Provide Answer *'}
+                  {taskData.input_type === 'multiple_choice' ? 'Select Label Option *' : 'Provide Answer *'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
