@@ -1,4 +1,5 @@
-// File: app/label/[taskId]/page.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -40,7 +41,7 @@ interface ApiTaskItem {
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV';
   data?: string;
   file?: TaskFile;
-  // other fields omitted for brevity
+
 }
 
 interface ApiTaskResponse {
@@ -50,7 +51,7 @@ interface ApiTaskResponse {
   input_type?: 'multiple_choice' | 'text_input';
   labeller_instructions?: string;
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV';
-  // other fields...
+  
 }
 
 const getTaskTypeIcon = (type?: string) => {
@@ -71,7 +72,7 @@ const FALLBACK_LABELS = [
   { option_text: 'Sports' }
 ];
 
-const LabelTask: React.FC = () => {
+const LabelTask = () => {
   const { taskId } = useParams();
   const router = useRouter();
 
@@ -97,8 +98,8 @@ const LabelTask: React.FC = () => {
 
     (async () => {
       try {
-        const resp = await fetchTaskById(taskId);
-        const payload: ApiTaskResponse = resp?.data ? resp.data : resp;
+        const resp: any = await fetchTaskById(Array.isArray(taskId) ? taskId[0] : taskId);
+        const payload: ApiTaskResponse = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
 
         if (cancelled) return;
         setTaskData(payload || null);
@@ -133,7 +134,7 @@ const LabelTask: React.FC = () => {
   const isLastItem = currentItemIndex === totalItems - 1;
 
   const choicesToShow = (labellingChoices.length > 0) ? labellingChoices : FALLBACK_LABELS;
-  const hasFile = !!(currentItem?.file && (currentItem.file.file_url || currentItem.file.file_name));
+//  const hasFile = !!(currentItem?.file && (currentItem.file.file_url || currentItem.file.file_name));
   const itemType = currentItem?.task_type ?? taskData.task_type ?? 'TEXT';
 
   // --- Handlers ---
@@ -200,7 +201,7 @@ const LabelTask: React.FC = () => {
       setIsSubmitting(true);
       const resp = await annotateMissingAsset(Number(taskIdToSend), noteForServer);
       // resp is expected to be the API response object
-      toast('Marked as missing', { description: resp?.message ?? 'Missing asset recorded' });
+      toast('Marked as missing', { description: (resp && typeof resp === 'object' && 'message' in resp) ? (resp as any).message : 'Missing asset recorded' });
 
       // update local responses so the UI reflects the missing marker
       const newResponses = [...responses];
@@ -245,7 +246,7 @@ const LabelTask: React.FC = () => {
         labels.push(r.answer.trim());
         continue;
       }
-      // skip empties
+      
     }
 
     return labels;
@@ -268,8 +269,9 @@ const LabelTask: React.FC = () => {
     try {
       setIsSubmitting(true);
       const resp = await annotateTask(payload);
-      // Success
-      toast('Task labels submitted successfully', { description: resp?.message ?? 'Submission succeeded' });
+  
+      const message = (resp && typeof resp === 'object' && 'message' in resp) ? (resp as { message?: string }).message : undefined;
+      toast('Task labels submitted successfully', { description: message ?? 'Submission succeeded' });
       setShowConfirmDialog(false);
       router.push('/label/overview');
     } catch (err: any) {

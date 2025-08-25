@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/table'
 import { toast } from 'sonner'
 import { Copy, Eye, EyeOff, Trash2, Plus, Key } from 'lucide-react'
-import { ACCESS_TOKEN_KEY } from '../../../constants/index'
-import { BASE_API_URL } from '../../../constants/env-vars'
+import { ACCESS_TOKEN_KEY } from '@/constants/index'
+import { BASE_API_URL } from '@/constants/env-vars'
 import { isAxiosError } from 'axios'
 import DeleteConfirmationModal from '@/components/ui/delete-confirm'
 
