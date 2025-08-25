@@ -12,6 +12,18 @@ export const fetchAssignedClusters = async (): Promise<AssignedCluster[]> => {
 }
 
 export const fetchTaskById = async (taskId: string | number) => {
-  const response = await axiosClient.get(`/tasks/cluster/${taskId}/`);
-  return response.data; // full task details
-};
+  const response = await axiosClient.get(`/tasks/cluster/${taskId}/`)
+  return response.data // full task details
+}
+
+// --- Annotate API (same style as above) ---
+export const annotateTask = async (payload: { task_id: number; labels: string[] }) => {
+  const response = await axiosClient.post('/tasks/annotate/', payload)
+  return response.data
+}
+
+export const annotateMissingAsset = async (taskId: number, notes?: string) => {
+  const labels = notes && notes.trim() !== '' ? [notes.trim(), 'MISSING_ASSET'] : ['MISSING_ASSET']
+  const response = await axiosClient.post('/tasks/annotate/', { task_id: taskId, labels })
+  return response.data
+}

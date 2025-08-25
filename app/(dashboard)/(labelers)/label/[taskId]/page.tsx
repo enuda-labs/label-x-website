@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Check,
@@ -24,9 +24,8 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import Image from 'next/image';
 
-// ---- IMPORT YOUR API HELPER ----
-// adjust the import path to where you defined fetchTaskById
-import { fetchTaskById } from '@/services/apis/clusters';
+// API helpers (you added these earlier)
+import { fetchTaskById, annotateTask, annotateMissingAsset } from '@/services/apis/clusters';
 
 interface TaskFile {
   file_url?: string;
@@ -65,17 +64,17 @@ const getTaskTypeIcon = (type?: string) => {
   }
 };
 
-// --- FALLBACK (HARD-CODED) LABELS (used only if API returns none) ---
 const FALLBACK_LABELS = [
   { option_text: 'Electronics' },
   { option_text: 'Clothing' },
   { option_text: 'Home & Garden' },
   { option_text: 'Sports' }
 ];
-// ---------------------------------------------------------------------
 
 const LabelTask: React.FC = () => {
   const { taskId } = useParams();
+  const router = useRouter();
+
   const [taskData, setTaskData] = useState<ApiTaskResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +86,8 @@ const LabelTask: React.FC = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [responses, setResponses] = useState<Array<{ answer: string; notes: string }>>([]);
 
-  // Fetch task on mount / when taskId changes
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   useEffect(() => {
     if (!taskId) return;
 
@@ -136,10 +136,10 @@ const LabelTask: React.FC = () => {
   const hasFile = !!(currentItem?.file && (currentItem.file.file_url || currentItem.file.file_name));
   const itemType = currentItem?.task_type ?? taskData.task_type ?? 'TEXT';
 
-  // helpers
+  // --- Handlers ---
   const handleCategorySelect = (category: string) => setSelectedCategory(category);
 
-  const handleSubmitLabel = () => {
+  const handleSubmitLabelLocal = () => {
     if (inputType === 'multiple_choice' && (!selectedCategory || selectedCategory.trim() === '')) {
       toast('Please select a category', { description: 'All items must be labeled before you can continue.' });
       return;
@@ -154,10 +154,10 @@ const LabelTask: React.FC = () => {
     setResponses(newResponses);
 
     toast('Label saved', { description: inputType === 'multiple_choice' ? `Item labeled as "${selectedCategory}"` : 'Your response has been saved' });
-
     setCompletedItems(prev => prev + 1);
 
-    if (isLastItem) setShowConfirmDialog(true); else handleNext();
+    if (isLastItem) setShowConfirmDialog(true);
+    else handleNext();
   };
 
   const handleNext = () => {
@@ -190,25 +190,119 @@ const LabelTask: React.FC = () => {
     }
   };
 
-  const handleFinalSubmit = () => {
-    // TODO: call submission API to persist responses
-    toast('Task completed successfully!', { description: 'All your labels have been submitted. Thank you for your work!' });
-    setShowConfirmDialog(false);
+  // Mark missing — now persists immediately via annotateMissingAsset
+  const handleMarkMissing = async () => {
+    const taskIdToSend = taskData?.id ?? Number(taskId);
+    const serial = currentItem?.serial_no ?? currentItem?.id;
+    const noteForServer = `Marked missing${serial ? ` (serial: ${serial})` : ''}`;
+
+    try {
+      setIsSubmitting(true);
+      const resp = await annotateMissingAsset(Number(taskIdToSend), noteForServer);
+      // resp is expected to be the API response object
+      toast('Marked as missing', { description: resp?.message ?? 'Missing asset recorded' });
+
+      // update local responses so the UI reflects the missing marker
+      const newResponses = [...responses];
+      newResponses[currentItemIndex] = { answer: 'MISSING_ASSET', notes: noteForServer };
+      setResponses(newResponses);
+      setCompletedItems(prev => prev + 1);
+
+      if (isLastItem) {
+        setShowConfirmDialog(true);
+      } else {
+        handleNext();
+      }
+    } catch (err: any) {
+      // If server says "You have already labeled this task" or similar, surface it and redirect
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const detail = data?.detail || data?.message || err?.message || '';
+
+      if (status === 400 && typeof detail === 'string' && detail.toLowerCase().includes('already label')) {
+        toast('You already labeled this task', { description: detail || 'This task has already been labeled.' });
+        router.push('/label/overview');
+        return;
+      }
+
+      console.error('Mark missing failed', err);
+      toast('Failed to mark missing', { description: detail || 'An error occurred' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleMarkMissing = () => {
-    const newResponses = [...responses];
-    newResponses[currentItemIndex] = { answer: 'MISSING_ASSET', notes: 'Marked missing by reviewer' };
-    setResponses(newResponses);
+  // Build labels (notes preferred over answer)
+  const buildLabelsForSubmission = () => {
+    const labels: string[] = [];
 
-    toast('Marked as missing', { description: 'This item was marked as missing and skipped.' });
-    setCompletedItems(prev => prev + 1);
+    for (const r of responses) {
+      if (r.notes && r.notes.trim() !== '') {
+        labels.push(r.notes.trim());
+        continue;
+      }
+      if (r.answer && r.answer.trim() !== '') {
+        labels.push(r.answer.trim());
+        continue;
+      }
+      // skip empties
+    }
 
-    if (isLastItem) setShowConfirmDialog(true); else handleNext();
+    return labels;
   };
 
-  // Render helpers inside the CardContent block where needed.
+  // Submit labels using annotateTask helper
+  const submitLabels = async () => {
+    const labels = buildLabelsForSubmission();
 
+    if (labels.length === 0) {
+      toast('No labels to submit', { description: 'Please label at least one item or add notes.' });
+      return;
+    }
+
+    const payload = {
+      task_id: taskData?.id ?? Number(taskId),
+      labels
+    };
+
+    try {
+      setIsSubmitting(true);
+      const resp = await annotateTask(payload);
+      // Success
+      toast('Task labels submitted successfully', { description: resp?.message ?? 'Submission succeeded' });
+      setShowConfirmDialog(false);
+      router.push('/label/overview');
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const detail = data?.detail || data?.message || err?.message || '';
+
+      // Specific: user already labeled this task
+      if (status === 400 && typeof detail === 'string' && detail.toLowerCase().includes('already label')) {
+        toast('You already labeled this task', { description: detail || 'This task has already been labeled.' });
+        setShowConfirmDialog(false);
+        router.push('/label/overview');
+        return;
+      }
+
+      if (status === 401 || status === 403) {
+        toast('Not authorized', { description: detail || 'Please sign in and try again.' });
+        setShowConfirmDialog(false);
+        return;
+      }
+
+      console.error('Annotate failed', status, data || err);
+      toast('Failed to submit labels', { description: detail || 'An error occurred while submitting labels.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    await submitLabels();
+  };
+
+  // --- Render ---
   return (
     <div className="min-h-screen bg-card/20">
       <header className="border-b bg-card/30 backdrop-blur-sm sticky top-0 z-50">
@@ -216,9 +310,7 @@ const LabelTask: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/label/overview">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-                </Button>
+                <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4" /> Back to Dashboard</Button>
               </Link>
             </div>
             <div className="flex items-center gap-3">
@@ -255,7 +347,6 @@ const LabelTask: React.FC = () => {
                 <CardTitle className="flex items-center gap-2"><Eye className="h-5 w-5 text-primary" /> Content to Label</CardTitle>
               </CardHeader>
 
-              {/* === START: Enhanced preview logic for different task types === */}
               <CardContent>
                 {(() => {
                   const fileUrl = currentItem?.file?.file_url;
@@ -263,39 +354,26 @@ const LabelTask: React.FC = () => {
                   const serial = currentItem?.serial_no ?? currentItem?.id;
                   const description = currentItem?.data ?? '';
 
-                  // determine missing media (image/video expected but no url + no description)
                   const isMissingMedia = (itemType === 'IMAGE' || itemType === 'VIDEO') && !fileUrl && (!description || description.trim() === '');
 
-                  // CSV preview helper (simple split)
                   const renderCsvPreview = (csvText: string) => {
                     try {
-                      const rows = csvText
-                        .split('\n')
-                        .map(r => r.split(',').map(c => c.trim()))
-                        .filter(r => r.length > 0);
+                      const rows = csvText.split('\n').map(r => r.split(',').map(c => c.trim())).filter(r => r.length > 0);
                       const head = rows[0] ?? [];
-                      const sample = rows.slice(1, 6); // up to 5 rows
+                      const sample = rows.slice(1, 6);
                       return (
                         <div className="mt-4 overflow-auto rounded bg-muted/10 p-2">
                           <table className="min-w-full text-sm">
                             <thead>
-                              <tr>
-                                {head.map((h, i) => <th key={i} className="px-2 py-1 text-left font-medium">{h || `col${i+1}`}</th>)}
-                              </tr>
+                              <tr>{head.map((h, i) => <th key={i} className="px-2 py-1 text-left font-medium">{h || `col${i+1}`}</th>)}</tr>
                             </thead>
                             <tbody>
-                              {sample.map((r, ri) => (
-                                <tr key={ri}>
-                                  {r.map((cell, ci) => <td key={ci} className="px-2 py-1">{cell}</td>)}
-                                </tr>
-                              ))}
+                              {sample.map((r, ri) => <tr key={ri}>{r.map((cell, ci) => <td key={ci} className="px-2 py-1">{cell}</td>)}</tr>)}
                             </tbody>
                           </table>
                         </div>
                       );
-                    } catch {
-                      return null;
-                    }
+                    } catch { return null; }
                   };
 
                   if (isMissingMedia) {
@@ -307,7 +385,7 @@ const LabelTask: React.FC = () => {
                             <p className="text-sm text-muted-foreground text-center">No {itemType?.toLowerCase()} provided for this item.</p>
                             <p className="text-sm text-muted-foreground text-center">{serial ? `Serial: ${serial}` : `Item ID: ${currentItem?.id ?? '—'}`}</p>
                             <div className="flex gap-2 mt-4">
-                              <Button variant="outline" onClick={handleMarkMissing}>Mark Missing</Button>
+                              <Button variant="outline" onClick={handleMarkMissing} disabled={isSubmitting}>Mark Missing</Button>
                               <Button onClick={handleNext}>Skip</Button>
                             </div>
                           </div>
@@ -316,19 +394,11 @@ const LabelTask: React.FC = () => {
                     );
                   }
 
-                  // If file exists, render an appropriate preview
                   if (fileUrl) {
                     if (itemType === 'IMAGE') {
                       return (
                         <div className="text-center">
-                          <Image
-                            src={fileUrl}
-                            alt={fileName ?? `image-${currentItem?.id}`}
-                            width={800}
-                            height={600}
-                            className="max-w-full h-auto rounded-lg mx-auto"
-                            style={{ maxHeight: '400px' }}
-                          />
+                          <Image src={fileUrl} alt={fileName ?? `image-${currentItem?.id}`} width={800} height={600} className="max-w-full h-auto rounded-lg mx-auto" style={{ maxHeight: '400px' }} />
                           <div className="mt-4 p-4 bg-muted/50 rounded-lg">
                             {fileName && <p className="text-sm text-muted-foreground">File: {fileName}</p>}
                             <p className="text-lg mt-2">{description}</p>
@@ -373,7 +443,6 @@ const LabelTask: React.FC = () => {
                       );
                     }
 
-                    // other file types: download link + description
                     return (
                       <div className="p-6 bg-muted/50 rounded-lg">
                         {fileName ? <p className="text-sm text-muted-foreground">File: <a href={fileUrl} target="_blank" rel="noreferrer" className="underline">{fileName}</a></p> : null}
@@ -382,7 +451,6 @@ const LabelTask: React.FC = () => {
                     );
                   }
 
-                  // no fileUrl: show plain description / text
                   return (
                     <div className="p-6 bg-muted/50 rounded-lg">
                       <p className="text-lg leading-relaxed">{description || 'No content available'}</p>
@@ -395,7 +463,6 @@ const LabelTask: React.FC = () => {
                   );
                 })()}
               </CardContent>
-              {/* === END: Enhanced preview logic === */}
             </Card>
           </div>
 
@@ -436,7 +503,7 @@ const LabelTask: React.FC = () => {
             </Card>
 
             <div className="space-y-3">
-              <Button onClick={handleSubmitLabel} disabled={inputType === 'multiple_choice' ? (!selectedCategory || selectedCategory.trim() === '') : false} className="w-full" variant="default">
+              <Button onClick={handleSubmitLabelLocal} disabled={inputType === 'multiple_choice' ? (!selectedCategory || selectedCategory.trim() === '') : false} className="w-full" variant="default">
                 <Save className="h-4 w-4 mr-2" />
                 {isLastItem ? 'Complete Task' : 'Submit & Continue'}
               </Button>
@@ -456,7 +523,8 @@ const LabelTask: React.FC = () => {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="py-8 border shadow-sm">
           <DialogHeader>
-            <CardTitle>Confirm Task Completion</CardTitle>
+            <DialogTitle>Confirm Task Completion</DialogTitle>
+            <DialogDescription>You have completed all {totalItems} items in this task. Please review your work before final submission.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 max-h-[300px] overflow-y-auto">
@@ -472,7 +540,7 @@ const LabelTask: React.FC = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>Review Again</Button>
-            <Button onClick={handleFinalSubmit}>Submit All Labels</Button>
+            <Button onClick={handleFinalSubmit} disabled={isSubmitting}>{isSubmitting ? 'Submitting…' : 'Submit All Labels'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
