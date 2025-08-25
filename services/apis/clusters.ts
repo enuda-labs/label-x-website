@@ -10,3 +10,8 @@ export const fetchAssignedClusters = async (): Promise<AssignedCluster[]> => {
   )
   return response.data.data
 }
+
+export const fetchTaskById = async (taskId: string | number) => {
+  const response = await axiosClient.get(`/tasks/cluster/${taskId}/`);
+  return response.data; // full task details
+};
