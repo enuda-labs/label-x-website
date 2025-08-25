@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import WelcomeHeader from '@/components/auth/welcome-header'
 
-import { Users, Building2 } from 'lucide-react'
+import { Users, Building2, Tags } from 'lucide-react'
 import FloatingElements from '@/components/auth/auth-floating-elements'
 
 const RoleSelection = () => {
   const router = useRouter()
 
-  const handleRoleSelect = (role: 'individual' | 'organization') => {
+  const handleRoleSelect = (role: 'individual' | 'organization' | 'labeler') => {
     router.push(`/auth/signup?role=${role}`)
   }
 
@@ -30,10 +30,10 @@ const RoleSelection = () => {
 
       <section className="relative overflow-hidden px-4 pt-16 pb-20">
         <div className="container mx-auto">
-          <div className="mx-auto max-w-2xl">
+          <div className="mx-auto max-w-5xl">
             <WelcomeHeader />
 
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
               {/* Individual Card */}
               <Card
                 className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
@@ -87,6 +87,33 @@ const RoleSelection = () => {
                   </Button>
                 </div>
               </Card>
+
+               <Card
+                className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
+                onClick={() => handleRoleSelect('individual')}
+              >
+                <div className="space-y-4 text-center">
+                  <div className="from-primary to-primary-glow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r transition-transform duration-300 group-hover:scale-110">
+                    <Tags className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white">Labelers</h3>
+                  <p className="text-sm leading-relaxed text-white/70">
+                     Perfect for professional annotators, data labelers, and specialists who 
+  provide high-quality annotation services to clients across various 
+  industries and project scales.
+                  </p>
+                  <Button
+                    className="mt-6 h-11 w-full transition-all duration-300"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRoleSelect('labeler')
+                    }}
+                  >
+                    Continue as Labeler
+                  </Button>
+                </div>
+              </Card>
+
             </div>
 
             <div className="mt-8 text-center">

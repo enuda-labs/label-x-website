@@ -1,5 +1,5 @@
 import { SidebarProvider } from '@/components/ui/sidebar'
-//import { AppSidebar } from '@/components/shared/app-sidebar'
+import { AppSidebar } from '@/components/shared/app-sidebar'
 
 export default function DashboardRootLayout({
   children,
@@ -8,7 +8,7 @@ export default function DashboardRootLayout({
 }) {
   return (
     <SidebarProvider>
-      {/* <AppSidebar /> */}
+      <AppSidebar userRole='labeler' />
       <main className="w-full overflow-x-hidden p-4 md:px-10">{children}</main>
     </SidebarProvider>
   )
