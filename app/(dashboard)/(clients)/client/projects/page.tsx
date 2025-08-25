@@ -6,22 +6,21 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogDescription,
-//   DialogFooter,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogTrigger,
-// } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Search, Plus } from 'lucide-react'
 import DashboardLayout from '@/components/shared/dashboard-layout'
-import {  useQuery, } from '@tanstack/react-query'
-import {getProjects } from '@/services/apis/project'
-//import { isAxiosError } from 'axios'
+import {  useMutation, useQuery, useQueryClient, } from '@tanstack/react-query'
+import {createProject, getProjects } from '@/services/apis/project'
+import { isAxiosError } from 'axios'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 
 interface Project {
   id: number
@@ -38,13 +37,13 @@ const Projects = () => {
   const [loading, setLoading] = useState(true)
   const [projects, setProjects] = useState<Project[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  // const [newProject, setNewProject] = useState({
-  //   name: '',
-  //   description: '',
-  // })
-  // const [open, setOpen] = useState(false)
-  // const [error, setError] = useState('')
-  //const queryClient = useQueryClient()
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+  })
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
   const { data: projectsData } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
@@ -109,19 +108,20 @@ const Projects = () => {
     }).format(date)
   }
 
-  // const { mutate: createMutation, isPending } = useMutation({
-  //   mutationFn: createProject,
-  //   onSuccess: () => {
-  //     queryClient.invalidateQueries({ queryKey: ['projects'] })
-  //     setNewProject({ name: '', description: '' })
-  //     setOpen(false)
-  //     setError('')
-  //   },
-  //   onError: (err) => {
-  //     queryClient.invalidateQueries({ queryKey: ['projects'] })
-  //     if (isAxiosError(err)) setError(err.response?.data.detail || err.message)
-  //   },
-  // })
+  const { mutate: createMutation, isPending } = useMutation({
+    mutationFn: createProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      setNewProject({ name: '', description: '' })
+      setOpen(false)
+      router.push('/client/projects/task')
+      setError('')
+    },
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      if (isAxiosError(err)) setError(err.response?.data.detail || err.message)
+    },
+  })
 
   return (
     <DashboardLayout title="My Projects">
@@ -136,12 +136,66 @@ const Projects = () => {
           />
         </div>
 
-      <Link href="/dashboard/client/projects/new">
+ <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90 w-full md:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               New Project
             </Button>
-          </Link>
+          </DialogTrigger>
+          <DialogContent className="border-white/10 bg-[#0A0A0A] text-white">
+            <DialogHeader>
+              <DialogTitle>Create New Project</DialogTitle>
+              <DialogDescription className="text-white/60">
+                Fill in the details to create a new data review project.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white mb-2">
+                  Project Name
+                </label>
+                <Input
+                  placeholder="e.g., Content Moderation Project"
+                  className="border-white/10 bg-white/5 text-white"
+                  value={newProject.name}
+                  onChange={(e) =>
+                    setNewProject({ ...newProject, name: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white">
+                  Description
+                </label>
+                <Input
+                  placeholder="Brief description of the project"
+                  className="border-white/10 bg-white/5 text-white"
+                  value={newProject.description}
+                  onChange={(e) =>
+                    setNewProject({
+                      ...newProject,
+                      description: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <span className="text-sm text-red-500">{error}</span>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-primary/90"
+                onClick={() => createMutation(newProject)}
+              >
+                {isPending ? 'Creating Project...' : 'Create Project'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         
       </div>
 

@@ -45,7 +45,7 @@ const LabelerDashboard = () => {
         setLoading(true)
         const data = await fetchAssignedClusters()
         setClusters(data)
-      } catch (err) {
+      } catch  {
         setError('Failed to load tasks')
       } finally {
         setLoading(false)

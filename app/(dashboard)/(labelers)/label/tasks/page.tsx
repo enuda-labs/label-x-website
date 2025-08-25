@@ -42,9 +42,6 @@ const HARDCODED_LABEL_CHOICES = [
 ]
 
 
-
-
-
 const getTypeIcon = (type: string) => {
   switch (type) {
     case 'TEXT':
@@ -70,7 +67,7 @@ const ProjectsContent = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all')
 
   const currentTab = searchParams.get('task') || 'assigned'
-
+console.log(loading)
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams)
     params.set('task', value)
