@@ -42,9 +42,6 @@ const HARDCODED_LABEL_CHOICES = [
 ]
 
 
-
-
-
 const getTypeIcon = (type: string) => {
   switch (type) {
     case 'TEXT':

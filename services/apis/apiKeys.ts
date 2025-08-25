@@ -1,6 +1,6 @@
 import axios from 'axios'
-import { ACCESS_TOKEN_KEY } from '../../constants/index'
-import { BASE_API_URL } from '../../constants/env-vars'
+import { ACCESS_TOKEN_KEY } from '@/constants'
+import { BASE_API_URL } from '@/constants/env-vars'
 
 // Interface for an API key object
 export interface ApiKey {
