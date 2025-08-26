@@ -17,8 +17,8 @@ import {
 } from '@/components/ui/dialog'
 import { Search, Plus } from 'lucide-react'
 import DashboardLayout from '@/components/shared/dashboard-layout'
-import {  useMutation, useQuery, useQueryClient, } from '@tanstack/react-query'
-import {createProject, getProjects } from '@/services/apis/project'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { createProject, getProjects } from '@/services/apis/project'
 import { isAxiosError } from 'axios'
 import { useRouter } from 'next/navigation'
 
@@ -136,7 +136,7 @@ const Projects = () => {
           />
         </div>
 
- <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90 w-full md:w-auto">
               <Plus className="mr-2 h-4 w-4" />
@@ -153,7 +153,7 @@ const Projects = () => {
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white mb-2">
+                <label className="mb-2 text-sm font-medium text-white">
                   Project Name
                 </label>
                 <Input
@@ -190,13 +190,13 @@ const Projects = () => {
                 type="submit"
                 className="bg-primary hover:bg-primary/90"
                 onClick={() => createMutation(newProject)}
+                disabled={isPending}
               >
                 {isPending ? 'Creating Project...' : 'Create Project'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
       </div>
 
       {/* Projects List */}
@@ -213,7 +213,7 @@ const Projects = () => {
             <Card
               key={project.id}
               className="cursor-pointer border-white/10 bg-white/5 p-5"
-              onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+              onClick={() => router.push(`/client/projects/${project.id}`)}
             >
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-col justify-between md:flex-row md:items-center">

@@ -59,6 +59,18 @@ export const completeReview = async (taskId: string) => {
   return response.data
 }
 
+export const createTaskCluster = async (payload: TaskClusterPayload) => {
+  const response = await axiosClient.post('/tasks/cluster/', payload)
+  return response.data
+}
+
+export const listTasksClusterInProject = async (projectId: string) => {
+  const response = await axiosClient.get<TaskItem[]>(
+    `/tasks/project/${projectId}/clusters/`
+  )
+  return response.data
+}
+
 export type ReviewTask = {
   task_type: string
   id: string
@@ -151,4 +163,16 @@ export interface RawTask {
   updated_at: string
   priority: string
   group: number
+}
+
+interface TaskClusterPayload {
+  tasks: TaskData[]
+  labelling_choices: LabellingChoice[]
+  input_type: 'multiple_choice' | 'text'
+  labeller_instructions: string
+  deadline: string
+  labeller_per_item_count: number
+  task_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'CSV' | 'PDF'
+  annotation_method: 'manual'
+  project: number
 }

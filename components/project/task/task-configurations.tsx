@@ -1,45 +1,44 @@
-'use client';
+'use client'
 
-import React, { useState } from 'react';
-import { Plus, X, Calendar, Users } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { DataType } from '../data-type-selection';
-import TaskItem, { TaskItem as TaskItemType } from './task-item';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react'
+import { Plus, X, Calendar, Users } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { DataType } from '../data-type-selection'
+import TaskItem, { TaskItem as TaskItemType } from './task-item'
+import { Button } from '@/components/ui/button'
 
-export type InputType = 'multiple_choice' | 'text_input';
+export type InputType = 'multiple_choice' | 'text'
 
 interface TaskConfigurationProps {
-  dataType: DataType;
-  onConfigChange: (config: TaskConfig) => void;
-  initialConfig?: Partial<TaskConfig>;
+  dataType: DataType
+  onConfigChange: (config: TaskConfig) => void
+  initialConfig?: Partial<TaskConfig>
 }
 
 export interface LabellingChoice {
-  option_text: string;
+  option_text: string
 }
 
 export interface TaskConfig {
-  taskName: string;
-  description: string;
-  inputType: InputType;
-  labellingChoices: LabellingChoice[];
-  instructions: string;
-  deadline?: Date;  
-  labellersRequired: number;
-  tasks: TaskItemType[];
+  taskName: string
+  description: string
+  inputType: InputType
+  labellingChoices: LabellingChoice[]
+  instructions: string
+  deadline: Date
+  labellersRequired: number
+  tasks: TaskItemType[]
 }
 
 const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
   dataType,
   onConfigChange,
-  initialConfig = {}
+  initialConfig = {},
 }) => {
   const [config, setConfig] = useState<TaskConfig>({
     taskName: initialConfig.taskName || '',
@@ -47,65 +46,84 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
     inputType: initialConfig.inputType || 'multiple_choice',
     labellingChoices: initialConfig.labellingChoices || [],
     instructions: initialConfig.instructions || '',
-    deadline: initialConfig.deadline,
+    deadline: initialConfig.deadline || new Date(),
     labellersRequired: initialConfig.labellersRequired || 1,
-    tasks: initialConfig.tasks || [{ id: '1', data: '' }]
-  });
-  
-  const [newChoice, setNewChoice] = useState('');
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+    tasks: initialConfig.tasks || [{ id: '1', data: '', file: null }],
+  })
+
+  const [newChoice, setNewChoice] = useState('')
+  // const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
   const updateConfig = (updates: Partial<TaskConfig>) => {
-    const newConfig = { ...config, ...updates };
-    setConfig(newConfig);
-    onConfigChange(newConfig);
-  };
+    const newConfig = { ...config, ...updates }
+    setConfig(newConfig)
+    onConfigChange(newConfig)
+  }
 
   const addChoice = () => {
-    if (newChoice.trim() && !config.labellingChoices.some(choice => choice.option_text === newChoice.trim())) {
-      const choices = [...config.labellingChoices, { option_text: newChoice.trim() }];
-      updateConfig({ labellingChoices: choices });
-      setNewChoice('');
+    if (
+      newChoice.trim() &&
+      !config.labellingChoices.some(
+        (choice) => choice.option_text === newChoice.trim()
+      )
+    ) {
+      const choices = [
+        ...config.labellingChoices,
+        { option_text: newChoice.trim() },
+      ]
+      updateConfig({ labellingChoices: choices })
+      setNewChoice('')
     }
-  };
+  }
 
   const removeChoice = (choiceToRemove: string) => {
-    const choices = config.labellingChoices.filter(choice => choice.option_text !== choiceToRemove);
-    updateConfig({ labellingChoices: choices });
-  };
+    const choices = config.labellingChoices.filter(
+      (choice) => choice.option_text !== choiceToRemove
+    )
+    updateConfig({ labellingChoices: choices })
+  }
 
   const addTask = () => {
     const newTask: TaskItemType = {
       id: (config.tasks.length + 1).toString(),
-      data: ''
-    };
-    updateConfig({ tasks: [...config.tasks, newTask] });
-  };
+      data: '',
+      file: null,
+    }
+    updateConfig({ tasks: [...config.tasks, newTask] })
+  }
 
   const updateTask = (index: number, updatedTask: TaskItemType) => {
-    const tasks = [...config.tasks];
-    tasks[index] = updatedTask;
-    updateConfig({ tasks });
-  };
+    const tasks = [...config.tasks]
+    tasks[index] = updatedTask
+    updateConfig({ tasks })
+  }
 
   const removeTask = (index: number) => {
     if (config.tasks.length > 1) {
-      const tasks = config.tasks.filter((_, i) => i !== index);
-      updateConfig({ tasks });
+      const tasks = config.tasks.filter((_, i) => i !== index)
+      updateConfig({ tasks })
     }
-  };
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      addChoice();
+      e.preventDefault()
+      addChoice()
     }
-  };
+  }
+  const formatDateTimeLocal = (date: Date) => {
+    if (!date) return ''
+    const offset = date.getTimezoneOffset() * 60000
+    const localDate = new Date(date.getTime() - offset)
+    return localDate.toISOString().slice(0, 16)
+  }
 
   return (
     <Card className="shadow-soft bg-card/20">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">Task Configuration</CardTitle>
+        <CardTitle className="text-xl font-semibold">
+          Task Configuration
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Task Name */}
@@ -132,27 +150,34 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
             placeholder="Describe what this task involves and what kind of data needs to be labeled..."
             value={config.description}
             onChange={(e) => updateConfig({ description: e.target.value })}
-            className="min-h-[100px] border-border focus:border-primary resize-none"
+            className="border-border focus:border-primary min-h-[100px] resize-none"
           />
         </div>
 
         {/* Input Type Selection */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium">How should labelers respond? *</Label>
-          <RadioGroup 
-            value={config.inputType} 
-            onValueChange={(value: InputType) => updateConfig({ inputType: value })}
+          <Label className="text-sm font-medium">
+            How should labelers respond? *
+          </Label>
+          <RadioGroup
+            value={config.inputType}
+            onValueChange={(value: InputType) =>
+              updateConfig({ inputType: value })
+            }
             className="flex gap-6"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="multiple_choice" id="multiple_choice" />
-              <Label htmlFor="multiple_choice" className="text-sm cursor-pointer">
+              <Label
+                htmlFor="multiple_choice"
+                className="cursor-pointer text-sm"
+              >
                 Multiple Choice (Select from options)
               </Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="text_input" id="text_input" />
-              <Label htmlFor="text_input" className="text-sm cursor-pointer">
+              <RadioGroupItem value="text" id="text_input" />
+              <Label htmlFor="text_input" className="cursor-pointer text-sm">
                 Text Input (Free text response)
               </Label>
             </div>
@@ -171,7 +196,7 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
                 onKeyPress={handleKeyPress}
                 className="border-border focus:border-primary"
               />
-              <Button 
+              <Button
                 onClick={addChoice}
                 variant="outline"
                 size="sm"
@@ -180,19 +205,19 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
             {config.labellingChoices.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {config.labellingChoices.map((choice) => (
-                  <Badge 
-                    key={choice.option_text} 
+                  <Badge
+                    key={choice.option_text}
                     variant="secondary"
                     className="flex items-center gap-1 px-3 py-1"
                   >
                     {choice.option_text}
                     <button
                       onClick={() => removeChoice(choice.option_text)}
-                      className="ml-1 hover:text-destructive"
+                      className="hover:text-destructive ml-1"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -204,10 +229,10 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
         )}
 
         {/* Task Items */}
-        <div className="space-y-4 ">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">Task Items *</Label>
-            <Button 
+            <Button
               onClick={addTask}
               variant="outline"
               size="sm"
@@ -217,8 +242,8 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
               Add Task Item
             </Button>
           </div>
-          
-          <div className="space-y-3 ">
+
+          <div className="space-y-3">
             {config.tasks.map((task, index) => (
               <TaskItem
                 key={task.id}
@@ -242,62 +267,78 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
             placeholder="Provide clear, detailed instructions for how labellers should approach this task..."
             value={config.instructions}
             onChange={(e) => updateConfig({ instructions: e.target.value })}
-            className="min-h-[120px] border-border focus:border-primary resize-none"
+            className="border-border focus:border-primary min-h-[120px] resize-none"
           />
         </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Deadline */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="deadline"
+              className="flex items-center gap-2 text-sm font-medium"
+            >
+              <Calendar className="h-4 w-4" />
+              Deadline
+            </Label>
+            <Input
+              id="deadline"
+              type="datetime-local"
+              value={formatDateTimeLocal(config.deadline) || ''}
+              onChange={(e) =>
+                updateConfig({
+                  deadline: e.target.value
+                    ? new Date(e.target.value)
+                    : undefined,
+                })
+              }
+              className="border-border focus:border-primary"
+              min={(() => {
+                const d = new Date()
+                d.setHours(d.getHours() + 24)
+                return d.toISOString().slice(0, 16)
+              })()}
+            />
+          </div>
 
+          {/* Labellers Required */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="labellers"
+              className="flex items-center gap-2 text-sm font-medium"
+            >
+              <Users className="h-4 w-4" />
+              Labellers per Item
+            </Label>
+            <Input
+              id="labellers"
+              type="number"
+              min="1"
+              max="10"
+              value={config.labellersRequired}
+              onChange={(e) =>
+                updateConfig({
+                  labellersRequired: parseInt(e.target.value) || 1,
+                })
+              }
+              className="border-border focus:border-primary"
+            />
+          </div>
+        </div>
         {/* Advanced Settings */}
-        <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+        {/* <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start p-0 h-auto">
-              <span className="text-sm font-medium text-primary">
+            <Button variant="ghost" className="h-auto w-full justify-start p-0">
+              <span className="text-primary text-sm font-medium">
                 Advanced Settings {isAdvancedOpen ? '−' : '+'}
               </span>
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Deadline */}
-              <div className="space-y-2">
-                <Label htmlFor="deadline" className="text-sm font-medium flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Deadline
-                </Label>
-                <Input
-                  id="deadline"
-                  type="datetime-local"
-                  value={config.deadline?.toISOString().slice(0, 16) || ''}
-                  onChange={(e) => updateConfig({ 
-                    deadline: e.target.value ? new Date(e.target.value) : undefined 
-                  })}
-                  className="border-border focus:border-primary"
-                />
-              </div>
-
-              {/* Labellers Required */}
-              <div className="space-y-2">
-                <Label htmlFor="labellers" className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Labellers per Item
-                </Label>
-                <Input
-                  id="labellers"
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={config.labellersRequired}
-                  onChange={(e) => updateConfig({ 
-                    labellersRequired: parseInt(e.target.value) || 1 
-                  })}
-                  className="border-border focus:border-primary"
-                />
-              </div>
-            </div>
+          <CollapsibleContent className="mt-4 space-y-4">
           </CollapsibleContent>
-        </Collapsible>
+        </Collapsible> */}
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
-export default TaskConfiguration;
+export default TaskConfiguration

@@ -15,9 +15,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { Button } from '../ui/button'
+import { useRouter } from 'next/navigation'
 
 const ProjectDetail = ({ id }: { id: number }) => {
   const queryClient = useQueryClient()
+  const router = useRouter()
+
   const { data: project, isPending } = useQuery({
     queryKey: ['project', id],
     queryFn: () => getProject(id),
@@ -88,51 +92,67 @@ const ProjectDetail = ({ id }: { id: number }) => {
     <DashboardLayout title={project.name}>
       <Card className="mb-6 border-white/10 bg-white/5 p-6">
         <div className="flex flex-col justify-between md:flex-row md:items-center">
-          <div>
-            <div className="mb-2 flex items-center">
-              <h2 className="mr-3 text-2xl font-bold text-white">
-                {project.name}
-              </h2>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Badge
-                    className={`${getStatusColor(project.status)} cursor-pointer`}
-                  >
-                    {project.status
-                      .replace('_', ' ')
-                      .replace(/\b\w/g, (l) => l.toUpperCase())}
-                  </Badge>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => updateStatus('pending')}>
-                    Pending
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateStatus('in_progress')}>
-                    In Progress
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateStatus('completed')}>
-                    Completed
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <p className="mb-4 text-white/70">{project.description}</p>
+          <div className="flex flex-1 items-center justify-between">
+            <div className="flex-1">
+              <div className="mb-2 flex items-center">
+                <h2 className="mr-3 text-2xl font-bold text-white">
+                  {project.name}
+                </h2>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Badge
+                      className={`${getStatusColor(project.status)} cursor-pointer`}
+                    >
+                      {project.status
+                        .replace('_', ' ')
+                        .replace(/\b\w/g, (l) => l.toUpperCase())}
+                    </Badge>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => updateStatus('pending')}>
+                      Pending
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => updateStatus('in_progress')}
+                    >
+                      In Progress
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => updateStatus('completed')}>
+                      Completed
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <p className="mb-4 text-white/70">{project.description}</p>
 
-            <div className="flex flex-wrap gap-4 text-sm text-white/60">
-              <div className="flex items-center">
-                <CalendarDays className="mr-1 h-4 w-4" />
-                Created: {formatDate(project.created_at)}
+              <div className="flex flex-wrap gap-4 text-sm text-white/60">
+                <div className="flex items-center">
+                  <CalendarDays className="mr-1 h-4 w-4" />
+                  Created: {formatDate(project.created_at)}
+                </div>
+                <div className="flex items-center">
+                  <Clock className="mr-1 h-4 w-4" />
+                  {formatDate(
+                    new Date(
+                      new Date(project.created_at).setFullYear(
+                        new Date(project.created_at).getFullYear() + 1
+                      )
+                    ).toISOString()
+                  )}
+                </div>
               </div>
-              <div className="flex items-center">
-                <Clock className="mr-1 h-4 w-4" />
-                {formatDate(
-                  new Date(
-                    new Date(project.created_at).setFullYear(
-                      new Date(project.created_at).getFullYear() + 1
-                    )
-                  ).toISOString()
-                )}
-              </div>
+            </div>
+            <div className="mt-3 md:mt-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="hover:bg-primary h-8 border-white/10"
+                onClick={() =>
+                  router.push(`/client/projects/${project.id}/tasks`)
+                }
+              >
+                View Tasks
+              </Button>
             </div>
           </div>
           {/* <DropdownMenu>

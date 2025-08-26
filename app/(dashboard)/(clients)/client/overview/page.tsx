@@ -30,11 +30,10 @@ import {
   DialogClose,
 } from '@/components/ui/dialog'
 
-
 const Dashboard = () => {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [dataPoints, setDataPoints] = useState<number | null>(null);
+  const [dataPoints, setDataPoints] = useState<number | null>(null)
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [showPlans, setShowPlans] = useState(false)
   const [showModal, setShowModal] = useState(false)
@@ -116,8 +115,7 @@ const Dashboard = () => {
     }).format(date)
   }
 
-
-   useEffect(() => {
+  useEffect(() => {
     const loadDataPoints = async () => {
       try {
         const balance = await fetchDataPoints()
@@ -137,15 +135,15 @@ const Dashboard = () => {
     loadDataPoints()
   }, [router])
 
-
   return (
     <DashboardLayout title="Dashboard">
-       <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>No Data Points Available</DialogTitle>
             <DialogDescription>
-              You have no data points remaining. Please subscribe to a plan to continue using the service.
+              You have no data points remaining. Please subscribe to a plan to
+              continue using the service.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -180,13 +178,12 @@ const Dashboard = () => {
           </>
         ) : (
           <>
-       <Card className="border-white/10 bg-white/5 p-4">
-  <div className="mb-1 text-sm text-white/60">Data Points</div>
-  <div className="text-3xl font-bold text-white">
-    {dataPoints ?? '...'}
-  </div>
-</Card>
-
+            <Card className="border-white/10 bg-white/5 p-4">
+              <div className="mb-1 text-sm text-white/60">Data Points</div>
+              <div className="text-3xl font-bold text-white">
+                {dataPoints ?? '...'}
+              </div>
+            </Card>
 
             <Card className="border-white/10 bg-white/5 p-4">
               <div className="mb-1 text-sm text-white/60">Pending Projects</div>
@@ -290,7 +287,7 @@ const Dashboard = () => {
                       size="sm"
                       className="h-8 px-2 text-white/60 hover:text-white"
                       onClick={() =>
-                        router.push(`/dashboard/projects/${project.id}`)
+                        router.push(`/client/projects/${project.id}`)
                       }
                     >
                       <ArrowRight className="h-4 w-4" />
