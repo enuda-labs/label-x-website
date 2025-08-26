@@ -300,7 +300,7 @@ const Dashboard = () => {
             <div className="my-10 flex items-center">
               No project has been created for this account
               <Link
-                href={'/dashboard/projects'}
+                href={'/client/projects'}
                 className="text-primary ml-3 underline"
               >
                 Create now
@@ -309,7 +309,7 @@ const Dashboard = () => {
           )}
           {recentProjects.length > 3 && (
             <Button
-              onClick={() => router.push('dashboard/projects')}
+              onClick={() => router.push('/client/projects')}
               className="mx-auto mt-4 mb-4 flex cursor-pointer items-center justify-center px-10"
             >
               View All Projects
