@@ -95,15 +95,15 @@ const adminItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Projects',
-    url: '/admin/projects',
+    title: 'Labelers',
+    url: '/admin/labelers',
     icon: Clock,
   },
-  // {
-  //   title: 'Users',
-  //   url: '/admin/users',
-  //   icon: User,
-  // },
+  {
+    title: 'Assignments',
+    url: '/admin/assignments?tab=assignments',
+    icon: User,
+  },
   {
     title: 'Settings',
     url: '/admin/profile',
