@@ -87,7 +87,31 @@ const LabelerItems = [
     icon: User,
   },
 ]
-const items = userRole === 'client' ? clientItems : LabelerItems
+
+const adminItems = [
+  {
+    title: 'Dashboard',
+    url: '/admin',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'Labelers',
+    url: '/admin?tab=labelers',
+    icon: Clock,
+  },
+  {
+    title: 'Assignments',
+    url: '/admin/?tab=assignments',
+    icon: User,
+  },
+  {
+    title: 'Settings',
+    url: '/admin/profile',
+    icon: Key,
+  },
+]
+
+const items = userRole === 'client' ? clientItems : userRole === 'admin' ? adminItems : LabelerItems
   const { setUser, setIsLoggedIn } = useGlobalStore()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userName, setUserName] = useState('')
