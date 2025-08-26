@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import WelcomeHeader from '@/components/auth/welcome-header'
 
-import { Users, Building2, Tags } from 'lucide-react'
+import { Users, Tags } from 'lucide-react'
 import FloatingElements from '@/components/auth/auth-floating-elements'
 
 const RoleSelection = () => {
@@ -33,9 +33,9 @@ const RoleSelection = () => {
           <div className="mx-auto max-w-5xl">
             <WelcomeHeader />
 
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
+            <div className="mt-8 grid gap-6 md:grid-cols-2">
               {/* Individual Card */}
-              <Card
+              {/* <Card
                 className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
                 onClick={() => handleRoleSelect('individual')}
               >
@@ -59,7 +59,7 @@ const RoleSelection = () => {
                     Continue as Individual
                   </Button>
                 </div>
-              </Card>
+              </Card> */}
 
               {/* Company Card */}
               <Card
@@ -68,29 +68,27 @@ const RoleSelection = () => {
               >
                 <div className="space-y-4 text-center">
                   <div className="from-primary to-primary-glow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r transition-transform duration-300 group-hover:scale-110">
-                    <Building2 className="h-8 w-8 text-white" />
+                    <Users className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-white">Organization</h3>
+                  <h3 className="text-2xl font-bold text-white">Client</h3>
                   <p className="text-sm leading-relaxed text-white/70">
-                    Ideal for organizations, teams, and enterprises that need
-                    collaborative annotation workflows and advanced project
-                    management features.
+                    Perfect for freelancers, researchers, individual data scientists, organizations, teams, and enterprises. Whether you&lsquo;re annotating datasets for personal projects or managing large-scale collaborative annotation workflows with advanced project management features.
                   </p>
                   <Button
                     className="mt-6 h-11 w-full transition-all duration-300"
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRoleSelect('organization')
+                      handleRoleSelect('individual')
                     }}
                   >
-                    Continue as Organization
+                    Continue as a Client
                   </Button>
                 </div>
               </Card>
 
                <Card
                 className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
-                onClick={() => handleRoleSelect('individual')}
+                onClick={() => router.push('/auth/login-only')}
               >
                 <div className="space-y-4 text-center">
                   <div className="from-primary to-primary-glow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r transition-transform duration-300 group-hover:scale-110">
@@ -104,12 +102,8 @@ const RoleSelection = () => {
                   </p>
                   <Button
                     className="mt-6 h-11 w-full transition-all duration-300"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRoleSelect('labeler')
-                    }}
                   >
-                    Continue as Labeler
+                    Continue as a Labeler
                   </Button>
                 </div>
               </Card>
