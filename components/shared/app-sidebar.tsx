@@ -96,12 +96,12 @@ const adminItems = [
   },
   {
     title: 'Labelers',
-    url: '/admin/labelers',
+    url: '/admin?tab=labelers',
     icon: Clock,
   },
   {
     title: 'Assignments',
-    url: '/admin/assignments?tab=assignments',
+    url: '/admin/?tab=assignments',
     icon: User,
   },
   {

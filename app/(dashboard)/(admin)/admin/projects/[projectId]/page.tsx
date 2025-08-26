@@ -161,16 +161,17 @@ const ProjectManagement = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="border-b bg-card/30 backdrop-blur supports-[backdrop-filter]:bg-bcard/40">
-        <div className="px-4 py-4">
-          <div className="flex ">
-            <div className="flex flex-col  gap-x-4">
-              <Button asChild variant="ghost" size="sm">
+      <div className="border-b bg-card/30 py-3 backdrop-blur supports-[backdrop-filter]:bg-bcard/40">
+      <Button asChild variant="ghost" size="sm">
                 <Link href="/admin">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Admin
                 </Link>
               </Button>
+        <div className="px-4 py-4">
+          <div className="flex ">
+            <div className="flex flex-col  gap-x-4">
+              
               <div className="flex-1">
                 <h1 className="text-2xl font-bold">{project.name}</h1>
                 <div className="flex items-center space-x-4 mt-1">
