@@ -85,7 +85,7 @@ const Subscriptions = () => {
                         user
                           ? router.push('dashboard')
                           : router.push(
-                              `/auth?plan=${plan.name}&returnTo=%2Fdashboard`
+                              `/auth/login?plan=${plan.name}&returnTo=%2Fdashboard`
                             )
                       }
                     >

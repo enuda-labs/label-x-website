@@ -25,7 +25,7 @@ export const Signup = () => {
   const role = searchParams.get('role')
 
     useEffect(() => {
-      if (!role || role !== 'individual'&& role !== 'organization') {
+      if (!role || role !== 'individual' && role !== 'organization') {
         router.push('/auth/role')
       }
   }, [ router, role])
