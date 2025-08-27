@@ -26,7 +26,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 // API helpers (you added these earlier)
-import { fetchTaskById, annotateTask, annotateMissingAsset } from '@/services/apis/clusters';
+import { fetchTaskById, annotateTask, annotateMissingAsset, fetchTaskProgress } from '@/services/apis/clusters';
+
 
 interface TaskFile {
   file_url?: string;
@@ -51,7 +52,7 @@ interface ApiTaskResponse {
   input_type?: 'multiple_choice' | 'text_input';
   labeller_instructions?: string;
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV';
-  
+
 }
 
 const getTaskTypeIcon = (type?: string) => {
@@ -81,11 +82,12 @@ const LabelTask = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [completedItems, setCompletedItems] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [responses, setResponses] = useState<Array<{ answer: string; notes: string }>>([]);
+  const [responses, setResponses] = useState<Array<{ answer: string[]; notes: string }>>([]);
+  const [progressData, setProgressData] = useState<any>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -105,10 +107,10 @@ const LabelTask = () => {
         setTaskData(payload || null);
 
         const items = payload?.tasks ?? [];
-        setResponses(new Array(items.length).fill({ answer: '', notes: '' }));
+        setResponses(new Array(items.length).fill({ answer: [], notes: '' }));
         setCompletedItems(0);
         setCurrentItemIndex(0);
-        setSelectedCategory(null);
+        setSelectedCategories([]);
         setNotes('');
       } catch (err: any) {
         console.error('Failed to fetch task', err);
@@ -121,40 +123,52 @@ const LabelTask = () => {
     return () => { cancelled = true; };
   }, [taskId]);
 
+
+
+
+
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading task...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center"><div className="p-6 bg-red-50 text-red-700 rounded">{error}</div></div>;
   if (!taskData) return <div className="min-h-screen flex items-center justify-center">Task not found</div>;
-
   const items = taskData.tasks ?? [];
   const totalItems = items.length;
   const currentItem = items[currentItemIndex] ?? { data: '' };
   const inputType = taskData.input_type ?? 'multiple_choice';
-  const labellingChoices = taskData.labelling_choices ?? [];
-  const progress = totalItems === 0 ? 0 : (completedItems / totalItems) * 100;
+  const labellingChoices = (taskData as any).choices ?? [];
+  const progress = progressData?.completion_percentage ?? 0;
   const isLastItem = currentItemIndex === totalItems - 1;
 
-  const choicesToShow = (labellingChoices.length > 0) ? labellingChoices : FALLBACK_LABELS;
-//  const hasFile = !!(currentItem?.file && (currentItem.file.file_url || currentItem.file.file_name));
+  const choicesToShow = labellingChoices.length > 0 ? labellingChoices : FALLBACK_LABELS;
+  const hasFile = !!(currentItem?.file && (currentItem.file.file_url || currentItem.file.file_name));
   const itemType = currentItem?.task_type ?? taskData.task_type ?? 'TEXT';
 
   // --- Handlers ---
-  const handleCategorySelect = (category: string) => setSelectedCategory(category);
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category) // remove if already selected
+        : [...prev, category]              // add if not selected
+    );
+  };
+
 
   const handleSubmitLabelLocal = () => {
-    if (inputType === 'multiple_choice' && (!selectedCategory || selectedCategory.trim() === '')) {
-      toast('Please select a category', { description: 'All items must be labeled before you can continue.' });
-      return;
-    }
-    if (inputType === 'text_input' && (!selectedCategory || selectedCategory.trim() === '')) {
-      toast('Please provide an answer', { description: 'All items must be labeled before you can continue.' });
-      return;
-    }
+    if (inputType === "multiple_choice" && selectedCategories.length === 0) {
+    toast("Please select at least one category", { description: "All items must be labeled before you can continue." });
+    return;
+  }
+  if (inputType === "text_input" && selectedCategories.length === 0) {
+    toast("Please provide an answer", { description: "All items must be labeled before you can continue." });
+    return;
+  }
 
-    const newResponses = [...responses];
-    newResponses[currentItemIndex] = { answer: selectedCategory || '', notes };
-    setResponses(newResponses);
+  const newResponses = [...responses];
+  newResponses[currentItemIndex] = { answer: [...selectedCategories], notes };
+  setResponses(newResponses);
 
-    toast('Label saved', { description: inputType === 'multiple_choice' ? `Item labeled as "${selectedCategory}"` : 'Your response has been saved' });
+  toast("Label saved", { description: `Item labeled as "${selectedCategories.join(", ")}"` });
+
     setCompletedItems(prev => prev + 1);
 
     if (isLastItem) setShowConfirmDialog(true);
@@ -167,12 +181,13 @@ const LabelTask = () => {
       setCurrentItemIndex(nextIndex);
       const saved = responses[nextIndex];
       if (saved) {
-        setSelectedCategory(saved.answer || null);
-        setNotes(saved.notes || '');
-      } else {
-        setSelectedCategory(null);
-        setNotes('');
-      }
+      setSelectedCategories(saved.answer || []);
+      setNotes(saved.notes || "");
+    } else {
+      setSelectedCategories([]);
+      setNotes("");
+    }
+
     }
   };
 
@@ -182,12 +197,13 @@ const LabelTask = () => {
       setCurrentItemIndex(prevIndex);
       const saved = responses[prevIndex];
       if (saved) {
-        setSelectedCategory(saved.answer || null);
-        setNotes(saved.notes || '');
-      } else {
-        setSelectedCategory(null);
-        setNotes('');
-      }
+    setSelectedCategories(saved.answer || []);
+    setNotes(saved.notes || "");
+  } else {
+    setSelectedCategories([]);
+    setNotes("");
+  }
+
     }
   };
 
@@ -205,7 +221,7 @@ const LabelTask = () => {
 
       // update local responses so the UI reflects the missing marker
       const newResponses = [...responses];
-      newResponses[currentItemIndex] = { answer: 'MISSING_ASSET', notes: noteForServer };
+      newResponses[currentItemIndex] = { answer: ['MISSING_ASSET'], notes: noteForServer };
       setResponses(newResponses);
       setCompletedItems(prev => prev + 1);
 
@@ -233,68 +249,71 @@ const LabelTask = () => {
     }
   };
 
-  // Build labels (notes preferred over answer)
+
+  // Build payload (labels + notes)
   const buildLabelsForSubmission = () => {
     const labels: string[] = [];
+    const notesArr: string[] = [];
 
     for (const r of responses) {
-      if (r.notes && r.notes.trim() !== '') {
-        labels.push(r.notes.trim());
-        continue;
+      if (r.answer && r.answer.length > 0) {
+        labels.push(...r.answer); // merge all answers
       }
-      if (r.answer && r.answer.trim() !== '') {
-        labels.push(r.answer.trim());
-        continue;
+      if (r.notes && r.notes.trim() !== "") {
+        notesArr.push(r.notes.trim());
       }
-      
     }
 
-    return labels;
+    return {
+      task_id: taskData?.id ?? Number(taskId),
+      labels,
+      notes: notesArr.join(" | ") || ""
+    };
   };
+
+
+
 
   // Submit labels using annotateTask helper
   const submitLabels = async () => {
-    const labels = buildLabelsForSubmission();
+    const payload = buildLabelsForSubmission();
 
-    if (labels.length === 0) {
-      toast('No labels to submit', { description: 'Please label at least one item or add notes.' });
+    if (payload.labels.length === 0 && !payload.notes) {
+      toast("Nothing to submit", { description: "Please provide at least one label or note." });
       return;
     }
-
-    const payload = {
-      task_id: taskData?.id ?? Number(taskId),
-      labels
-    };
 
     try {
       setIsSubmitting(true);
       const resp = await annotateTask(payload);
-  
-      const message = (resp && typeof resp === 'object' && 'message' in resp) ? (resp as { message?: string }).message : undefined;
-      toast('Task labels submitted successfully', { description: message ?? 'Submission succeeded' });
+
+      toast("Task labels submitted successfully", {
+        description: resp?.message ?? "Submission succeeded"
+      });
       setShowConfirmDialog(false);
-      router.push('/label/overview');
+      router.push("/label/overview");
     } catch (err: any) {
       const status = err?.response?.status;
       const data = err?.response?.data;
-      const detail = data?.detail || data?.message || err?.message || '';
+      const detail = data?.detail || data?.message || err?.message || "";
 
-      // Specific: user already labeled this task
-      if (status === 400 && typeof detail === 'string' && detail.toLowerCase().includes('already label')) {
-        toast('You already labeled this task', { description: detail || 'This task has already been labeled.' });
+      if (status === 400 && typeof detail === "string" && detail.toLowerCase().includes("already label")) {
+        toast("You already labeled this task", {
+          description: detail || "This task has already been labeled."
+        });
         setShowConfirmDialog(false);
-        router.push('/label/overview');
+        router.push("/label/overview");
         return;
       }
 
       if (status === 401 || status === 403) {
-        toast('Not authorized', { description: detail || 'Please sign in and try again.' });
+        toast("Not authorized", { description: detail || "Please sign in and try again." });
         setShowConfirmDialog(false);
         return;
       }
 
-      console.error('Annotate failed', status, data || err);
-      toast('Failed to submit labels', { description: detail || 'An error occurred while submitting labels.' });
+      console.error("Annotate failed", status, data || err);
+      toast("Failed to submit labels", { description: detail || "An error occurred while submitting labels." });
     } finally {
       setIsSubmitting(false);
     }
@@ -303,6 +322,21 @@ const LabelTask = () => {
   const handleFinalSubmit = async () => {
     await submitLabels();
   };
+
+ const currentTaskId = Number(taskId) || 0;
+
+  const handleNextTask = () => {
+  const nextId = currentTaskId + 1;
+  router.push(`/label/${nextId}`);
+};
+
+const handlePreviousTask = () => {
+  if (currentTaskId > 1) { // prevent going to task 0 or negative
+    const prevId = currentTaskId - 1;
+    router.push(`/label/${prevId}`);
+  }
+};
+
 
   // --- Render ---
   return (
@@ -324,11 +358,15 @@ const LabelTask = () => {
 
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Progress</span>
-            <span className="text-sm text-muted-foreground">{Math.round(progress)}% complete</span>
-          </div>
+              <span className="text-sm text-muted-foreground">
+                {progress}% complete
+                  </span>
+            </div>
           <Progress value={progress} className="h-2" />
+
+
         </div>
       </div>
 
@@ -351,8 +389,8 @@ const LabelTask = () => {
 
               <CardContent>
                 {(() => {
-                  const fileUrl = currentItem?.file?.file_url;
-                  const fileName = currentItem?.file?.file_name;
+                  const fileUrl = currentItem?.file_url || currentItem?.file?.file_url || null;
+                  const fileName = currentItem?.file_name || currentItem?.file?.file_name || null;
                   const serial = currentItem?.serial_no ?? currentItem?.id;
                   const description = currentItem?.data ?? '';
 
@@ -480,22 +518,42 @@ const LabelTask = () => {
             </Card>
 
             <Card className="bg-card/20">
-              <CardHeader>
-                <CardTitle className="text-base">{inputType === 'multiple_choice' ? 'Select Label Option *' : 'Provide Answer *'}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {inputType === 'multiple_choice' ? (
-                  choicesToShow.map((choice, index) => (
-                    <Button key={index} variant={selectedCategory === choice.option_text ? 'default' : 'outline'} className="w-full justify-start" onClick={() => handleCategorySelect(choice.option_text)}>
-                      {selectedCategory === choice.option_text && <Check className="h-4 w-4 mr-2" />}
-                      {choice.option_text}
-                    </Button>
-                  ))
-                ) : (
-                  <Textarea placeholder="Enter your response here..." value={selectedCategory || ''} onChange={(e) => setSelectedCategory(e.target.value)} className="min-h-[100px] resize-none" />
-                )}
-              </CardContent>
-            </Card>
+      <CardHeader>
+        <CardTitle className="text-base">
+          {inputType === "multiple_choice" && choicesToShow.length > 0
+            ? "Select Label Option *"
+            : "Provide Answer *"}
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+      {inputType === "multiple_choice" && choicesToShow.length > 0 ? (
+  choicesToShow.map((choice, index) => (
+    <Button
+      key={index}
+      variant={selectedCategories.includes(choice.option_text) ? "default" : "outline"}
+      className="w-full justify-start"
+      onClick={() => handleCategoryToggle(choice.option_text)}
+    >
+      {selectedCategories.includes(choice.option_text) && (
+        <Check className="h-4 w-4 mr-2" />
+      )}
+      {choice.option_text}
+    </Button>
+  ))
+) : (
+  <Textarea
+    placeholder="Enter your response here..."
+    value={selectedCategories.join(", ")}
+    onChange={(e) => setSelectedCategories(e.target.value.split(",").map(s => s.trim()))}
+    className="min-h-[100px] resize-none"
+  />
+)}
+
+      </CardContent>
+    </Card>
+
+
 
             <Card className="bg-card/20">
               <CardHeader><CardTitle className="text-base">Additional Notes (Optional)</CardTitle></CardHeader>
@@ -505,7 +563,7 @@ const LabelTask = () => {
             </Card>
 
             <div className="space-y-3">
-              <Button onClick={handleSubmitLabelLocal} disabled={inputType === 'multiple_choice' ? (!selectedCategory || selectedCategory.trim() === '') : false} className="w-full" variant="default">
+              <Button onClick={handleSubmitLabelLocal}  disabled={inputType === 'multiple_choice' ? selectedCategories.length === 0 : false} className="w-full" variant="default">
                 <Save className="h-4 w-4 mr-2" />
                 {isLastItem ? 'Complete Task' : 'Submit & Continue'}
               </Button>
@@ -514,9 +572,23 @@ const LabelTask = () => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handlePrevious} disabled={currentItemIndex === 0} variant="ghost" className="flex-1 bg-card/20">Previous</Button>
-              <Button onClick={handleNext} disabled={currentItemIndex === totalItems - 1} className="flex-1">Next</Button>
-            </div>
+    <Button
+      onClick={handlePreviousTask}
+      disabled={currentTaskId <= 1}
+      variant="ghost"
+      className="flex-1 bg-card/20"
+    >
+      Previous Task
+    </Button>
+
+    <Button
+      onClick={handleNextTask}
+      className="flex-1"
+    >
+      Next Task
+    </Button>
+  </div>
+
           </div>
         </div>
       </div>
@@ -526,7 +598,11 @@ const LabelTask = () => {
         <DialogContent className="py-8 border shadow-sm">
           <DialogHeader>
             <DialogTitle>Confirm Task Completion</DialogTitle>
-            <DialogDescription>You have completed all {totalItems} items in this task. Please review your work before final submission.</DialogDescription>
+            <DialogDescription>
+    You have completed all {totalItems} items in this task.
+    Please review your work before final submission.
+  </DialogDescription>
+
           </DialogHeader>
 
           <div className="space-y-4 max-h-[300px] overflow-y-auto">

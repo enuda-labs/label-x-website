@@ -30,7 +30,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { fetchAssignedClusters } from '@/services/apis/clusters'
+import { fetchAssignedClusters,fetchPendingClusters } from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
 
 // 🔹 Hardcoded label categories
@@ -62,6 +62,7 @@ const ProjectsContent = () => {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [clusters, setClusters] = useState<AssignedCluster[]>([])
+  const [pendingClusters, setPendingClusters] = useState<AssignedCluster[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -75,19 +76,35 @@ console.log(loading)
   }
 
   useEffect(() => {
-    const loadClusters = async () => {
+    const load = async () => {
       try {
         setLoading(true)
-        const data = await fetchAssignedClusters()
-        setClusters(data)
+        const [assigned, pending] = await Promise.all([
+          fetchAssignedClusters(),
+          fetchPendingClusters()
+        ])
+
+        // Add status dynamically
+        const assignedWithStatus = assigned.map(task => ({
+          ...task,
+          status: task.pending_tasks === 0 ? 'completed' : 'assigned'
+        }))
+        const pendingWithStatus = pending.map(task => ({
+          ...task,
+          status: 'pending'
+        }))
+
+        setClusters(assignedWithStatus)
+        setPendingClusters(pendingWithStatus)
       } catch (err) {
-        console.error('Error fetching clusters:', err)
+        console.error("Error fetching clusters", err)
       } finally {
         setLoading(false)
       }
     }
-    loadClusters()
+    load()
   }, [])
+
 
   const filteredTasks = useMemo(() => {
     return clusters.filter((task) => {
@@ -101,24 +118,35 @@ console.log(loading)
     })
   }, [searchTerm, typeFilter, clusters])
 
-  const getStatus = (task: AssignedCluster) => {
-    if (task.pending_tasks === 0) return 'completed'
-    if (task.pending_tasks === task.tasks_count) return 'assigned'
-    return 'pending'
-  }
+  const getStatus = (task: AssignedCluster) => task.status
+
 
   const getTasksByStatus = (status: string) => {
     return filteredTasks.filter((task) => getStatus(task) === status)
   }
-
   const getTaskCounts = () => {
     return {
-      assigned: filteredTasks.filter((t) => getStatus(t) === 'assigned').length,
-      pending: filteredTasks.filter((t) => getStatus(t) === 'pending').length,
-      completed: filteredTasks.filter((t) => getStatus(t) === 'completed')
-        .length,
+      assigned: clusters.filter((t) => getStatus(t) === 'assigned').length,
+      pending: pendingClusters.length,  // use API data
+      completed: clusters.filter((t) => getStatus(t) === 'completed').length,
     }
   }
+
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'assigned':
+        return 'destructive' // blue for assigned (or pick a blue variant)
+      case 'pending':
+        return 'secondary'   // yellow for pending (or pick a yellow variant)
+      case 'completed':
+        return 'default'     // green for completed
+      default:
+        return 'outline'
+    }
+  }
+
+
 
   const taskCounts = getTaskCounts()
 
@@ -140,30 +168,31 @@ console.log(loading)
           {task.labeller_instructions}
         </p>
 
-        {/* 🔹 Status (text only, under description) */}
         <div className="flex items-center gap-2 mt-2 text-sm">
-          {getStatus(task) === 'assigned' && (
-            <span className="flex items-center text-yellow-500">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              Assigned
-            </span>
-          )}
-          {getStatus(task) === 'pending' && (
-            <span className="flex items-center text-blue-500">
-              <PlayCircle className="h-4 w-4 mr-1" />
-              Pending
-            </span>
-          )}
-          {getStatus(task) === 'completed' && (
-            <span className="flex items-center text-green-500">
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Completed
-            </span>
-          )}
+    {getStatus(task) === 'assigned' && (
+      <span className="flex items-center text-blue-500">
+        <AlertCircle className="h-4 w-4 mr-1" />
+        Assigned
+      </span>
+    )}
+    {getStatus(task) === 'pending' && (
+      <span className="flex items-center text-yellow-500">
+        <PlayCircle className="h-4 w-4 mr-1" />
+        Pending
+      </span>
+    )}
+    {getStatus(task) === 'completed' && (
+      <span className="flex items-center text-green-500">
+        <CheckCircle2 className="h-4 w-4 mr-1" />
+        Completed
+      </span>
+    )}
+  
 
-          {/* Example extra badge for difficulty */}
-          <span className="text-xs text-muted-foreground">MEDIUM</span>
-        </div>
+    {/* Example extra badge for difficulty */}
+    <span className="text-xs text-muted-foreground">MEDIUM</span>
+  </div>
+
       </div>
     </div>
   </CardHeader>
@@ -270,30 +299,42 @@ console.log(loading)
 
         {/* Tabs */}
         <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-            <TabsTrigger value="assigned" className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Assigned ({taskCounts.assigned})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <PlayCircle className="h-4 w-4" />
-              Pending ({taskCounts.pending})
-            </TabsTrigger>
-            <TabsTrigger value="completed" className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" />
-              Completed ({taskCounts.completed})
-            </TabsTrigger>
-          </TabsList>
+        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+      <TabsTrigger value="assigned" className="flex items-center gap-2">
+        <AlertCircle className="h-4 w-4" />
+        Assigned ({taskCounts.assigned})
+      </TabsTrigger>
+      <TabsTrigger value="pending" className="flex items-center gap-2">
+        <PlayCircle className="h-4 w-4" />
+        Pending ({taskCounts.pending})
+      </TabsTrigger>
+      <TabsTrigger value="completed" className="flex items-center gap-2">
+        <CheckCircle2 className="h-4 w-4" />
+        Completed ({taskCounts.completed})
+      </TabsTrigger>
+    </TabsList>
 
-          <TabsContent value="assigned" className="space-y-6">
-            <div className="grid gap-6">
-              {getTasksByStatus('assigned').map(renderTaskCard)}
-            </div>
-          </TabsContent>
+    <TabsContent value="assigned" className="space-y-6">
+      <div className="grid gap-6">
+        {[...clusters, ...pendingClusters]
+          .filter(task => getStatus(task) === 'assigned' || getStatus(task) === 'pending')
+          .map(task => (
+            <React.Fragment key={`${task.status}-${task.id}`}>
+              {renderTaskCard(task)}
+            </React.Fragment>
+          ))}
+      </div>
+    </TabsContent>
+
+
+
 
           <TabsContent value="pending" className="space-y-6">
-            <div className="grid gap-6">{getTasksByStatus('pending').map(renderTaskCard)}</div>
-          </TabsContent>
+  <div className="grid gap-6">
+    {pendingClusters.map(renderTaskCard)}
+  </div>
+</TabsContent>
+
 
           <TabsContent value="completed" className="space-y-6">
             <div className="grid gap-6">{getTasksByStatus('completed').map(renderTaskCard)}</div>

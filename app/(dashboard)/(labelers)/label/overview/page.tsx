@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { fetchAssignedClusters } from '@/services/apis/clusters'
+import { fetchAssignedClusters, fetchTaskProgress } from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
 
 const getTypeIcon = (type: string) => {
@@ -27,33 +27,42 @@ const getTypeIcon = (type: string) => {
 }
 
 // 🔹 Hardcoded label categories
-const HARDCODED_LABEL_CHOICES = [
-  'Electronics',
-  'Clothing',
-  'Home & Garden',
-  'Sports',
-]
+const HARDCODED_LABEL_CHOICES = ['Electronics', 'Clothing', 'Home & Garden', 'Sports']
 
 const LabelerDashboard = () => {
-  const [clusters, setClusters] = useState<AssignedCluster[]>([])
+  const [clusters, setClusters] = useState<(AssignedCluster & { progress?: any })[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadClusters = async () => {
-      try {
-        setLoading(true)
-        const data = await fetchAssignedClusters()
-        setClusters(data)
-      } catch  {
-        setError('Failed to load tasks')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const loadClusters = async () => {
+    try {
+      setLoading(true)
+      const data = await fetchAssignedClusters()
 
-    loadClusters()
-  }, [])
+      // fetch progress for each cluster
+      const enriched = await Promise.all(
+        data.map(async (cluster) => {
+          try {
+            const progress = await fetchTaskProgress(cluster.id)
+            return { ...cluster, progress }
+          } catch {
+            return { ...cluster, progress: null }
+          }
+        })
+      )
+
+      setClusters(enriched)
+    } catch (err) {
+      setError('Failed to load tasks')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  loadClusters()
+}, [])
+
 
   return (
     <div className="min-h-screen">
@@ -192,11 +201,18 @@ const LabelerDashboard = () => {
                     <div className="flex justify-between text-sm mb-2">
                       <span>Progress</span>
                       <span>
-                        {task.tasks_count - task.pending_tasks} / {task.tasks_count} items
+                        {task.progress
+                          ? `${task.progress.completed_tasks}/${task.progress.total_tasks}`
+                          : `${task.tasks_count - task.pending_tasks}/${task.tasks_count}`}{' '}
+                        items
                       </span>
                     </div>
                     <Progress
-                      value={((task.tasks_count - task.pending_tasks) / task.tasks_count) * 100}
+                      value={
+                        task.progress
+                          ? task.progress.completion_percentage
+                          : ((task.tasks_count - task.pending_tasks) / task.tasks_count) * 100
+                      }
                       className="h-2"
                     />
                   </div>
@@ -222,7 +238,10 @@ const LabelerDashboard = () => {
                   <div className="flex items-center justify-between pt-2">
                     <div className="text-sm text-muted-foreground">
                       <Clock className="h-4 w-4 inline mr-1" />
-                      Due: {new Date(task.deadline).toLocaleDateString()}
+                      Due:{' '}
+                      {new Date(
+                        task.progress?.deadline || task.deadline
+                      ).toLocaleDateString()}
                     </div>
                     <Link href={`/label/${task.id}`}>
                       <Button variant="default">
