@@ -30,88 +30,92 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getUserDetails } from '@/services/apis/user'
 import { useGlobalStore } from '@/context/store'
 
-
-export function AppSidebar({userRole}:{userRole:string}) {
+export function AppSidebar({ userRole }: { userRole: string }) {
   const clientItems = [
-  {
-    title: 'Dashboard',
-    url: '/client/overview',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Projects',
-    url: '/client/projects',
-    icon: Clock,
-  },
-  {
-    title: 'Api Keys',
-    url: '/client/api-keys',
-    icon: Key,
-  },
-  {
-    title: 'Payments',
-    url: '/client/payment',
-    icon: CreditCard,
-  },
-  {
-    title: 'Profile',
-    url: '/client/profile',
-    icon: User,
-  },
-]
+    {
+      title: 'Dashboard',
+      url: '/client/overview',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Projects',
+      url: '/client/projects',
+      icon: Clock,
+    },
+    {
+      title: 'Api Keys',
+      url: '/client/api-keys',
+      icon: Key,
+    },
+    {
+      title: 'Payments',
+      url: '/client/payment',
+      icon: CreditCard,
+    },
+    {
+      title: 'Profile',
+      url: '/client/profile',
+      icon: User,
+    },
+  ]
 
-const LabelerItems = [
-  {
-    title: 'Dashboard',
-    url: '/label/overview',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Tasks',
-    url: '/label/tasks',
-    icon: Clock,
-  },
-  // {
-  //   title: 'Api Keys',
-  //   url: '/label/api-keys',
-  //   icon: Key,
-  // },
-  // {
-  //   title: 'Payments',
-  //   url: '/dashboard/payment',
-  //   icon: CreditCard,
-  // },
-  {
-    title: 'Profile',
-    url: '/label/profile',
-    icon: User,
-  },
-]
+  const LabelerItems = [
+    {
+      title: 'Dashboard',
+      url: '/label/overview',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Tasks',
+      url: '/label/tasks',
+      icon: Clock,
+    },
+    // {
+    //   title: 'Api Keys',
+    //   url: '/label/api-keys',
+    //   icon: Key,
+    // },
+    // {
+    //   title: 'Payments',
+    //   url: '/dashboard/payment',
+    //   icon: CreditCard,
+    // },
+    {
+      title: 'Profile',
+      url: '/label/profile',
+      icon: User,
+    },
+  ]
 
-const adminItems = [
-  {
-    title: 'Dashboard',
-    url: '/admin',
-    icon: LayoutDashboard,
-  },
-  {
-    title: 'Labelers',
-    url: '/admin?tab=labelers',
-    icon: Clock,
-  },
-  {
-    title: 'Assignments',
-    url: '/admin/?tab=assignments',
-    icon: User,
-  },
-  {
-    title: 'Settings',
-    url: '/admin/profile',
-    icon: Key,
-  },
-]
+  const adminItems = [
+    {
+      title: 'Dashboard',
+      url: '/admin',
+      icon: LayoutDashboard,
+    },
+    {
+      title: 'Labelers',
+      url: '/admin?tab=labelers',
+      icon: Clock,
+    },
+    {
+      title: 'Assignments',
+      url: '/admin/?tab=assignments',
+      icon: User,
+    },
+    {
+      title: 'Settings',
+      url: '/admin/profile',
+      icon: Key,
+    },
+  ]
 
-const items = userRole === 'client' ? clientItems : userRole === 'admin' ? adminItems : LabelerItems
+  const items =
+    userRole === 'client'
+      ? clientItems
+      : userRole === 'admin'
+        ? adminItems
+        : LabelerItems
   const { setUser, setIsLoggedIn } = useGlobalStore()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userName, setUserName] = useState('')
@@ -130,8 +134,20 @@ const items = userRole === 'client' ? clientItems : userRole === 'admin' ? admin
     if (data) {
       setUserName(data.user.username)
       setUserEmail(data.user.email)
+
+      if (userRole === 'admin' && !data.user.is_admin) {
+        if (data.user.is_reviewer) {
+          return router.push(`/label/overview`)
+        }
+        return router.push(`/client/overview`)
+      } else if (userRole === 'labeler' && !data.user.is_reviewer) {
+        if (data.user.is_admin) {
+          return router.push(`/admin`)
+        }
+        return router.push(`/client/overview`)
+      }
     }
-  }, [data])
+  }, [data, router, userRole])
 
   useEffect(() => {
     const token = localStorage.getItem(ACCESS_TOKEN_KEY)
@@ -151,7 +167,7 @@ const items = userRole === 'client' ? clientItems : userRole === 'admin' ? admin
       description: 'You have been logged out of your account',
     })
     queryClient.invalidateQueries({ queryKey: ['offer-ride'] })
-    router.push('/')
+    router.push('/auth/login')
   }
 
   const isActivePath = (path: string) => pathname === path

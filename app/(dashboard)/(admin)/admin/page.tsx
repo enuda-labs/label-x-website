@@ -8,6 +8,8 @@ import { Settings } from 'lucide-react'
 import Link from 'next/link'
 import AdminDashboardContent from './overview'
 
+export const dynamic = 'force-dynamic'
+
 function DashboardFallback() {
   return (
     <div className="container mx-auto px-4 py-8">
@@ -29,6 +31,7 @@ export default function AdminDashboard() {
     params.set('tab', value)
     router.push(`?${params.toString()}`)
   }
+
   return (
     <div className="min-h-screen">
       <div className="bg-card/30 supports-[backdrop-filter]:bg-card/60 border-b backdrop-blur">

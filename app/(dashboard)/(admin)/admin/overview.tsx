@@ -1,71 +1,181 @@
-'use client';
+'use client'
 
-import { useState, } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {  Users, FolderOpen, Plus } from "lucide-react";
-import Link from "next/link";
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Users, FolderOpen, Plus, Loader } from 'lucide-react'
+import Link from 'next/link'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { getProjects } from '@/services/apis/project'
+import {
+  addReviewer,
+  listReviewers,
+  removeReviewer,
+} from '@/services/apis/reviewers'
+import { Skeleton } from '@/components/ui/skeleton'
 
-const mockProjects = [
-  {
-    id: 1,
-    name: "Image Classification Project",
-    type: "IMAGE",
-    status: "Active",
-    totalTasks: 150,
-    completedTasks: 45,
-    assignedLabelers: 3,
-    deadline: "2025-09-15"
-  },
-  {
-    id: 2,
-    name: "Text Sentiment Analysis",
-    type: "TEXT",
-    status: "Active",
-    totalTasks: 300,
-    completedTasks: 120,
-    assignedLabelers: 5,
-    deadline: "2025-09-30"
-  },
-  {
-    id: 3,
-    name: "Document Review",
-    type: "PDF",
-    status: "Completed",
-    totalTasks: 50,
-    completedTasks: 50,
-    assignedLabelers: 2,
-    deadline: "2025-08-20"
-  }
-];
+// const mockProjects = [
+//   {
+//     id: 1,
+//     name: 'Image Classification Project',
+//     type: 'IMAGE',
+//     status: 'Active',
+//     totalTasks: 150,
+//     completedTasks: 45,
+//     assignedLabelers: 3,
+//     deadline: '2025-09-15',
+//   },
+//   {
+//     id: 2,
+//     name: 'Text Sentiment Analysis',
+//     type: 'TEXT',
+//     status: 'Active',
+//     totalTasks: 300,
+//     completedTasks: 120,
+//     assignedLabelers: 5,
+//     deadline: '2025-09-30',
+//   },
+//   {
+//     id: 3,
+//     name: 'Document Review',
+//     type: 'PDF',
+//     status: 'Completed',
+//     totalTasks: 50,
+//     completedTasks: 50,
+//     assignedLabelers: 2,
+//     deadline: '2025-08-20',
+//   },
+// ]
 
-const mockLabelers = [
-  { id: 1, name: "John Doe", email: "john@example.com", status: "Active", completedTasks: 45, accuracy: 95 },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", status: "Active", completedTasks: 78, accuracy: 92 },
-  { id: 3, name: "Mike Johnson", email: "mike@example.com", status: "Inactive", completedTasks: 23, accuracy: 88 },
-  { id: 4, name: "Sarah Wilson", email: "sarah@example.com", status: "Active", completedTasks: 67, accuracy: 97 },
-  { id: 5, name: "David Brown", email: "david@example.com", status: "Active", completedTasks: 34, accuracy: 91 }
-];
+// const mockLabelers = [
+//   {
+//     id: 1,
+//     name: 'John Doe',
+//     email: 'john@example.com',
+//     status: 'Active',
+//     completedTasks: 45,
+//     accuracy: 95,
+//   },
+//   {
+//     id: 2,
+//     name: 'Jane Smith',
+//     email: 'jane@example.com',
+//     status: 'Active',
+//     completedTasks: 78,
+//     accuracy: 92,
+//   },
+//   {
+//     id: 3,
+//     name: 'Mike Johnson',
+//     email: 'mike@example.com',
+//     status: 'Inactive',
+//     completedTasks: 23,
+//     accuracy: 88,
+//   },
+//   {
+//     id: 4,
+//     name: 'Sarah Wilson',
+//     email: 'sarah@example.com',
+//     status: 'Active',
+//     completedTasks: 67,
+//     accuracy: 97,
+//   },
+//   {
+//     id: 5,
+//     name: 'David Brown',
+//     email: 'david@example.com',
+//     status: 'Active',
+//     completedTasks: 34,
+//     accuracy: 91,
+//   },
+// ]
 
-export default function AdminDashboardContent({currentTab, handleTabChange}:{currentTab: string, handleTabChange: (value: string) => void}) {
+export default function AdminDashboardContent({
+  currentTab,
+  handleTabChange,
+}: {
+  currentTab: string
+  handleTabChange: (value: string) => void
+}) {
+  const queryClient = useQueryClient()
+  const [selectedProject, setSelectedProject] = useState<number | null>(null)
+  const [selectedLabelers, setSelectedLabelers] = useState<number[]>([])
 
-  const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [selectedLabelers, setSelectedLabelers] = useState<number[]>([]);
+  const { data: labelers = [] } = useQuery({
+    queryKey: ['labelers'],
+    queryFn: listReviewers,
+  })
 
-  
+  const { data: projects, isPending: isFetchingProjects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: getProjects,
+  })
+
+  const { mutate: toggleActiveMutation, isPending: isToggling } = useMutation({
+    mutationFn: async () => {},
+  })
+
+  const { mutate: addReviewerMutation, isPending: isAdding } = useMutation({
+    mutationFn: addReviewer,
+    onSuccess: () => {
+      setSelectedLabelers([])
+      setSelectedProject(null)
+      queryClient.invalidateQueries({ queryKey: ['labelers'] })
+    },
+  })
+
+  const { mutate: removeReviewerMutation, isPending: isRemoving } = useMutation(
+    {
+      mutationFn: removeReviewer,
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['labelers'] })
+      },
+    }
+  )
+
+  // useEffect(() => {
+  //   if (projectsData?.projects) {
+  //     setProjects(projectsData.projects)
+  //   }
+  // }, [projectsData])
+
   const handleAssignLabelers = () => {
     // integrate with API here
-    console.log(`Assigning labelers ${selectedLabelers} to project ${selectedProject}`);
-  };
+    if (!selectedProject) return
+
+    selectedLabelers.map((labelerId) => {
+      addReviewerMutation({
+        user_id: labelerId,
+        group_id: selectedProject,
+      })
+    })
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs
+        value={currentTab}
+        onValueChange={handleTabChange}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="projects">
             <FolderOpen className="mr-2 h-4 w-4" />
@@ -88,38 +198,62 @@ export default function AdminDashboardContent({currentTab, handleTabChange}:{cur
           </div>
 
           <div className="grid gap-4">
-            {mockProjects.map((project) => (
-              <Card key={project.id} className="p-6 bg-card/20">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold">{project.name}</h3>
-                      <Badge variant={project.status === "Active" ? "default" : "secondary"}>
-                        {project.status}
-                      </Badge>
-                      <Badge variant="outline">{project.type}</Badge>
+            {isFetchingProjects ? (
+              <>
+                <Skeleton className="h-28 bg-white/5" />
+                <Skeleton className="h-28 bg-white/5" />
+                <Skeleton className="h-28 bg-white/5" />
+                <Skeleton className="h-28 bg-white/5" />
+              </>
+            ) : (
+              projects?.projects.map((project) => (
+                <Card key={project.id} className="bg-card/20 p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-semibold">
+                          {project.name}
+                        </h3>
+                        <Badge
+                          variant={
+                            project.status === 'completed'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                          className="capitalize"
+                        >
+                          {project.status}
+                        </Badge>
+                        {/* <Badge variant="outline">{project.type}</Badge> */}
+                      </div>
+                      <p className="text-muted-foreground text-sm">
+                        Progress: {project.task_stats.completed_tasks}/
+                        {project.task_stats.total_tasks} tasks completed
+                      </p>
+                      {/* <p className="text-muted-foreground text-sm">
+                      Assigned Labelers: {project.assignedLabelers} | Deadline:{' '}
+                      {project.deadline}
+                    </p> */}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Progress: {project.completedTasks}/{project.totalTasks} tasks completed
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Assigned Labelers: {project.assignedLabelers} | Deadline: {project.deadline}
-                    </p>
+                    <div className="flex space-x-2">
+                      <Button asChild size="sm">
+                        <Link href={`/admin/projects/${project.id}`}>
+                          Manage
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button asChild size="sm">
-                      <Link href={`/admin/projects/${project.id}`}>Manage</Link>
-                    </Button>
+                  <div className="bg-secondary mt-4 h-2 w-full rounded-full">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all"
+                      style={{
+                        width: `${(project.task_stats.completed_tasks / project.task_stats.total_tasks) * 100}%`,
+                      }}
+                    />
                   </div>
-                </div>
-                <div className="mt-4 w-full bg-secondary rounded-full h-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full transition-all" 
-                    style={{ width: `${(project.completedTasks / project.totalTasks) * 100}%` }}
-                  />
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
 
@@ -146,22 +280,42 @@ export default function AdminDashboardContent({currentTab, handleTabChange}:{cur
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockLabelers.map((labeler) => (
+                {labelers.map((labeler) => (
                   <TableRow key={labeler.id}>
-                    <TableCell className="font-medium">{labeler.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {labeler.username}
+                    </TableCell>
                     <TableCell>{labeler.email}</TableCell>
                     <TableCell>
-                      <Badge variant={labeler.status === "Active" ? "default" : "secondary"}>
-                        {labeler.status}
+                      <Badge
+                        variant={labeler.is_active ? 'default' : 'secondary'}
+                      >
+                        {labeler.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{labeler.completedTasks}</TableCell>
-                    <TableCell>{labeler.accuracy}%</TableCell>
+                    <TableCell>{'labeler.completedTasks'}</TableCell>
+                    <TableCell>{'labeler.accuracy'}%</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">Edit</Button>
-                        <Button variant="outline" size="sm">
-                          {labeler.status === "Active" ? "Deactivate" : "Activate"}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeReviewerMutation(labeler.id)}
+                        >
+                          {isRemoving ? <Loader size="sm" /> : 'Remove'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleActiveMutation()}
+                        >
+                          {isToggling ? (
+                            <Loader size="sm" />
+                          ) : labeler.is_active ? (
+                            'Deactivate'
+                          ) : (
+                            'Activate'
+                          )}
                         </Button>
                       </div>
                     </TableCell>
@@ -175,20 +329,28 @@ export default function AdminDashboardContent({currentTab, handleTabChange}:{cur
         {/* Assignments Tab */}
         <TabsContent value="assignments" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Assign Labelers to Projects</h2>
+            <h2 className="text-xl font-semibold">
+              Assign Labelers to Projects
+            </h2>
           </div>
 
           <Card className="p-6">
             <div className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="project-select">Select Project</Label>
-                <Select onValueChange={(value) => setSelectedProject(Number(value))}>
+                <Select
+                  onValueChange={(value) => setSelectedProject(Number(value))}
+                  value={selectedProject?.toString()}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a project" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockProjects.filter(p => p.status === "Active").map((project) => (
-                      <SelectItem key={project.id} value={project.id.toString()}>
+                    {projects?.projects.map((project) => (
+                      <SelectItem
+                        key={project.id}
+                        value={project.id.toString()}
+                      >
                         {project.name}
                       </SelectItem>
                     ))}
@@ -198,48 +360,69 @@ export default function AdminDashboardContent({currentTab, handleTabChange}:{cur
 
               <div className="space-y-4">
                 <Label>Select Labelers to Assign</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockLabelers.filter(l => l.status === "Active").map((labeler) => (
-                    <Card key={labeler.id} className="p-4">
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          id={`labeler-${labeler.id}`}
-                          checked={selectedLabelers.includes(labeler.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedLabelers([...selectedLabelers, labeler.id]);
-                            } else {
-                              setSelectedLabelers(selectedLabelers.filter(id => id !== labeler.id));
-                            }
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        <div className="flex-1">
-                          <label htmlFor={`labeler-${labeler.id}`} className="font-medium cursor-pointer">
-                            {labeler.name}
-                          </label>
-                          <p className="text-sm text-muted-foreground">{labeler.email}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Accuracy: {labeler.accuracy}% | Tasks: {labeler.completedTasks}
-                          </p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {labelers
+                    .filter((l) => l.is_active)
+                    .map((labeler) => (
+                      <Card key={labeler.id} className="p-4">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id={`labeler-${labeler.id}`}
+                            checked={selectedLabelers.includes(labeler.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedLabelers([
+                                  ...selectedLabelers,
+                                  labeler.id,
+                                ])
+                              } else {
+                                setSelectedLabelers(
+                                  selectedLabelers.filter(
+                                    (id) => id !== labeler.id
+                                  )
+                                )
+                              }
+                            }}
+                            className="cursor-pointer rounded border-gray-300"
+                          />
+                          <div className="flex-1">
+                            <label
+                              htmlFor={`labeler-${labeler.id}`}
+                              className="cursor-pointer font-medium"
+                            >
+                              {labeler.username}
+                            </label>
+                            <p className="text-muted-foreground text-sm">
+                              {labeler.email}
+                            </p>
+                            <p className="text-muted-foreground text-sm">
+                              {/* Accuracy: {labeler.}% | */}
+                              Assigned Tasks: {labeler.assigned_clusters.length}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))}
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleAssignLabelers}
+                disabled={
+                  selectedLabelers.length === 0 || !selectedProject || isAdding
+                }
               >
-                Assign Selected Labelers
+                {isAdding ? (
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  'Assign Selected Labelers'
+                )}
               </Button>
             </div>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }
-
