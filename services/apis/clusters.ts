@@ -39,6 +39,15 @@ export const fetchAvailableTasks = async (): Promise<AvailableTask[]> => {
 }
 
 
+
+export const assignTaskToMe = async (clusterId: number) => {
+  const response = await axiosClient.post('/tasks/cluster/assign-to-self/', {
+    cluster: clusterId,
+  })
+  return response.data
+}
+
+
 // --- Annotate API (same style as above) ---
 export const annotateTask = async (payload: { task_id: number; labels: string[] }) => {
   const response = await axiosClient.post('/tasks/annotate/', payload)

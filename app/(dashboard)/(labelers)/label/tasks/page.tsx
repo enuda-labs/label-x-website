@@ -1,6 +1,7 @@
 'use client'
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   User,
@@ -32,6 +33,9 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { fetchAssignedClusters,fetchPendingClusters } from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
+import { getUserDetails } from '@/services/apis/user'
+
+
 
 // 🔹 Hardcoded label categories
 const HARDCODED_LABEL_CHOICES = [
@@ -74,6 +78,27 @@ console.log(loading)
     params.set('task', value)
     router.push(`?${params.toString()}`)
   }
+
+
+
+  // fetch user details
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: getUserDetails,
+  })
+
+  console.log("userData from query:", userData)
+
+  const username = userData?.user?.username ?? "Unknown User"
+
+  // derive role
+  let role = "No role"
+  if (userData?.user?.is_admin) role = "Admin"
+  else if (userData?.user?.is_reviewer) role = "Reviewer"
+  else role = "User"
+
+
+
 
   useEffect(() => {
     const load = async () => {
@@ -150,53 +175,58 @@ console.log(loading)
 
   const taskCounts = getTaskCounts()
 
-  const renderTaskCard = (task: AssignedCluster) => (
+  const renderTaskCard = (task: AssignedCluster) => {
+  // ✅ Fallbacks to avoid NaN
+  const totalTasks = task.tasks_count ?? 0
+  const pendingTasks = task.pending_tasks ?? 0
+  const completedTasks = totalTasks - pendingTasks
+  const progress =
+    totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+
+  return (
     <Card
       key={task.id}
       className="shadow-soft bg-card/20 hover:shadow-glow transition-all duration-300"
     >
-    <CardHeader>
-    <div className="flex items-start gap-3">
-      {/* 🔹 Type Icon */}
-      <div className="p-2 bg-primary/10 rounded-lg">
-        {getTypeIcon(task.task_type)}
-      </div>
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          {/* 🔹 Type Icon */}
+          <div className="p-2 bg-primary/10 rounded-lg">
+            {getTypeIcon(task.task_type)}
+          </div>
 
-      <div>
-        <CardTitle className="text-lg">{task.project_name}</CardTitle>
-        <p className="text-sm text-muted-foreground mt-1">
-          {task.labeller_instructions}
-        </p>
+          <div>
+            <CardTitle className="text-lg">{task.project_name}</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              {task.labeller_instructions}
+            </p>
 
-        <div className="flex items-center gap-2 mt-2 text-sm">
-    {getStatus(task) === 'assigned' && (
-      <span className="flex items-center text-blue-500">
-        <AlertCircle className="h-4 w-4 mr-1" />
-        Assigned
-      </span>
-    )}
-    {getStatus(task) === 'pending' && (
-      <span className="flex items-center text-yellow-500">
-        <PlayCircle className="h-4 w-4 mr-1" />
-        Pending
-      </span>
-    )}
-    {getStatus(task) === 'completed' && (
-      <span className="flex items-center text-green-500">
-        <CheckCircle2 className="h-4 w-4 mr-1" />
-        Completed
-      </span>
-    )}
-  
+            <div className="flex items-center gap-2 mt-2 text-sm">
+              {getStatus(task) === 'assigned' && (
+                <span className="flex items-center text-blue-500">
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Assigned
+                </span>
+              )}
+              {getStatus(task) === 'pending' && (
+                <span className="flex items-center text-yellow-500">
+                  <PlayCircle className="h-4 w-4 mr-1" />
+                  Pending
+                </span>
+              )}
+              {getStatus(task) === 'completed' && (
+                <span className="flex items-center text-green-500">
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Completed
+                </span>
+              )}
 
-    {/* Example extra badge for difficulty */}
-    <span className="text-xs text-muted-foreground">MEDIUM</span>
-  </div>
-
-      </div>
-    </div>
-  </CardHeader>
-
+              {/* Example extra badge for difficulty */}
+              <span className="text-xs text-muted-foreground">MEDIUM</span>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
 
       <CardContent className="space-y-4">
         {/* Progress */}
@@ -204,15 +234,10 @@ console.log(loading)
           <div className="flex justify-between text-sm mb-2">
             <span>Progress</span>
             <span>
-              {task.tasks_count - task.pending_tasks} / {task.tasks_count} items
+              {completedTasks} / {totalTasks} items
             </span>
           </div>
-          <Progress
-            value={
-              ((task.tasks_count - task.pending_tasks) / task.tasks_count) * 100
-            }
-            className="h-2"
-          />
+          <Progress value={progress} className="h-2" />
         </div>
 
         {/* Hardcoded Label Options */}
@@ -250,6 +275,7 @@ console.log(loading)
       </CardContent>
     </Card>
   )
+}
 
   return (
     <div className="min-h-screen">
@@ -258,7 +284,7 @@ console.log(loading)
           <span className="text-muted-foreground">All Projects</span>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <User className="h-4 w-4" />
-            John Labeler
+              {userLoading ? "Loading..." : `${username} (${role})`}
           </div>
         </div>
       </header>
@@ -315,30 +341,23 @@ console.log(loading)
     </TabsList>
 
     <TabsContent value="assigned" className="space-y-6">
-      <div className="grid gap-6">
-        {[...clusters, ...pendingClusters]
-          .filter(task => getStatus(task) === 'assigned' || getStatus(task) === 'pending')
-          .map(task => (
-            <React.Fragment key={`${task.status}-${task.id}`}>
-              {renderTaskCard(task)}
-            </React.Fragment>
-          ))}
-      </div>
-    </TabsContent>
+    <div className="grid gap-6">
+      {getTasksByStatus('assigned').map(renderTaskCard)}
+    </div>
+  </TabsContent>
 
+  <TabsContent value="pending" className="space-y-6">
+    <div className="grid gap-6">
+      {pendingClusters.map(renderTaskCard)}
+    </div>
+  </TabsContent>
 
+  <TabsContent value="completed" className="space-y-6">
+    <div className="grid gap-6">
+      {getTasksByStatus('completed').map(renderTaskCard)}
+    </div>
+  </TabsContent>
 
-
-          <TabsContent value="pending" className="space-y-6">
-  <div className="grid gap-6">
-    {pendingClusters.map(renderTaskCard)}
-  </div>
-</TabsContent>
-
-
-          <TabsContent value="completed" className="space-y-6">
-            <div className="grid gap-6">{getTasksByStatus('completed').map(renderTaskCard)}</div>
-          </TabsContent>
         </Tabs>
       </main>
     </div>

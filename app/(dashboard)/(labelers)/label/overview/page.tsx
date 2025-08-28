@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { Clock, FileText, Video, Database, ChevronRight, User, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,6 +10,9 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { fetchAssignedClusters, fetchTaskProgress } from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
+import { getUserDetails } from '@/services/apis/user'
+
+
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -33,6 +37,24 @@ const LabelerDashboard = () => {
   const [clusters, setClusters] = useState<(AssignedCluster & { progress?: any })[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+
+  // fetch user details
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: getUserDetails,
+  })
+
+  console.log("userData from query:", userData)
+
+  const username = userData?.user?.username ?? "Unknown User"
+
+  // derive role
+  let role = "No role"
+  if (userData?.user?.is_admin) role = "Admin"
+  else if (userData?.user?.is_reviewer) role = "Reviewer"
+  else role = "User"
+
 
   useEffect(() => {
   const loadClusters = async () => {
@@ -75,7 +97,7 @@ const LabelerDashboard = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
-                John Labeler
+                  {userLoading ? "Loading..." : `${username} (${role})`}
               </div>
             </div>
           </div>
