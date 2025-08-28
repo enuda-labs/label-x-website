@@ -6,6 +6,7 @@ import {
   CreditCard,
   User,
   LogOut,
+  ClipboardList,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -71,11 +72,11 @@ const LabelerItems = [
     url: '/label/tasks',
     icon: Clock,
   },
-  // {
-  //   title: 'Api Keys',
-  //   url: '/label/api-keys',
-  //   icon: Key,
-  // },
+  {
+    title: 'Available Tasks',
+    url: '/label/available-tasks',
+    icon: ClipboardList,
+  },
   // {
   //   title: 'Payments',
   //   url: '/dashboard/payment',

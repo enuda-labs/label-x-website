@@ -1,5 +1,8 @@
 import { AxiosClient } from '@/utils/axios'
 import { AssignedCluster } from '@/types/clusters'
+import { AvailableTask } from '@/types/availableTasks'
+
+
 
 const axiosClient = new AxiosClient()
 
@@ -24,6 +27,17 @@ export const fetchTaskById = async (taskId: string | number) => {
   const response = await axiosClient.get(`/tasks/cluster/${taskId}/`)
   return response.data // full task details
 }
+
+
+
+export const fetchAvailableTasks = async (): Promise<AvailableTask[]> => {
+  const response = await axiosClient.get<{
+    status: string
+    data: { available_tasks: AvailableTask[]; total_available: number; assigned_clusters: number }
+  }>('/tasks/available-for-annotation/')
+  return response.data.data.available_tasks
+}
+
 
 // --- Annotate API (same style as above) ---
 export const annotateTask = async (payload: { task_id: number; labels: string[] }) => {
