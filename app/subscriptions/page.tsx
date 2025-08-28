@@ -5,8 +5,11 @@ import Navbar from '@/components/shared/navbar'
 import { GridBackground } from '@/components/shared/grid-line'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { useQuery } from '@tanstack/react-query'
-import { getSubscriptionPlans } from '@/services/apis/subscription'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import {
+  getSubscriptionPlans,
+  initializeSubscription,
+} from '@/services/apis/subscription'
 import { getUserDetails } from '@/services/apis/user'
 import { planFeats } from '@/utils'
 
@@ -20,6 +23,13 @@ const Subscriptions = () => {
   const { data: user } = useQuery({
     queryKey: ['user'],
     queryFn: getUserDetails,
+  })
+
+  const { mutate: subscriptionMutation, isPending } = useMutation({
+    mutationFn: initializeSubscription,
+    onSuccess: (data) => {
+      router.push(data.data.payment_url)
+    },
   })
 
   return (
@@ -83,13 +93,18 @@ const Subscriptions = () => {
                       className="bg-primary hover:bg-primary/90 w-full cursor-pointer"
                       onClick={() =>
                         user
-                          ? router.push('dashboard')
+                          ? subscriptionMutation(plan.id)
                           : router.push(
                               `/auth/login?plan=${plan.name}&returnTo=%2Fdashboard`
                             )
                       }
+                      disabled={isPending}
                     >
-                      Get Started
+                      {isPending ? (
+                        <div className="mx-auto h-[24px] w-[24px] animate-spin rounded-full border-[3px] border-solid border-[rgba(0,0,0,0.2)] border-t-[#fff]"></div>
+                      ) : (
+                        'Get Started'
+                      )}
                     </Button>
                   </div>
                 ))}
