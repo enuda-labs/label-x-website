@@ -31,6 +31,7 @@ import {
   removeReviewer,
 } from '@/services/apis/reviewers'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 // const mockProjects = [
 //   {
@@ -108,13 +109,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 //   },
 // ]
 
-export default function AdminDashboardContent({
-  currentTab,
-  handleTabChange,
-}: {
-  currentTab: string
-  handleTabChange: (value: string) => void
-}) {
+export default function AdminDashboardContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   const queryClient = useQueryClient()
   const [selectedProject, setSelectedProject] = useState<number | null>(null)
   const [selectedLabelers, setSelectedLabelers] = useState<number[]>([])
@@ -150,6 +148,14 @@ export default function AdminDashboardContent({
       },
     }
   )
+
+  const currentTab = searchParams.get('tab') || 'projects'
+
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('tab', value)
+    router.push(`?${params.toString()}`)
+  }
 
   // useEffect(() => {
   //   if (projectsData?.projects) {
