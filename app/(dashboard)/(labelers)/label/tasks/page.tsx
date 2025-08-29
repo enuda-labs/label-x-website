@@ -1,6 +1,7 @@
 'use client'
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   User,
@@ -30,8 +31,12 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { fetchAssignedClusters } from '@/services/apis/clusters'
+import {
+  fetchAssignedClusters,
+  fetchPendingClusters,
+} from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
+import { getUserDetails } from '@/services/apis/user'
 
 // 🔹 Hardcoded label categories
 const HARDCODED_LABEL_CHOICES = [
@@ -40,7 +45,6 @@ const HARDCODED_LABEL_CHOICES = [
   'Home & Garden',
   'Sports',
 ]
-
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -62,31 +66,61 @@ const ProjectsContent = () => {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [clusters, setClusters] = useState<AssignedCluster[]>([])
-  const [loading, setLoading] = useState(true)
+  const [pendingClusters, setPendingClusters] = useState<AssignedCluster[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [loading, setLoading] = useState(true)
 
   const currentTab = searchParams.get('task') || 'assigned'
-console.log(loading)
+  console.log(loading)
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams)
     params.set('task', value)
     router.push(`?${params.toString()}`)
   }
 
+  // fetch user details
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: getUserDetails,
+  })
+
+  const username = userData?.user?.username ?? 'Unknown User'
+
+  // derive role
+  let role = 'No role'
+  if (userData?.user?.is_admin) role = 'Admin'
+  else if (userData?.user?.is_reviewer) role = 'Reviewer'
+  else role = 'User'
+
   useEffect(() => {
-    const loadClusters = async () => {
+    const load = async () => {
       try {
         setLoading(true)
-        const data = await fetchAssignedClusters()
-        setClusters(data)
+        const [assigned, pending] = await Promise.all([
+          fetchAssignedClusters(),
+          fetchPendingClusters(),
+        ])
+
+        // Add status dynamically
+        const assignedWithStatus = assigned.map((task) => ({
+          ...task,
+          status: task.pending_tasks === 0 ? 'completed' : 'assigned',
+        }))
+        const pendingWithStatus = pending.map((task) => ({
+          ...task,
+          status: 'pending',
+        }))
+
+        setClusters(assignedWithStatus)
+        setPendingClusters(pendingWithStatus)
       } catch (err) {
-        console.error('Error fetching clusters:', err)
+        console.error('Error fetching clusters', err)
       } finally {
         setLoading(false)
       }
     }
-    loadClusters()
+    load()
   }, [])
 
   const filteredTasks = useMemo(() => {
@@ -101,135 +135,143 @@ console.log(loading)
     })
   }, [searchTerm, typeFilter, clusters])
 
-  const getStatus = (task: AssignedCluster) => {
-    if (task.pending_tasks === 0) return 'completed'
-    if (task.pending_tasks === task.tasks_count) return 'assigned'
-    return 'pending'
-  }
+  const getStatus = (task: AssignedCluster) => task.status
 
   const getTasksByStatus = (status: string) => {
     return filteredTasks.filter((task) => getStatus(task) === status)
   }
-
   const getTaskCounts = () => {
     return {
-      assigned: filteredTasks.filter((t) => getStatus(t) === 'assigned').length,
-      pending: filteredTasks.filter((t) => getStatus(t) === 'pending').length,
-      completed: filteredTasks.filter((t) => getStatus(t) === 'completed')
-        .length,
+      assigned: clusters.filter((t) => getStatus(t) === 'assigned').length,
+      pending: pendingClusters.length, // use API data
+      completed: clusters.filter((t) => getStatus(t) === 'completed').length,
+    }
+  }
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'assigned':
+        return 'destructive' // blue for assigned (or pick a blue variant)
+      case 'pending':
+        return 'secondary' // yellow for pending (or pick a yellow variant)
+      case 'completed':
+        return 'default' // green for completed
+      default:
+        return 'outline'
     }
   }
 
   const taskCounts = getTaskCounts()
 
-  const renderTaskCard = (task: AssignedCluster) => (
-    <Card
-      key={task.id}
-      className="shadow-soft bg-card/20 hover:shadow-glow transition-all duration-300"
-    >
-    <CardHeader>
-    <div className="flex items-start gap-3">
-      {/* 🔹 Type Icon */}
-      <div className="p-2 bg-primary/10 rounded-lg">
-        {getTypeIcon(task.task_type)}
-      </div>
+  const renderTaskCard = (task: AssignedCluster) => {
+    // ✅ Fallbacks to avoid NaN
+    const totalTasks = task.tasks_count ?? 0
+    const pendingTasks = task.pending_tasks ?? 0
+    const completedTasks = totalTasks - pendingTasks
+    const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
-      <div>
-        <CardTitle className="text-lg">{task.project_name}</CardTitle>
-        <p className="text-sm text-muted-foreground mt-1">
-          {task.labeller_instructions}
-        </p>
+    return (
+      <Card
+        key={task.id}
+        className="shadow-soft bg-card/20 hover:shadow-glow transition-all duration-300"
+      >
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            {/* 🔹 Type Icon */}
+            <div className="bg-primary/10 rounded-lg p-2">
+              {getTypeIcon(task.task_type)}
+            </div>
 
-        {/* 🔹 Status (text only, under description) */}
-        <div className="flex items-center gap-2 mt-2 text-sm">
-          {getStatus(task) === 'assigned' && (
-            <span className="flex items-center text-yellow-500">
-              <AlertCircle className="h-4 w-4 mr-1" />
-              Assigned
-            </span>
-          )}
-          {getStatus(task) === 'pending' && (
-            <span className="flex items-center text-blue-500">
-              <PlayCircle className="h-4 w-4 mr-1" />
-              Pending
-            </span>
-          )}
-          {getStatus(task) === 'completed' && (
-            <span className="flex items-center text-green-500">
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Completed
-            </span>
-          )}
+            <div>
+              <CardTitle className="text-lg">{task.project_name}</CardTitle>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {task.labeller_instructions}
+              </p>
 
-          {/* Example extra badge for difficulty */}
-          <span className="text-xs text-muted-foreground">MEDIUM</span>
-        </div>
-      </div>
-    </div>
-  </CardHeader>
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                {(() => {
+                  const status = getStatus(task)
+                  const safeStatus = status ?? 'pending' // fallback if undefined
+                  const icons: Record<string, React.ReactNode> = {
+                    assigned: <AlertCircle className="mr-1 h-4 w-4" />,
+                    pending: <PlayCircle className="mr-1 h-4 w-4" />,
+                    completed: <CheckCircle2 className="mr-1 h-4 w-4" />,
+                  }
+                  return (
+                    <Badge
+                      variant={getStatusBadgeVariant(safeStatus)}
+                      className="flex items-center"
+                    >
+                      {icons[safeStatus]}
+                      {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
+                    </Badge>
+                  )
+                })()}
 
-
-      <CardContent className="space-y-4">
-        {/* Progress */}
-        <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span>Progress</span>
-            <span>
-              {task.tasks_count - task.pending_tasks} / {task.tasks_count} items
-            </span>
-          </div>
-          <Progress
-            value={
-              ((task.tasks_count - task.pending_tasks) / task.tasks_count) * 100
-            }
-            className="h-2"
-          />
-        </div>
-
-        {/* Hardcoded Label Options */}
-        <div>
-          <p className="text-sm font-medium mb-2">Label Options:</p>
-          <div className="flex flex-wrap gap-2">
-            {HARDCODED_LABEL_CHOICES.map((choice, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {choice}
-              </Badge>
-            ))}
-            {task.input_type === 'text_input' && (
-              <Badge variant="outline" className="text-xs">
-                Text Input
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Footer with Status + Button */}
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-muted-foreground">
-              <Clock className="h-4 w-4 inline mr-1" />
-              Due: {new Date(task.deadline).toLocaleDateString()}
+                {/* Example extra badge for difficulty */}
+                <span className="text-muted-foreground text-xs">MEDIUM</span>
+              </div>
             </div>
           </div>
-          <Link href={`/label/${task.id}`}>
-            <Button variant="default">
-              Continue Labeling
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
-  )
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Progress */}
+          <div>
+            <div className="mb-2 flex justify-between text-sm">
+              <span>Progress</span>
+              <span>
+                {completedTasks} / {totalTasks} items
+              </span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+
+          {/* Hardcoded Label Options */}
+          <div>
+            <p className="mb-2 text-sm font-medium">Label Options:</p>
+            <div className="flex flex-wrap gap-2">
+              {HARDCODED_LABEL_CHOICES.map((choice, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {choice}
+                </Badge>
+              ))}
+              {task.input_type === 'text_input' && (
+                <Badge variant="outline" className="text-xs">
+                  Text Input
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Footer with Status + Button */}
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-3">
+              <div className="text-muted-foreground text-sm">
+                <Clock className="mr-1 inline h-4 w-4" />
+                Due: {new Date(task.deadline).toLocaleDateString()}
+              </div>
+            </div>
+            <Link href={`/label/${task.id}`}>
+              <Button variant="default">
+                Continue Labeling
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="min-h-screen">
       <header className="bg-card/20 border-b backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <span className="text-muted-foreground">All Projects</span>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <User className="h-4 w-4" />
-            John Labeler
+            {userLoading ? 'Loading...' : `${username} (${role})`}
           </div>
         </div>
       </header>
@@ -269,7 +311,11 @@ console.log(loading)
         </div>
 
         {/* Tabs */}
-        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+        <Tabs
+          value={currentTab}
+          onValueChange={handleTabChange}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
             <TabsTrigger value="assigned" className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
@@ -292,11 +338,15 @@ console.log(loading)
           </TabsContent>
 
           <TabsContent value="pending" className="space-y-6">
-            <div className="grid gap-6">{getTasksByStatus('pending').map(renderTaskCard)}</div>
+            <div className="grid gap-6">
+              {pendingClusters.map(renderTaskCard)}
+            </div>
           </TabsContent>
 
           <TabsContent value="completed" className="space-y-6">
-            <div className="grid gap-6">{getTasksByStatus('completed').map(renderTaskCard)}</div>
+            <div className="grid gap-6">
+              {getTasksByStatus('completed').map(renderTaskCard)}
+            </div>
           </TabsContent>
         </Tabs>
       </main>
@@ -310,19 +360,19 @@ const LabelerProjectsPage = () => {
       fallback={
         <div className="min-h-screen">
           <header className="bg-card/20 border-b backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-4 flex justify-between">
+            <div className="container mx-auto flex justify-between px-4 py-4">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-4 w-24" />
             </div>
           </header>
-          <main className="container mx-auto px-4 py-8 space-y-6">
+          <main className="container mx-auto space-y-6 px-4 py-8">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-96" />
             <Skeleton className="h-10 w-full" />
             {[1, 2, 3].map((i) => (
               <Card key={i} className="bg-card/20 p-6">
-                <Skeleton className="h-5 w-48 mb-2" />
-                <Skeleton className="h-4 w-64 mb-2" />
+                <Skeleton className="mb-2 h-5 w-48" />
+                <Skeleton className="mb-2 h-4 w-64" />
                 <Skeleton className="h-2 w-full" />
               </Card>
             ))}

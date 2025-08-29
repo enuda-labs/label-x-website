@@ -6,6 +6,7 @@ import {
   CreditCard,
   User,
   LogOut,
+  ClipboardList,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -70,16 +71,11 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       url: '/label/tasks',
       icon: Clock,
     },
-    // {
-    //   title: 'Api Keys',
-    //   url: '/label/api-keys',
-    //   icon: Key,
-    // },
-    // {
-    //   title: 'Payments',
-    //   url: '/dashboard/payment',
-    //   icon: CreditCard,
-    // },
+    {
+      title: 'Available Tasks',
+      url: '/label/available-tasks',
+      icon: ClipboardList,
+    },
     {
       title: 'Profile',
       url: '/label/profile',
@@ -137,17 +133,21 @@ export function AppSidebar({ userRole }: { userRole: string }) {
 
       if (userRole === 'admin' && !data.user.is_admin) {
         if (data.user.is_reviewer) {
-          return router.push(`/label/overview`)
+          router.push(`/label/overview`)
+          return
         }
-        return router.push(`/client/overview`)
+        router.push(`/client/overview`)
+        return
       } else if (userRole === 'labeler' && !data.user.is_reviewer) {
         if (data.user.is_admin) {
-          return router.push(`/admin`)
+          router.push(`/admin`)
+          return
         }
-        return router.push(`/client/overview`)
+        router.push(`/client/overview`)
+        return
       }
     }
-  }, [data, router, userRole])
+  }, [data, userRole, router])
 
   useEffect(() => {
     const token = localStorage.getItem(ACCESS_TOKEN_KEY)
@@ -249,29 +249,6 @@ export function AppSidebar({ userRole }: { userRole: string }) {
                 Log Out
               </Button>
             </div>
-            {/* <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-
-                  <SidebarMenuButton >
-                   <User2 /> Username
-                    <ChevronUp className="ml-auto" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="top"
-                  className="w-[--radix-popper-anchor-width]"
-                >
-                  <DropdownMenuItem>
-                    <span>Account</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Billing</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Sign out</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu> */}
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
