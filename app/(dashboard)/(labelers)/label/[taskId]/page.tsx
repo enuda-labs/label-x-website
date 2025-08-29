@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ import {
   Database,
   Video
 } from 'lucide-react';
+import { AxiosError } from "axios";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -87,7 +88,8 @@ const LabelTask = () => {
   const [completedItems, setCompletedItems] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [responses, setResponses] = useState<Array<{ answer: string[]; notes: string }>>([]);
-  const [progressData, setProgressData] = useState<any>(null);
+  const [progressData, setProgressData] = useState<{ completion_percentage?: number } | null>(null);
+
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -100,7 +102,7 @@ const LabelTask = () => {
 
     (async () => {
       try {
-        const resp: any = await fetchTaskById(Array.isArray(taskId) ? taskId[0] : taskId);
+        const resp = await fetchTaskById(Number(Array.isArray(taskId) ? taskId[0] : taskId));
         const payload: ApiTaskResponse = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
 
         if (cancelled) return;
@@ -112,10 +114,10 @@ const LabelTask = () => {
         setCurrentItemIndex(0);
         setSelectedCategories([]);
         setNotes('');
-      } catch (err: any) {
-        console.error('Failed to fetch task', err);
-        setError('Failed to load task. Please try again.');
-      } finally {
+      } catch (err: unknown) {
+  console.error("Failed to fetch task", err);
+  setError("Failed to load task. Please try again.");
+} finally {
         if (!cancelled) setLoading(false);
       }
     })();
@@ -135,7 +137,7 @@ const LabelTask = () => {
   const totalItems = items.length;
   const currentItem = items[currentItemIndex] ?? { data: '' };
   const inputType = taskData.input_type ?? 'multiple_choice';
-  const labellingChoices = (taskData as any).choices ?? [];
+  const labellingChoices = taskData.labelling_choices ?? [];
   const progress = progressData?.completion_percentage ?? 0;
   const isLastItem = currentItemIndex === totalItems - 1;
 
@@ -217,7 +219,7 @@ const LabelTask = () => {
       setIsSubmitting(true);
       const resp = await annotateMissingAsset(Number(taskIdToSend), noteForServer);
       // resp is expected to be the API response object
-      toast('Marked as missing', { description: (resp && typeof resp === 'object' && 'message' in resp) ? (resp as any).message : 'Missing asset recorded' });
+      toast("Marked as missing", { description: resp.message ?? "Missing asset recorded" });
 
       // update local responses so the UI reflects the missing marker
       const newResponses = [...responses];
@@ -230,21 +232,29 @@ const LabelTask = () => {
       } else {
         handleNext();
       }
-    } catch (err: any) {
-      // If server says "You have already labeled this task" or similar, surface it and redirect
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const detail = data?.detail || data?.message || err?.message || '';
+    }
 
-      if (status === 400 && typeof detail === 'string' && detail.toLowerCase().includes('already label')) {
-        toast('You already labeled this task', { description: detail || 'This task has already been labeled.' });
-        router.push('/label/overview');
-        return;
-      }
 
-      console.error('Mark missing failed', err);
-      toast('Failed to mark missing', { description: detail || 'An error occurred' });
-    } finally {
+catch (err: unknown) {
+  if (err instanceof AxiosError) {
+    const status = err.response?.status;
+    const data = err.response?.data;
+    const detail = data?.detail || data?.message || err.message;
+
+    if (status === 400 && typeof detail === "string" && detail.toLowerCase().includes("already label")) {
+      toast("You already labeled this task", { description: detail });
+      router.push("/label/overview");
+      return;
+    }
+
+    console.error("Request failed", { status, data, detail });
+    toast("Failed to submit", { description: detail || "An error occurred" });
+  } else {
+    console.error("Unexpected error", err);
+    toast("Unexpected error occurred", { description: "Please try again." });
+  }
+}
+ finally {
       setIsSubmitting(false);
     }
   };
@@ -288,32 +298,42 @@ const LabelTask = () => {
       const resp = await annotateTask(payload);
 
       toast("Task labels submitted successfully", {
-        description: resp?.message ?? "Submission succeeded"
+        description: resp?.message ?? "Submission succeeded",
       });
       setShowConfirmDialog(false);
       router.push("/label/overview");
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const data = err?.response?.data;
-      const detail = data?.detail || data?.message || err?.message || "";
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        const status = err.response?.status;
+        const data = err.response?.data as { detail?: string; message?: string } | undefined;
+        const detail = data?.detail || data?.message || err.message || "";
 
-      if (status === 400 && typeof detail === "string" && detail.toLowerCase().includes("already label")) {
-        toast("You already labeled this task", {
-          description: detail || "This task has already been labeled."
+        if (
+          status === 400 &&
+          typeof detail === "string" &&
+          detail.toLowerCase().includes("already label")
+        ) {
+          toast("You already labeled this task", {
+            description: detail || "This task has already been labeled.",
+          });
+          setShowConfirmDialog(false);
+          router.push("/label/overview");
+          return;
+        }
+
+        if (status === 401 || status === 403) {
+          toast("Not authorized", {
+            description: detail || "Please sign in and try again.",
+          });
+          setShowConfirmDialog(false);
+          return;
+        }
+
+        console.error("Annotate failed", status, data || err);
+        toast("Failed to submit labels", {
+          description: detail || "An error occurred while submitting labels.",
         });
-        setShowConfirmDialog(false);
-        router.push("/label/overview");
-        return;
       }
-
-      if (status === 401 || status === 403) {
-        toast("Not authorized", { description: detail || "Please sign in and try again." });
-        setShowConfirmDialog(false);
-        return;
-      }
-
-      console.error("Annotate failed", status, data || err);
-      toast("Failed to submit labels", { description: detail || "An error occurred while submitting labels." });
     } finally {
       setIsSubmitting(false);
     }
@@ -322,6 +342,7 @@ const LabelTask = () => {
   const handleFinalSubmit = async () => {
     await submitLabels();
   };
+
 
  const currentTaskId = Number(taskId) || 0;
 
@@ -374,7 +395,9 @@ const handlePreviousTask = () => {
         <div className="flex items-start gap-2 mb-4">
           <div className="pt-1">{getTaskTypeIcon(taskData.task_type)}</div>
           <div>
-            <h1 className="text-xl font-semibold">{(taskData as any).title ?? `Task #${taskData.id ?? taskId}`}</h1>
+          <h1 className="text-xl font-semibold">
+{"title" in taskData ? (taskData as { title?: string }).title ?? `Task #${taskData.id ?? taskId}` : `Task #${taskData.id ?? taskId}`}
+</h1>
             <p className="text-sm text-muted-foreground">Item {currentItemIndex + 1} of {totalItems}</p>
           </div>
         </div>

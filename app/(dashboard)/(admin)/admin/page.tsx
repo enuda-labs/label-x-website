@@ -1,7 +1,5 @@
 'use client'
 import { Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-
 import { Button } from '@/components/ui/button'
 
 import { Settings } from 'lucide-react'
@@ -19,16 +17,6 @@ function DashboardFallback() {
 }
 
 export default function AdminDashboard() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-
-  const currentTab = searchParams.get('tab') || 'projects'
-
-  const handleTabChange = (value: string) => {
-    const params = new URLSearchParams(searchParams)
-    params.set('tab', value)
-    router.push(`?${params.toString()}`)
-  }
   return (
     <div className="min-h-screen">
       <div className="bg-card/30 supports-[backdrop-filter]:bg-card/60 border-b backdrop-blur">
@@ -46,10 +34,7 @@ export default function AdminDashboard() {
       </div>
 
       <Suspense fallback={<DashboardFallback />}>
-        <AdminDashboardContent
-          currentTab={currentTab}
-          handleTabChange={handleTabChange}
-        />
+        <AdminDashboardContent />
       </Suspense>
     </div>
   )

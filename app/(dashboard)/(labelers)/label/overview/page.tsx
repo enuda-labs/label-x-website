@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress'
 import { fetchAssignedClusters, fetchTaskProgress } from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
 import { getUserDetails } from '@/services/apis/user'
+import { TaskProgress } from '@/types/taskProgress'
 
 
 
@@ -34,7 +35,7 @@ const getTypeIcon = (type: string) => {
 const HARDCODED_LABEL_CHOICES = ['Electronics', 'Clothing', 'Home & Garden', 'Sports']
 
 const LabelerDashboard = () => {
-  const [clusters, setClusters] = useState<(AssignedCluster & { progress?: any })[]>([])
+  const [clusters, setClusters] = useState<(AssignedCluster & { progress?: TaskProgress | null })[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -96,8 +97,10 @@ const LabelerDashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                  {userLoading ? "Loading..." : `${username} (${role})`}
+              <User className="h-4 w-4" />
+  <span suppressHydrationWarning>
+    {userLoading ? 'Loading...' : `${username} (${role})`}
+  </span>
               </div>
             </div>
           </div>
@@ -277,7 +280,7 @@ const LabelerDashboard = () => {
             ))}
           </div>
 
-          <Link href="/label/projects" className="flex items-end justify-end">
+          <Link href="/label/tasks" className="flex items-end justify-end">
             <Button>View All Task</Button>
           </Link>
         </div>
