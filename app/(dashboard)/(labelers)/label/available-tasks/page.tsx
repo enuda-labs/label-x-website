@@ -1,11 +1,20 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { AxiosError } from 'axios'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronRight, FileText, ImageIcon, Video, Database, Clock, User } from 'lucide-react'
+import {
+  ChevronRight,
+  FileText,
+  ImageIcon,
+  Video,
+  Database,
+  Clock,
+  User,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -18,7 +27,6 @@ import {
 import { AvailableTask } from '@/types/availableTasks'
 import { fetchAvailableTasks, assignTaskToMe } from '@/services/apis/clusters'
 import { getUserDetails } from '@/services/apis/user'
-import { AxiosError } from 'axios'
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -37,7 +45,7 @@ const getTypeIcon = (type: string) => {
 }
 
 const AvailableTasksPage = () => {
-  const [tasks, setTasks] = useState<(AvailableTask & { status?: string })[]>([])
+  const [tasks, setTasks] = useState<AvailableTask[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState<number | null>(null)
   const [selectedTask, setSelectedTask] = useState<AvailableTask | null>(null)
@@ -62,10 +70,8 @@ const AvailableTasksPage = () => {
       try {
         setLoading(true)
         const data = await fetchAvailableTasks()
-        // add default status
-        const withStatus = data.map((t: AvailableTask) => ({ ...t, status: 'Available' }))
-        setTasks(withStatus)
-      } catch (error) {
+        setTasks(data)
+      } catch {
         toast.error('Failed to fetch available tasks')
       } finally {
         setLoading(false)
@@ -74,43 +80,39 @@ const AvailableTasksPage = () => {
     loadTasks()
   }, [])
 
-  const handleAssign = async (task: AvailableTask) => {
-    setAssigning(task.id)
+  const handleAssign = async (taskId: number) => {
+    setAssigning(taskId)
     try {
-      await assignTaskToMe(task.cluster_id) // ✅ now task is defined
-      toast.success('Task assigned successfully!', { description: 'Check your Assigned tab.' })
-
-      // update status instead of removing task
-      setTasks(prev =>
-        prev.map(t =>
-          t.id === task.id ? { ...t, status: 'Assigned' } : t
-        )
-      )
-
+      await assignTaskToMe(taskId)
+      toast.success('Task assigned successfully!', {
+        description: 'Check your Assigned tab.',
+      })
+      setTasks((prev) => prev.filter((t) => t.id !== taskId))
       setSelectedTask(null)
     } catch (err: unknown) {
-      if (err instanceof AxiosError) {
-        const backendError =
-          err.response?.data?.error || 'Failed to assign task. Please try again.'
-        toast.error(backendError)
-      } else {
-        toast.error('Unexpected error occurred while assigning task.')
+      let backendError = 'Failed to assign task. Please try again.'
+
+      if (err instanceof Error) {
+        backendError = err.message
+      } else if ((err as AxiosError)?.response) {
+        const resp = (err as AxiosError).response
+        backendError = (resp?.data as { error?: string })?.error ?? backendError
       }
+
+      toast.error(backendError)
     } finally {
       setAssigning(null)
     }
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="container mx-auto space-y-6 py-8">
       <header className="bg-card/20 border-b backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <h1 className="text-2xl font-bold">Available Tasks</h1>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <User className="h-4 w-4" />
-            <span suppressHydrationWarning>
-              {userLoading ? 'Loading...' : `${username} (${role})`}
-            </span>
+            {userLoading ? 'Loading...' : `${username} (${role})`}
           </div>
         </div>
       </header>
@@ -121,43 +123,40 @@ const AvailableTasksPage = () => {
       )}
 
       <div className="grid gap-6">
-        {tasks.map(task => (
+        {tasks.map((task) => (
           <Card
             key={task.id}
             className="shadow-soft bg-card/20 hover:shadow-glow transition-all duration-300"
           >
             <CardHeader>
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
+                <div className="bg-primary/10 rounded-lg p-2">
                   {getTypeIcon(task.task_type)}
                 </div>
                 <div>
                   <CardTitle className="text-lg">{task.cluster_name}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">#{task.serial_no}</p>
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="outline">{task.task_type}</Badge>
-                    <Badge
-                      variant={task.status === 'Assigned' ? 'default' : 'secondary'}
-                    >
-                      {task.status}
-                    </Badge>
-                  </div>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    #{task.serial_no}
+                  </p>
+                  <Badge variant="outline" className="mt-2">
+                    {task.task_type}
+                  </Badge>
                 </div>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4" />
                 Created: {new Date(task.created_at).toLocaleDateString()}
               </div>
 
               <Button
                 onClick={() => setSelectedTask(task)}
-                disabled={assigning === task.id || task.status === 'Assigned'}
+                disabled={assigning === task.id}
               >
-                {task.status === 'Assigned' ? 'Already Assigned' : 'Assign to Me'}
-                {task.status !== 'Assigned' && <ChevronRight className="h-4 w-4 ml-2" />}
+                Assign to Me
+                <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
@@ -170,8 +169,9 @@ const AvailableTasksPage = () => {
           <DialogHeader>
             <DialogTitle>Confirm Assignment</DialogTitle>
             <DialogDescription>
-              Are you sure you want to assign task <b>{selectedTask?.cluster_name}</b> (
-              {selectedTask?.serial_no}) to yourself?
+              Are you sure you want to assign task{' '}
+              <b>{selectedTask?.cluster_name}</b> ({selectedTask?.serial_no}) to
+              yourself?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -179,10 +179,9 @@ const AvailableTasksPage = () => {
               Cancel
             </Button>
             <Button
-    onClick={() => selectedTask && handleAssign(selectedTask)}
-    disabled={assigning === selectedTask?.id}
-  >
-
+              onClick={() => selectedTask && handleAssign(selectedTask.id)}
+              disabled={assigning === selectedTask?.id}
+            >
               {assigning === selectedTask?.id ? 'Assigning...' : 'Yes, Assign'}
             </Button>
           </DialogFooter>

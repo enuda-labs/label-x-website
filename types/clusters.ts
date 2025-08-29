@@ -1,5 +1,3 @@
-// types/clusters.ts
-
 export interface AssignedCluster {
   id: number
   input_type: string
@@ -12,4 +10,7 @@ export interface AssignedCluster {
   labeller_instructions: string
   tasks_count: number
   pending_tasks: number
+
+  // add this if backend includes it
+  status?: 'pending' | 'in_progress' | 'completed' | string
 }

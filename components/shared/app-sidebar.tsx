@@ -147,8 +147,7 @@ export function AppSidebar({ userRole }: { userRole: string }) {
         return
       }
     }
-}, [data, userRole, router]) 
-
+  }, [data, userRole, router])
 
   useEffect(() => {
     const token = localStorage.getItem(ACCESS_TOKEN_KEY)

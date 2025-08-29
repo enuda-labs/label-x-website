@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  // ChartContainer,
-  // ChartTooltip,
-  // ChartTooltipContent,
-} from '@/components/ui/chart'
+import {} from // ChartContainer,
+// ChartTooltip,
+// ChartTooltipContent,
+'@/components/ui/chart'
 import {
   // BarChart,
   // Bar,
@@ -158,7 +157,7 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
         </Button>
       </div>
 
-        {/*
+      {/*
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         //  Daily Progress Chart
 

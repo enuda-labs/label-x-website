@@ -31,14 +31,12 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { fetchAssignedClusters, fetchPendingClusters } from '@/services/apis/clusters'
+import {
+  fetchAssignedClusters,
+  fetchPendingClusters,
+} from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
 import { getUserDetails } from '@/services/apis/user'
-
-// 🔹 Extend AssignedCluster with a status field
-type ClusterWithStatus = AssignedCluster & {
-  status: 'assigned' | 'pending' | 'completed'
-}
 
 // 🔹 Hardcoded label categories
 const HARDCODED_LABEL_CHOICES = [
@@ -67,14 +65,14 @@ const getTypeIcon = (type: string) => {
 const ProjectsContent = () => {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [clusters, setClusters] = useState<ClusterWithStatus[]>([])
-  const [pendingClusters, setPendingClusters] = useState<ClusterWithStatus[]>([])
-  const [loading, setLoading] = useState(true)
+  const [clusters, setClusters] = useState<AssignedCluster[]>([])
+  const [pendingClusters, setPendingClusters] = useState<AssignedCluster[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [loading, setLoading] = useState(true)
 
   const currentTab = searchParams.get('task') || 'assigned'
-
+  console.log(loading)
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(searchParams)
     params.set('task', value)
@@ -105,11 +103,11 @@ const ProjectsContent = () => {
         ])
 
         // Add status dynamically
-        const assignedWithStatus: ClusterWithStatus[] = assigned.map((task) => ({
+        const assignedWithStatus = assigned.map((task) => ({
           ...task,
           status: task.pending_tasks === 0 ? 'completed' : 'assigned',
         }))
-        const pendingWithStatus: ClusterWithStatus[] = pending.map((task) => ({
+        const pendingWithStatus = pending.map((task) => ({
           ...task,
           status: 'pending',
         }))
@@ -129,29 +127,44 @@ const ProjectsContent = () => {
     return clusters.filter((task) => {
       const matchesSearch =
         task.project_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.labeller_instructions.toLowerCase().includes(searchTerm.toLowerCase())
+        task.labeller_instructions
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       const matchesType = typeFilter === 'all' || task.task_type === typeFilter
       return matchesSearch && matchesType
     })
   }, [searchTerm, typeFilter, clusters])
 
-  const getStatus = (task: ClusterWithStatus) => task.status
+  const getStatus = (task: AssignedCluster) => task.status
 
-  const getTasksByStatus = (status: ClusterWithStatus['status']) => {
+  const getTasksByStatus = (status: string) => {
     return filteredTasks.filter((task) => getStatus(task) === status)
   }
-
   const getTaskCounts = () => {
     return {
       assigned: clusters.filter((t) => getStatus(t) === 'assigned').length,
-      pending: pendingClusters.length,
+      pending: pendingClusters.length, // use API data
       completed: clusters.filter((t) => getStatus(t) === 'completed').length,
+    }
+  }
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'assigned':
+        return 'destructive' // blue for assigned (or pick a blue variant)
+      case 'pending':
+        return 'secondary' // yellow for pending (or pick a yellow variant)
+      case 'completed':
+        return 'default' // green for completed
+      default:
+        return 'outline'
     }
   }
 
   const taskCounts = getTaskCounts()
 
-  const renderTaskCard = (task: ClusterWithStatus) => {
+  const renderTaskCard = (task: AssignedCluster) => {
+    // ✅ Fallbacks to avoid NaN
     const totalTasks = task.tasks_count ?? 0
     const pendingTasks = task.pending_tasks ?? 0
     const completedTasks = totalTasks - pendingTasks
@@ -164,44 +177,48 @@ const ProjectsContent = () => {
       >
         <CardHeader>
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
+            {/* 🔹 Type Icon */}
+            <div className="bg-primary/10 rounded-lg p-2">
               {getTypeIcon(task.task_type)}
             </div>
 
             <div>
               <CardTitle className="text-lg">{task.project_name}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-sm">
                 {task.labeller_instructions}
               </p>
 
-              <div className="flex items-center gap-2 mt-2 text-sm">
-                {getStatus(task) === 'assigned' && (
-                  <span className="flex items-center text-blue-500">
-                    <AlertCircle className="h-4 w-4 mr-1" />
-                    Assigned
-                  </span>
-                )}
-                {getStatus(task) === 'pending' && (
-                  <span className="flex items-center text-yellow-500">
-                    <PlayCircle className="h-4 w-4 mr-1" />
-                    Pending
-                  </span>
-                )}
-                {getStatus(task) === 'completed' && (
-                  <span className="flex items-center text-green-500">
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Completed
-                  </span>
-                )}
-                <span className="text-xs text-muted-foreground">MEDIUM</span>
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                {(() => {
+                  const status = getStatus(task)
+                  const safeStatus = status ?? 'pending' // fallback if undefined
+                  const icons: Record<string, React.ReactNode> = {
+                    assigned: <AlertCircle className="mr-1 h-4 w-4" />,
+                    pending: <PlayCircle className="mr-1 h-4 w-4" />,
+                    completed: <CheckCircle2 className="mr-1 h-4 w-4" />,
+                  }
+                  return (
+                    <Badge
+                      variant={getStatusBadgeVariant(safeStatus)}
+                      className="flex items-center"
+                    >
+                      {icons[safeStatus]}
+                      {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
+                    </Badge>
+                  )
+                })()}
+
+                {/* Example extra badge for difficulty */}
+                <span className="text-muted-foreground text-xs">MEDIUM</span>
               </div>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* Progress */}
           <div>
-            <div className="flex justify-between text-sm mb-2">
+            <div className="mb-2 flex justify-between text-sm">
               <span>Progress</span>
               <span>
                 {completedTasks} / {totalTasks} items
@@ -210,8 +227,9 @@ const ProjectsContent = () => {
             <Progress value={progress} className="h-2" />
           </div>
 
+          {/* Hardcoded Label Options */}
           <div>
-            <p className="text-sm font-medium mb-2">Label Options:</p>
+            <p className="mb-2 text-sm font-medium">Label Options:</p>
             <div className="flex flex-wrap gap-2">
               {HARDCODED_LABEL_CHOICES.map((choice, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
@@ -226,17 +244,18 @@ const ProjectsContent = () => {
             </div>
           </div>
 
+          {/* Footer with Status + Button */}
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-3">
-              <div className="text-sm text-muted-foreground">
-                <Clock className="h-4 w-4 inline mr-1" />
+              <div className="text-muted-foreground text-sm">
+                <Clock className="mr-1 inline h-4 w-4" />
                 Due: {new Date(task.deadline).toLocaleDateString()}
               </div>
             </div>
             <Link href={`/label/${task.id}`}>
               <Button variant="default">
                 Continue Labeling
-                <ChevronRight className="h-4 w-4 ml-2" />
+                <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -248,13 +267,11 @@ const ProjectsContent = () => {
   return (
     <div className="min-h-screen">
       <header className="bg-card/20 border-b backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <span className="text-muted-foreground">All Projects</span>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
-          <User className="h-4 w-4" />
- <span suppressHydrationWarning>
-   {userLoading ? 'Loading...' : `${username} (${role})`}
- </span>
+            <User className="h-4 w-4" />
+            {userLoading ? 'Loading...' : `${username} (${role})`}
           </div>
         </div>
       </header>
@@ -267,6 +284,7 @@ const ProjectsContent = () => {
           </p>
         </div>
 
+        {/* Filters */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row">
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
@@ -292,7 +310,12 @@ const ProjectsContent = () => {
           </Select>
         </div>
 
-        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+        {/* Tabs */}
+        <Tabs
+          value={currentTab}
+          onValueChange={handleTabChange}
+          className="space-y-6"
+        >
           <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
             <TabsTrigger value="assigned" className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
@@ -337,19 +360,19 @@ const LabelerProjectsPage = () => {
       fallback={
         <div className="min-h-screen">
           <header className="bg-card/20 border-b backdrop-blur-sm">
-            <div className="container mx-auto px-4 py-4 flex justify-between">
+            <div className="container mx-auto flex justify-between px-4 py-4">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-4 w-24" />
             </div>
           </header>
-          <main className="container mx-auto px-4 py-8 space-y-6">
+          <main className="container mx-auto space-y-6 px-4 py-8">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-96" />
             <Skeleton className="h-10 w-full" />
             {[1, 2, 3].map((i) => (
               <Card key={i} className="bg-card/20 p-6">
-                <Skeleton className="h-5 w-48 mb-2" />
-                <Skeleton className="h-4 w-64 mb-2" />
+                <Skeleton className="mb-2 h-5 w-48" />
+                <Skeleton className="mb-2 h-4 w-64" />
                 <Skeleton className="h-2 w-full" />
               </Card>
             ))}
