@@ -12,7 +12,6 @@ import { AxiosError } from 'axios'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp'
 import { useGlobalStore } from '@/context/store'
 
-
 export const LoginOnly = () => {
   const { setIsLoggedIn } = useGlobalStore()
   const [email, setEmail] = useState('')
@@ -80,69 +79,70 @@ export const LoginOnly = () => {
 
   return (
     <>
-    <form onSubmit={handleLogin} className="space-y-4 pt-5">
-      <div className="space-y-2">
-        <Label htmlFor="email">Username</Label>
-        <Input
-          id="email"
-          placeholder="Username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="border-white/10 bg-white/5 text-white"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="border-white/10 bg-white/5 text-white"
-        />
-      </div>
-
-      {show2fa && (
-        <div>
-          <h3 className="mt-8 mb-4">
-            Input the code from your Authenticator app
-          </h3>
-          <div className="mb-10 flex justify-center">
-            <InputOTP
-              maxLength={6}
-              value={verificationCode}
-              onChange={setVerificationCode}
-            >
-              <InputOTPGroup>
-                {[...Array(6)].map((_, i) => (
-                  <InputOTPSlot
-                    key={i}
-                    index={i}
-                    className="border-white/10 bg-white/5 text-white"
-                  />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
+      <form onSubmit={handleLogin} className="space-y-4 pt-5">
+        <div className="space-y-2">
+          <Label htmlFor="email">Username</Label>
+          <Input
+            id="email"
+            placeholder="Username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border-white/10 bg-white/5 text-white"
+          />
         </div>
-      )}
 
-      <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
-      <Button
-        type="submit"
-        className="bg-primary hover:bg-primary/90 w-full h-12 mt-3"
-        disabled={loginMutation.isPending}
-      >
-        {loginMutation.isPending ? 'Logging in...' : 'Login'}
-      </Button>
-    </form>
-    <div className='pb-5 flex items-end justify-end'>
-      Don&#39;t have an account? Contact Support or your organization admin to get started.
-    </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="border-white/10 bg-white/5 text-white"
+          />
+        </div>
+
+        {show2fa && (
+          <div>
+            <h3 className="mt-8 mb-4">
+              Input the code from your Authenticator app
+            </h3>
+            <div className="mb-10 flex justify-center">
+              <InputOTP
+                maxLength={6}
+                value={verificationCode}
+                onChange={setVerificationCode}
+              >
+                <InputOTPGroup>
+                  {[...Array(6)].map((_, i) => (
+                    <InputOTPSlot
+                      key={i}
+                      index={i}
+                      className="border-white/10 bg-white/5 text-white"
+                    />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+          </div>
+        )}
+
+        <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
+        <Button
+          type="submit"
+          className="bg-primary hover:bg-primary/90 mt-3 h-12 w-full"
+          disabled={loginMutation.isPending}
+        >
+          {loginMutation.isPending ? 'Logging in...' : 'Login'}
+        </Button>
+      </form>
+      <div className="flex items-end justify-end pb-5">
+        Don&#39;t have an account? Contact Support or your organization admin to
+        get started.
+      </div>
     </>
   )
 }

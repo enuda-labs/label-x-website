@@ -286,10 +286,13 @@ export default function ApiKeys() {
                 onChange={(e) => setEnvironment(e.target.value as Environment)}
                 className="mt-1 rounded border border-white/10 bg-gray-800 p-2 text-white"
               >
-                <option value="test" className="bg-gray-800 text-white">Test</option>
-                <option value="production" className="bg-gray-800 text-white">Production</option>
+                <option value="test" className="bg-gray-800 text-white">
+                  Test
+                </option>
+                <option value="production" className="bg-gray-800 text-white">
+                  Production
+                </option>
               </select>
-
             </div>
           </div>
 

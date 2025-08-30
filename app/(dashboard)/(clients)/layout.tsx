@@ -8,7 +8,7 @@ export default function DashboardRootLayout({
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar userRole='client' />
+      <AppSidebar userRole="client" />
       <main className="w-full overflow-x-hidden p-4 md:px-10">{children}</main>
     </SidebarProvider>
   )

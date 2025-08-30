@@ -10,7 +10,9 @@ import FloatingElements from '@/components/auth/auth-floating-elements'
 const RoleSelection = () => {
   const router = useRouter()
 
-  const handleRoleSelect = (role: 'individual' | 'organization' | 'labeler') => {
+  const handleRoleSelect = (
+    role: 'individual' | 'organization' | 'labeler'
+  ) => {
     router.push(`/auth/signup?role=${role}`)
   }
 
@@ -21,7 +23,10 @@ const RoleSelection = () => {
 
       <FloatingElements />
 
-      <div className="relative z-50 mt-5 ml-5 flex items-center space-x-2" onClick={() => router.push('/')}>
+      <div
+        className="relative z-50 mt-5 ml-5 flex items-center space-x-2"
+        onClick={() => router.push('/')}
+      >
         <div className="bg-primary flex h-10 w-10 items-center justify-center rounded-lg text-xl font-bold text-white shadow-lg">
           Lx
         </div>
@@ -72,7 +77,11 @@ const RoleSelection = () => {
                   </div>
                   <h3 className="text-2xl font-bold text-white">Client</h3>
                   <p className="text-sm leading-relaxed text-white/70">
-                    Perfect for freelancers, researchers, individual data scientists, organizations, teams, and enterprises. Whether you&lsquo;re annotating datasets for personal projects or managing large-scale collaborative annotation workflows with advanced project management features.
+                    Perfect for freelancers, researchers, individual data
+                    scientists, organizations, teams, and enterprises. Whether
+                    you&lsquo;re annotating datasets for personal projects or
+                    managing large-scale collaborative annotation workflows with
+                    advanced project management features.
                   </p>
                   <Button
                     className="mt-6 h-11 w-full transition-all duration-300"
@@ -86,7 +95,7 @@ const RoleSelection = () => {
                 </div>
               </Card>
 
-               <Card
+              <Card
                 className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
                 onClick={() => router.push('/auth/login-only')}
               >
@@ -96,18 +105,15 @@ const RoleSelection = () => {
                   </div>
                   <h3 className="text-2xl font-bold text-white">Labelers</h3>
                   <p className="text-sm leading-relaxed text-white/70">
-                     Perfect for professional annotators, data labelers, and specialists who 
-  provide high-quality annotation services to clients across various 
-  industries and project scales.
+                    Perfect for professional annotators, data labelers, and
+                    specialists who provide high-quality annotation services to
+                    clients across various industries and project scales.
                   </p>
-                  <Button
-                    className="mt-6 h-11 w-full transition-all duration-300"
-                  >
+                  <Button className="mt-6 h-11 w-full transition-all duration-300">
                     Continue as a Labeler
                   </Button>
                 </div>
               </Card>
-
             </div>
 
             <div className="mt-8 text-center">
