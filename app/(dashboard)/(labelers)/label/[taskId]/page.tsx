@@ -96,7 +96,7 @@ const LabelTask = () => {
   const [error, setError] = useState<string | null>(null)
 
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [notes, setNotes] = useState('')
   const [completedItems, setCompletedItems] = useState(0)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
@@ -106,6 +106,34 @@ const LabelTask = () => {
   const [progressData, setProgressData] = useState<TaskProgress | null>(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+
+
+  const refreshTaskData = async () => {
+    if (!taskId) return
+
+    try {
+      const idToFetch = Array.isArray(taskId) ? Number(taskId[0]) : Number(taskId)
+
+      const resp = (await fetchTaskById(idToFetch)) as ApiResponse | { data: ApiTaskResponse }
+      const payload: ApiTaskResponse = 'data' in resp && resp.data ? resp.data : (resp as ApiTaskResponse)
+
+      setTaskData(payload || null)
+      const items = payload?.tasks ?? []
+      setResponses(new Array(items.length).fill({ answer: [], notes: '' }))
+      setCompletedItems(0)
+      setCurrentItemIndex(0)
+      setNotes('')
+
+      const progress = await fetchTaskProgress(idToFetch)
+      setProgressData(progress)
+    } catch (err) {
+      console.error('Failed to refresh task data', err)
+    }
+  }
+
+
+
 
   useEffect(() => {
     if (!taskId) return
@@ -138,7 +166,6 @@ const LabelTask = () => {
         setResponses(new Array(items.length).fill({ answer: [], notes: '' }))
         setCompletedItems(0)
         setCurrentItemIndex(0)
-        setSelectedCategories([])
         setNotes('')
       } catch (err: unknown) {
         let message = 'Failed to load task. Please try again.'
@@ -156,6 +183,13 @@ const LabelTask = () => {
       cancelled = true
     }
   }, [taskId])
+
+
+
+
+
+
+
 
   useEffect(() => {
     if (!taskId) return
@@ -176,6 +210,10 @@ const LabelTask = () => {
     })()
   }, [taskId])
 
+
+
+
+
   if (loading)
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -188,12 +226,16 @@ const LabelTask = () => {
         <div className="rounded bg-red-50 p-6 text-red-700">{error}</div>
       </div>
     )
+
+
   if (!taskData)
     return (
       <div className="flex min-h-screen items-center justify-center">
         Task not found
       </div>
     )
+
+
   const items = taskData.tasks ?? []
   const totalItems = items.length
   const currentItem = items[currentItemIndex] ?? { data: '' }
@@ -218,27 +260,26 @@ const LabelTask = () => {
     setCurrentItemIndex(index)
     const saved = responses[index]
     if (saved) {
-      setSelectedCategories(saved.answer || [])
+      setSelectedCategory(saved.answer?.[0] || '')
       setNotes(saved.notes || '')
     } else {
-      setSelectedCategories([])
+      setSelectedCategory('')
       setNotes('')
     }
   }
 
+
   // --- Handlers ---
-  const handleCategoryToggle = (category: string) => {
-    setSelectedCategories(
-      (prev) =>
-        prev.includes(category)
-          ? prev.filter((c) => c !== category) // remove if already selected
-          : [...prev, category] // add if not selected
-    )
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category)
   }
 
+
   const handleSubmitLabelLocal = async () => {
-    if (inputType === 'multiple_choice' && selectedCategories.length === 0) {
-      toast('Please select at least one category', {
+    const selectedCategoryToSend = selectedCategory || null
+
+    if (inputType === 'multiple_choice' && !selectedCategoryToSend) {
+      toast('Please select a category', {
         description: 'All items must be labeled before you can continue.',
       })
       return
@@ -251,38 +292,75 @@ const LabelTask = () => {
       setIsSubmitting(true)
 
       const payload = {
-        task_id: currentTaskIdToSend,  // 👈 now using item id
-        labels: selectedCategories,
+        task_id: currentTaskIdToSend,
+        labels: selectedCategoryToSend ? [selectedCategoryToSend] : [],
         notes,
       }
 
       const resp = await annotateTask(payload)
 
-      // update local state
       const newResponses = [...responses]
       newResponses[currentItemIndex] = {
-        answer: [...selectedCategories],
+        answer: selectedCategoryToSend ? [selectedCategoryToSend] : [],
         notes,
       }
       setResponses(newResponses)
       setCompletedItems((prev) => prev + 1)
 
       toast('Item labeled', {
-        description:
-          resp?.message ?? `Item labeled as "${selectedCategories.join(', ')}"`,
+        description: resp?.message ?? `Item labeled as "${selectedCategoryToSend}"`,
       })
 
-    setShowConfirmDialog(true)
+      await refreshTaskData()
+
+      setShowConfirmDialog(true)
     } catch (err: unknown) {
-  if (err instanceof Error) {
-    console.error('Failed to fetch task progress', err.message)
-  } else {
-    console.error('Failed to fetch task progress', err)
-  }
-} finally {
+      const error = err as AxiosError<{ detail?: string; message?: string }>
+      const status = error.response?.status
+      const detail =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message ||
+        ''
+
+      if (
+        status === 400 &&
+        typeof detail === 'string' &&
+        detail.toLowerCase().includes('already label')
+      ) {
+        toast('You already labeled this task', {
+          description: detail || 'This task has already been labeled.',
+        })
+
+        // Mark as completed in local state
+        const newResponses = [...responses]
+        newResponses[currentItemIndex] = {
+          answer: ['ALREADY_LABELED'],
+          notes: '',
+        }
+        setResponses(newResponses)
+        setCompletedItems((prev) => prev + 1)
+
+        // Auto-advance to next item
+        if (currentItemIndex < totalItems - 1) {
+          goToItemIndex(currentItemIndex + 1)
+        } else {
+          toast('All items completed in this cluster.')
+        }
+
+        return
+      }
+
+      console.error('Failed to submit task', status, error)
+      toast('Failed to submit labels', {
+        description: detail || 'An error occurred while submitting labels.',
+      })
+    } finally {
       setIsSubmitting(false)
     }
   }
+
+
 
   const handleNext = () => {
     if (currentItemIndex < totalItems - 1) {
@@ -292,7 +370,6 @@ const LabelTask = () => {
 
   // Mark missing — now persists immediately via annotateMissingAsset
   const handleMarkMissing = async () => {
-    // ✅ always send the current item id
     const taskIdToSend = currentItem?.id
     if (!taskIdToSend) return
 
@@ -302,48 +379,41 @@ const LabelTask = () => {
     try {
       setIsSubmitting(true)
 
-      const resp = await annotateMissingAsset(taskIdToSend, noteForServer)
+      // Make sure the API gets the expected payload
+      const resp = await annotateMissingAsset(taskIdToSend, {
+        labels: ["MISSING_ASSET"],
+        notes: noteForServer,
+      })
 
       toast('Marked as missing', {
         description: resp.message ?? 'Missing asset recorded',
       })
 
-      // update local state
+      await refreshTaskData()
+
       const newResponses = [...responses]
       newResponses[currentItemIndex] = {
         answer: ['MISSING_ASSET'],
         notes: noteForServer,
       }
       setResponses(newResponses)
-      setCompletedItems((prev) => prev + 1)
+      setCompletedItems(prev => prev + 1)
 
-setShowConfirmDialog(true)
+      // ✅ advance to the next item if available
+      if (currentItemIndex < totalItems - 1) {
+        goToItemIndex(currentItemIndex + 1)
+      } else {
+        setShowConfirmDialog(true)
+      }
+
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string; message?: string }>
       const detail = error.response?.data?.detail || error.message || ''
 
-      if (
-        typeof detail === 'string' &&
-        detail.toLowerCase().includes('already label')
-      ) {
-        toast('You already labeled this item', {
-          description: detail || 'This item has already been labeled.',
-        })
-
-        // advance in-cluster instead of navigating to another cluster id
-        const nextIndex = currentItemIndex + 1
-        if (nextIndex < totalItems) {
-          setTimeout(() => goToItemIndex(nextIndex), 250)
-        } else {
-          setTimeout(() => setShowConfirmDialog(true), 250)
-        }
-        return
-      }
-
-      console.error('Mark missing failed', err)
       toast('Failed to mark missing', {
         description: detail || 'An error occurred',
       })
+      console.error('Mark missing failed', err)
     } finally {
       setIsSubmitting(false)
     }
@@ -465,24 +535,25 @@ setShowConfirmDialog(true)
   // --- Render ---
   return (
     <div className="bg-card/20 min-h-screen">
-      <header className="bg-card/30 sticky top-0 z-50 border-b backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/label/overview">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-                </Button>
-              </Link>
-            </div>
-            <div className="flex items-center gap-3">
-             <Badge variant="outline">
-                {progressData?.completed_tasks ?? completedItems} completed
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </header>
+    <header className="bg-card/30 sticky top-0 z-50 border-b backdrop-blur-sm">
+<div className="container mx-auto px-4 py-4">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-4">
+      <Link href="/label/overview">
+        <Button variant="ghost" size="sm">
+          <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+        </Button>
+      </Link>
+    </div>
+    <div className="flex items-center gap-3">
+      <Badge variant="outline">
+        {progressData?.completed_tasks ?? completedItems} completed
+      </Badge>
+    </div>
+  </div>
+</div>
+</header>
+
 
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
@@ -775,32 +846,26 @@ setShowConfirmDialog(true)
                 {inputType === 'multiple_choice' && choicesToShow.length > 0 ? (
                   choicesToShow.map((choice, index) => (
                     <Button
-                      key={index}
-                      variant={
-                        selectedCategories.includes(choice.option_text)
-                          ? 'default'
-                          : 'outline'
-                      }
-                      className="w-full justify-start"
-                      onClick={() => handleCategoryToggle(choice.option_text)}
+                    key={index}
+                    variant={selectedCategory === choice.option_text ? 'default' : 'outline'}
+                    className="w-full justify-start"
+                    onClick={() => handleCategorySelect(choice.option_text)}
                     >
-                      {selectedCategories.includes(choice.option_text) && (
-                        <Check className="mr-2 h-4 w-4" />
-                      )}
-                      {choice.option_text}
+                    {selectedCategory === choice.option_text && (
+                      <Check className="mr-2 h-4 w-4" />
+                    )}
+                    {choice.option_text}
                     </Button>
                   ))
+
                 ) : (
                   <Textarea
-                    placeholder="Enter your response here..."
-                    value={selectedCategories.join(', ')}
-                    onChange={(e) =>
-                      setSelectedCategories(
-                        e.target.value.split(',').map((s) => s.trim())
-                      )
-                    }
-                    className="min-h-[100px] resize-none"
+                  placeholder="Enter your response here..."
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="min-h-[100px] resize-none"
                   />
+
                 )}
               </CardContent>
             </Card>
@@ -822,16 +887,13 @@ setShowConfirmDialog(true)
             </Card>
 
             <div className="space-y-3">
-              <Button
-                onClick={handleSubmitLabelLocal}
-                disabled={
-                  inputType === 'multiple_choice'
-                    ? selectedCategories.length === 0
-                    : false
-                }
-                className="w-full"
-                variant="default"
-              >
+            <Button
+            onClick={handleSubmitLabelLocal}
+            disabled={inputType === 'multiple_choice' && !selectedCategory}
+            className="w-full"
+            variant="default"
+            >
+
                 <Save className="mr-2 h-4 w-4" />
                 {isLastItem ? 'Complete Task' : 'Submit & Continue'}
               </Button>
