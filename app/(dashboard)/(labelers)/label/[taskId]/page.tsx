@@ -476,7 +476,9 @@ setShowConfirmDialog(true)
               </Link>
             </div>
             <div className="flex items-center gap-3">
-              <Badge variant="outline">{completedItems} completed</Badge>
+             <Badge variant="outline">
+                {progressData?.completed_tasks ?? completedItems} completed
+              </Badge>
             </div>
           </div>
         </div>
