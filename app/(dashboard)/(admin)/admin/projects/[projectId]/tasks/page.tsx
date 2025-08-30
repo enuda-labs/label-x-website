@@ -174,7 +174,7 @@ const ProjectTasks = () => {
             </div>
           ) : (
             <div className="my-20 flex items-center justify-center">
-              No project has been created for this account
+              No task has been created for this project
             </div>
           )}
         </div>

@@ -15,6 +15,7 @@ import TaskConfiguration, {
   TaskConfig,
 } from '@/components/project/task/task-configurations'
 import { createTaskCluster } from '@/services/apis/task'
+import { isAxiosError } from 'axios'
 
 enum AnnotationStep {
   DATA_TYPE = 'data_type',
@@ -74,8 +75,7 @@ const Annotate = () => {
           taskConfig.tasks.every((task) => task.data.trim()) &&
           (taskConfig.inputType === 'text' ||
             taskConfig.labellingChoices.length > 0) &&
-          taskConfig.deadline &&
-          taskConfig.deadline.getTime() - Date.now() > 24 * 60 * 60 * 1000
+          taskConfig.deadline
         )
       case AnnotationStep.PREVIEW:
         return true
@@ -101,8 +101,6 @@ const Annotate = () => {
       router.back()
     }
   }
-
-  console.log(taskConfig.tasks[0])
 
   const validateAndSubmit = async () => {
     if (!dataType || !canProceed()) {
@@ -175,10 +173,12 @@ const Annotate = () => {
       })
     } catch (error) {
       console.log('Submission Error:', error)
-      toast('Submission Failed', {
-        description:
-          'There was an error submitting your task. Please try again.',
-      })
+      if (isAxiosError(error))
+        toast('Submission Failed', {
+          description:
+            error.response?.data ||
+            'There was an error submitting your task. Please try again.',
+        })
     } finally {
       setIsSubmitting(false)
     }

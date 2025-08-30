@@ -16,6 +16,7 @@ import TaskConfiguration, {
 } from '@/components/project/task/task-configurations'
 import { createTaskCluster } from '@/services/apis/task'
 import { TaskItem } from '@/components/project/task/task-item'
+import { isAxiosError } from 'axios'
 
 enum AnnotationStep {
   DATA_TYPE = 'data_type',
@@ -61,6 +62,15 @@ const Annotate = () => {
       (getStepNumber(currentStep) / Object.values(AnnotationStep).length) * 100
     )
   }
+  console.log(
+    taskConfig.taskName,
+    taskConfig.description,
+    taskConfig.instructions,
+    taskConfig.tasks.length > 0,
+    taskConfig.tasks.every((task) => task.data.trim()),
+    taskConfig.inputType === 'text' || taskConfig.labellingChoices.length > 0,
+    taskConfig.deadline
+  )
 
   const canProceed = (): boolean => {
     switch (currentStep) {
@@ -75,8 +85,7 @@ const Annotate = () => {
           taskConfig.tasks.every((task) => task.data.trim()) &&
           (taskConfig.inputType === 'text' ||
             taskConfig.labellingChoices.length > 0) &&
-          taskConfig.deadline &&
-          taskConfig.deadline.getTime() - Date.now() > 24 * 60 * 60 * 1000
+          taskConfig.deadline
         )
       case AnnotationStep.PREVIEW:
         return true
@@ -181,10 +190,17 @@ const Annotate = () => {
       })
     } catch (error) {
       console.log('Submission Error:', error)
-      toast('Submission Failed', {
-        description:
-          'There was an error submitting your task. Please try again.',
-      })
+      if (isAxiosError(error))
+        toast('Submission Failed', {
+          description:
+            error.response?.data.error ||
+            'There was an error submitting your task. Please try again.',
+        })
+      else
+        toast('Submission Failed', {
+          description:
+            'There was an error submitting your task. Please try again.',
+        })
     } finally {
       setIsSubmitting(false)
     }
