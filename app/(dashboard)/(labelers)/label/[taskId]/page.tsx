@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { AxiosError } from 'axios'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams} from 'next/navigation'
 import {
   ArrowLeft,
   Check,
@@ -200,7 +200,12 @@ const LabelTask = () => {
   const inputType = taskData.input_type ?? 'multiple_choice'
   const labellingChoices = taskData.choices ?? taskData.labelling_choices ?? []
   const progress =
-    totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
+  progressData && progressData.total_tasks > 0
+    ? Math.round((progressData.completed_tasks / progressData.total_tasks) * 100)
+    : totalItems > 0
+    ? Math.round((completedItems / totalItems) * 100)
+    : 0
+
   const isLastItem = currentItemIndex === totalItems - 1
 
   const choicesToShow =
@@ -345,99 +350,99 @@ setShowConfirmDialog(true)
   }
 
   // Build payload (labels + notes)
-  const buildLabelsForSubmission = () => {
-    const labels: string[] = []
-    const notesArr: string[] = []
-
-    for (const r of responses) {
-      if (r.answer && r.answer.length > 0) {
-        labels.push(...r.answer) // merge all answers
-      }
-      if (r.notes && r.notes.trim() !== '') {
-        notesArr.push(r.notes.trim())
-      }
-    }
-
-    return {
-      task_id: taskData?.id ?? Number(taskId),
-      labels,
-      notes: notesArr.join(' | ') || '',
-    }
-  }
+  // const buildLabelsForSubmission = () => {
+  //   const labels: string[] = []
+  //   const notesArr: string[] = []
+  //
+  //   for (const r of responses) {
+  //     if (r.answer && r.answer.length > 0) {
+  //       labels.push(...r.answer) // merge all answers
+  //     }
+  //     if (r.notes && r.notes.trim() !== '') {
+  //       notesArr.push(r.notes.trim())
+  //     }
+  //   }
+  //
+  //   return {
+  //     task_id: taskData?.id ?? Number(taskId),
+  //     labels,
+  //     notes: notesArr.join(' | ') || '',
+  //   }
+  // }
 
   // Submit labels using annotateTask helper (final / batch submit)
   const currentTaskId = Array.isArray(taskId)
     ? Number(taskId[0])
     : Number(taskId) || 0
 
-  const submitLabels = async () => {
-    const payload = buildLabelsForSubmission()
-
-    if (payload.labels.length === 0 && !payload.notes) {
-      toast('Nothing to submit', {
-        description: 'Please provide at least one label or note.',
-      })
-      return
-    }
-
-    try {
-      setIsSubmitting(true)
-      const resp = await annotateTask(payload)
-
-      toast('Task labels submitted successfully', {
-        description: resp?.message ?? 'Submission succeeded',
-      })
-      setShowConfirmDialog(false)
-
-      // After final/batch submission: advance to next item in cluster if present,
-      // otherwise keep on last item (you can change this to navigate to next cluster if desired)
-      if (currentItemIndex < totalItems - 1) {
-        goToItemIndex(currentItemIndex + 1)
-      } else {
-        toast('All items in this cluster submitted.')
-      }
-    } catch (err: unknown) {
-      const error = err as AxiosError<{ detail?: string; message?: string }>
-      const status = error.response?.status
-      const detail =
-        error.response?.data?.detail ||
-        error.response?.data?.message ||
-        error.message ||
-        ''
-
-      if (
-        status === 400 &&
-        typeof detail === 'string' &&
-        detail.toLowerCase().includes('already label')
-      ) {
-        toast('You already labeled this task', {
-          description: detail || 'This task has already been labeled.',
-        })
-        setShowConfirmDialog(false)
-
-        if (currentItemIndex < totalItems - 1) {
-          goToItemIndex(currentItemIndex + 1)
-        }
-        return
-      }
-
-      if (status === 401 || status === 403) {
-        toast('Not authorized', {
-          description: detail || 'Please sign in and try again.',
-        })
-        setShowConfirmDialog(false)
-        return
-      }
-
-      console.error('Annotate failed', status, error)
-      toast('Failed to submit labels', {
-        description: detail || 'An error occurred while submitting labels.',
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
+  // const submitLabels = async () => {
+  //   const payload = buildLabelsForSubmission()
+  //
+  //   if (payload.labels.length === 0 && !payload.notes) {
+  //     toast('Nothing to submit', {
+  //       description: 'Please provide at least one label or note.',
+  //     })
+  //     return
+  //   }
+  //
+  //   try {
+  //     setIsSubmitting(true)
+  //     const resp = await annotateTask(payload)
+  //
+  //     toast('Task labels submitted successfully', {
+  //       description: resp?.message ?? 'Submission succeeded',
+  //     })
+  //     setShowConfirmDialog(false)
+  //
+  //     // After final/batch submission: advance to next item in cluster if present,
+  //     // otherwise keep on last item (you can change this to navigate to next cluster if desired)
+  //     if (currentItemIndex < totalItems - 1) {
+  //       goToItemIndex(currentItemIndex + 1)
+  //     } else {
+  //       toast('All items in this cluster submitted.')
+  //     }
+  //   } catch (err: unknown) {
+  //     const error = err as AxiosError<{ detail?: string; message?: string }>
+  //     const status = error.response?.status
+  //     const detail =
+  //       error.response?.data?.detail ||
+  //       error.response?.data?.message ||
+  //       error.message ||
+  //       ''
+  //
+  //     if (
+  //       status === 400 &&
+  //       typeof detail === 'string' &&
+  //       detail.toLowerCase().includes('already label')
+  //     ) {
+  //       toast('You already labeled this task', {
+  //         description: detail || 'This task has already been labeled.',
+  //       })
+  //       setShowConfirmDialog(false)
+  //
+  //       if (currentItemIndex < totalItems - 1) {
+  //         goToItemIndex(currentItemIndex + 1)
+  //       }
+  //       return
+  //     }
+  //
+  //     if (status === 401 || status === 403) {
+  //       toast('Not authorized', {
+  //         description: detail || 'Please sign in and try again.',
+  //       })
+  //       setShowConfirmDialog(false)
+  //       return
+  //     }
+  //
+  //     console.error('Annotate failed', status, error)
+  //     toast('Failed to submit labels', {
+  //       description: detail || 'An error occurred while submitting labels.',
+  //     })
+  //   } finally {
+  //     setIsSubmitting(false)
+  //   }
+  // }
+  //
 
 
   // Next/Previous should move between items within the cluster
