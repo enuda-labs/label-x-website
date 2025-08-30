@@ -221,7 +221,7 @@ const ProjectsContent = () => {
             <Progress value={progress} className="h-2" />
           </div>
 
-          
+
           <div>
             <p className="mb-2 text-sm font-medium">Label Options:</p>
             <div className="flex flex-wrap gap-2">
@@ -254,11 +254,12 @@ const ProjectsContent = () => {
               </div>
             </div>
             <Link href={`/label/${task.id}`}>
-              <Button variant="default">
-                Continue Labeling
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+    <Button variant="default">
+      {task.status === 'completed' ? 'Review' : 'Label'}
+      <ChevronRight className="ml-2 h-4 w-4" />
+    </Button>
+  </Link>
+
           </div>
         </CardContent>
       </Card>

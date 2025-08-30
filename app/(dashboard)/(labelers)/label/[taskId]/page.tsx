@@ -275,90 +275,70 @@ const LabelTask = () => {
   }
 
 
-  const handleSubmitLabelLocal = async () => {
-    const selectedCategoryToSend = selectedCategory || null
+  // --- Handlers ---
+const handleSubmitLabelLocal = () => {
+  const selectedCategoryToSend = selectedCategory || null
 
-    if (inputType === 'multiple_choice' && !selectedCategoryToSend) {
-      toast('Please select a category', {
-        description: 'All items must be labeled before you can continue.',
-      })
-      return
-    }
-
-    const currentTaskIdToSend = currentItem?.id
-    if (!currentTaskIdToSend) return
-
-    try {
-      setIsSubmitting(true)
-
-      const payload = {
-        task_id: currentTaskIdToSend,
-        labels: selectedCategoryToSend ? [selectedCategoryToSend] : [],
-        notes,
-      }
-
-      const resp = await annotateTask(payload)
-
-      const newResponses = [...responses]
-      newResponses[currentItemIndex] = {
-        answer: selectedCategoryToSend ? [selectedCategoryToSend] : [],
-        notes,
-      }
-      setResponses(newResponses)
-      setCompletedItems((prev) => prev + 1)
-
-      toast('Item labeled', {
-        description: resp?.message ?? `Item labeled as "${selectedCategoryToSend}"`,
-      })
-
-      await refreshTaskData()
-
-      setShowConfirmDialog(true)
-    } catch (err: unknown) {
-      const error = err as AxiosError<{ detail?: string; message?: string }>
-      const status = error.response?.status
-      const detail =
-        error.response?.data?.detail ||
-        error.response?.data?.message ||
-        error.message ||
-        ''
-
-      if (
-        status === 400 &&
-        typeof detail === 'string' &&
-        detail.toLowerCase().includes('already label')
-      ) {
-        toast('You already labeled this task', {
-          description: detail || 'This task has already been labeled.',
-        })
-
-        // Mark as completed in local state
-        const newResponses = [...responses]
-        newResponses[currentItemIndex] = {
-          answer: ['ALREADY_LABELED'],
-          notes: '',
-        }
-        setResponses(newResponses)
-        setCompletedItems((prev) => prev + 1)
-
-        // Auto-advance to next item
-        if (currentItemIndex < totalItems - 1) {
-          goToItemIndex(currentItemIndex + 1)
-        } else {
-          toast('All items completed in this cluster.')
-        }
-
-        return
-      }
-
-      console.error('Failed to submit task', status, error)
-      toast('Failed to submit labels', {
-        description: detail || 'An error occurred while submitting labels.',
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (inputType === 'multiple_choice' && !selectedCategoryToSend) {
+    toast('Please select a category', {
+      description: 'All items must be labeled before you can continue.',
+    })
+    return
   }
+
+  // ✅ Just open confirm dialog
+  setShowConfirmDialog(true)
+}
+
+const handleConfirmSubmit = async () => {
+  const selectedCategoryToSend = selectedCategory || null
+  const currentTaskIdToSend = currentItem?.id
+  if (!currentTaskIdToSend) return
+
+  try {
+    setIsSubmitting(true)
+
+    const payload = {
+      task_id: currentTaskIdToSend,
+      labels: selectedCategoryToSend ? [selectedCategoryToSend] : [],
+      notes,
+    }
+
+    const resp = await annotateTask(payload)
+
+    const newResponses = [...responses]
+    newResponses[currentItemIndex] = {
+      answer: selectedCategoryToSend ? [selectedCategoryToSend] : [],
+      notes,
+    }
+    setResponses(newResponses)
+    setCompletedItems((prev) => prev + 1)
+
+    toast('Item labeled', {
+      description: resp?.message ?? `Item labeled as "${selectedCategoryToSend}"`,
+    })
+
+    await refreshTaskData()
+
+    // move forward
+    if (currentItemIndex < totalItems - 1) {
+      goToItemIndex(currentItemIndex + 1)
+    } else {
+      toast('All items completed in this cluster.')
+    }
+  } catch (err: unknown) {
+    const error = err as AxiosError<{ detail?: string; message?: string }>
+    const detail = error.response?.data?.detail || error.message || ''
+
+    toast('Failed to submit labels', {
+      description: detail || 'An error occurred while submitting labels.',
+    })
+    console.error('Failed to submit task', err)
+  } finally {
+    setIsSubmitting(false)
+    setShowConfirmDialog(false)
+  }
+}
 
 
 
@@ -924,7 +904,7 @@ const LabelTask = () => {
       {/* Submission Confirmation Modal */}
       {/* Item Confirmation Modal */}
   <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-    <DialogContent className="border py-8 shadow-sm">
+    <DialogContent className="border shadow-sm max-w-lg w-[90%] rounded-xl p-6 flex flex-col items-center justify-center">
       <DialogHeader>
         <DialogTitle>Confirm Item Annotation</DialogTitle>
         <DialogDescription>
@@ -933,39 +913,29 @@ const LabelTask = () => {
       </DialogHeader>
 
       <div className="space-y-4">
-        <div className="bg-muted/50 rounded-lg p-3 text-sm">
-          <div className="font-medium">Item {currentItemIndex + 1}:</div>
-          <div className="text-muted-foreground">
-            Answer: {responses[currentItemIndex]?.answer?.join(', ') || '—'}
-          </div>
-          {responses[currentItemIndex]?.notes && (
-            <div className="text-muted-foreground">
-              Notes: {responses[currentItemIndex]?.notes}
-            </div>
-          )}
-        </div>
+      <div className="bg-muted/50 rounded-lg p-3 text-sm">
+  <div className="font-medium">Item {currentItemIndex + 1}:</div>
+  <div className="text-muted-foreground">
+    Answer: {selectedCategory || '—'}
+  </div>
+  {notes && (
+    <div className="text-muted-foreground">
+      Notes: {notes}
+    </div>
+  )}
+</div>
+
       </div>
 
       <DialogFooter>
-        <Button
-          variant="outline"
-          onClick={() => setShowConfirmDialog(false)}
-        >
+        <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
           Edit Response
         </Button>
-        <Button
-          onClick={() => {
-            setShowConfirmDialog(false)
-            if (currentItemIndex < totalItems - 1) {
-              goToItemIndex(currentItemIndex + 1)
-            } else {
-              toast('All items completed in this cluster.')
-            }
-          }}
-        >
+        <Button onClick={handleConfirmSubmit} disabled={isSubmitting}>
           Confirm & Continue
         </Button>
       </DialogFooter>
+
     </DialogContent>
   </Dialog>
 
