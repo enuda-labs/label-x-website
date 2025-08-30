@@ -63,16 +63,22 @@ type AnnotateRequest = {
 
 export const annotateMissingAsset = async (
   taskId: number,
-  notes?: string
+  payload: { labels?: string[]; notes?: string }
 ): Promise<ApiResponse> => {
+  const { labels = [], notes } = payload
   const trimmed = notes?.trim()
-  const labels = trimmed ? [trimmed, 'MISSING_ASSET'] : ['MISSING_ASSET']
+  const finalLabels = [...labels, 'MISSING_ASSET']
 
-  const payload: AnnotateRequest = { task_id: taskId, labels }
-  const response = await axiosClient.post('/tasks/annotate/', payload)
+  const requestPayload: AnnotateRequest = {
+    task_id: taskId,
+    labels: finalLabels,
+    notes: trimmed,
+  }
 
+  const response = await axiosClient.post('/tasks/annotate/', requestPayload)
   return response.data as ApiResponse
 }
+
 
 export const fetchTaskProgress = async (
   clusterId: number
