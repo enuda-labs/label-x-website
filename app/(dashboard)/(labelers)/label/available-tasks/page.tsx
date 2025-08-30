@@ -175,19 +175,25 @@ const AvailableClustersPage = () => {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4" />
-                Deadline: {new Date(cluster.deadline).toLocaleDateString()}
-              </div>
+    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+      <Clock className="h-4 w-4" />
+      Deadline: {new Date(cluster.deadline).toLocaleDateString()}
+    </div>
 
-              <Button
-                onClick={() => setSelectedCluster(cluster)}
-                disabled={assigning === cluster.id}
-              >
-                Assign to Me
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            </CardContent>
+    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+      <User className="h-4 w-4" />
+      Labellers allowed: {cluster.labeller_per_item_count}
+    </div>
+
+    <Button
+      onClick={() => setSelectedCluster(cluster)}
+      disabled={assigning === cluster.id}
+    >
+      Assign to Me
+      <ChevronRight className="ml-2 h-4 w-4" />
+    </Button>
+  </CardContent>
+
           </Card>
         ))}
       </div>
