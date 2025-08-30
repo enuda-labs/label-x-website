@@ -181,7 +181,7 @@ const Dashboard = () => {
             <Card className="border-white/10 bg-white/5 p-4">
               <div className="mb-1 text-sm text-white/60">Data Points</div>
               <div className="text-3xl font-bold text-white">
-                {dataPoints ?? '...'}
+                {dataPoints?.toLocaleString() ?? '...'}
               </div>
             </Card>
 

@@ -22,6 +22,7 @@ import DashboardLayout from '../shared/dashboard-layout'
 import { Skeleton } from '../ui/skeleton'
 import { getProjectChart } from '@/services/apis/project'
 import { useQuery } from '@tanstack/react-query'
+import { Activity } from 'lucide-react'
 
 // interface ProjectChartsProps {
 //   projectId: number;
@@ -258,27 +259,34 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
           <CardTitle className="text-white">Task Status Distribution</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
-                >
-                  {statusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          {statusDistribution.find((data) => data.value) ? (
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusDistribution}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) =>
+                      `${name} ${(percent * 100).toFixed(0)}%`
+                    }
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <Activity className="mx-auto mb-4 h-12 w-12 text-white/20" />
+              <p className="text-white/60">Data not available</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

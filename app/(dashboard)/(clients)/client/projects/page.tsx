@@ -114,7 +114,6 @@ const Projects = () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setNewProject({ name: '', description: '' })
       setOpen(false)
-      router.push('/client/projects/task')
       setError('')
     },
     onError: (err) => {

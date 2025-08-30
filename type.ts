@@ -8,7 +8,7 @@ interface TaskFile {
 
 interface TaskData {
   file?: TaskFile
-  data: string
+  data?: string
 }
 
 interface LabellingChoice {

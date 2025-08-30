@@ -48,9 +48,9 @@ export const assignReviewers = async ({
   id: number
   reviewer_ids: number[]
 }) => {
-  const response = await axiosClient.post<number[]>(
+  const response = await axiosClient.post<{ reviewer_ids: number[] }>(
     `/tasks/cluster/${id}/assign-reviewers/`,
-    reviewer_ids
+    { reviewer_ids }
   )
   return response.data
 }
@@ -62,9 +62,9 @@ export const removeReviewers = async ({
   id: number
   reviewer_ids: number[]
 }) => {
-  const response = await axiosClient.post<number[]>(
+  const response = await axiosClient.post<{ reviewer_ids: number[] }>(
     `/tasks/cluster/${id}/remove-reviewers/`,
-    reviewer_ids
+    { reviewer_ids }
   )
   return response.data
 }

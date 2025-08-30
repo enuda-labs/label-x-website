@@ -15,6 +15,7 @@ import TaskConfiguration, {
   TaskConfig,
 } from '@/components/project/task/task-configurations'
 import { createTaskCluster } from '@/services/apis/task'
+import { TaskItem } from '@/components/project/task/task-item'
 
 enum AnnotationStep {
   DATA_TYPE = 'data_type',
@@ -102,8 +103,6 @@ const Annotate = () => {
     }
   }
 
-  console.log(taskConfig.tasks[0])
-
   const validateAndSubmit = async () => {
     if (!dataType || !canProceed()) {
       toast('Validation Error', {
@@ -114,9 +113,10 @@ const Annotate = () => {
 
     setIsSubmitting(true)
     let uploadedFileUrl = ''
-    if (taskConfig.inputType !== 'text') {
+    if (dataType !== 'TEXT') {
       // Assume first task item contains the file (customize as needed)
       const fileTask = taskConfig.tasks[0].file
+      console.log(fileTask)
       if (fileTask) {
         try {
           uploadedFileUrl = await uploadToCloudinary(fileTask)
@@ -141,22 +141,28 @@ const Annotate = () => {
       }
     }
     try {
-      if (taskConfig.inputType !== 'text' && !uploadedFileUrl) {
+      if (dataType !== 'TEXT' && !uploadedFileUrl) {
         toast('File Upload Error', { description: 'File upload not found' })
         setIsSubmitting(false)
         return
       }
-      // TODO: Replace with API call FROM Backend
+
+      const taskBody = (task: TaskItem) =>
+        dataType === 'TEXT'
+          ? {
+              data: task.data,
+            }
+          : {
+              file: {
+                file_url: uploadedFileUrl,
+                file_name: task.file?.name || '',
+                file_size_bytes: task.file?.size || 0,
+                file_type: task.file?.type || '',
+              },
+            }
+
       await createTaskCluster({
-        tasks: taskConfig.tasks.map((task) => ({
-          data: task.data,
-          file: {
-            file_url: uploadedFileUrl,
-            file_name: task.file?.name || '',
-            file_size_bytes: task.file?.size || 0,
-            file_type: task.file?.type || '',
-          },
-        })),
+        tasks: taskConfig.tasks.map((task) => taskBody(task)),
         labelling_choices: taskConfig.labellingChoices,
         input_type: taskConfig.inputType,
         labeller_instructions: taskConfig.instructions,

@@ -21,7 +21,6 @@ export const Signup = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') || 'free'
-  const returnTo = searchParams.get('returnTo') || '/dashboard'
   const role = searchParams.get('role')
 
   useEffect(() => {
@@ -41,13 +40,13 @@ export const Signup = () => {
         username: userData.name,
         email: userData.email,
         password: userData.password,
-        role: role || '',
+        role: 'organization',
       })
       return response
     },
     onSuccess: (data) => {
       if (data.status === 'success') {
-        router.push(returnTo)
+        router.push('/auth/login')
         toast('Account created successfully', {
           description: 'Welcome to Label X',
         })
