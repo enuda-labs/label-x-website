@@ -1,0 +1,476 @@
+'use client'
+
+import React, { useState } from 'react'
+import { uploadToCloudinary } from '@/utils/cloudinary'
+import { ArrowLeft, CheckCircle, Upload, Settings } from 'lucide-react'
+import { useParams, useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { toast } from 'sonner'
+import DataTypeSelection, {
+  DataType,
+} from '@/components/project/data-type-selection'
+import TaskConfiguration, {
+  TaskConfig,
+} from '@/components/project/task/task-configurations'
+import { createTaskCluster } from '@/services/apis/task'
+
+enum AnnotationStep {
+  DATA_TYPE = 'data_type',
+  CONFIGURE = 'configure',
+  PREVIEW = 'preview',
+  SUBMIT = 'submit',
+}
+
+const Annotate = () => {
+  const { id: projectId } = useParams()
+
+  const [currentStep, setCurrentStep] = useState<AnnotationStep>(
+    AnnotationStep.DATA_TYPE
+  )
+  const [dataType, setDataType] = useState<DataType | null>(null)
+  const [taskConfig, setTaskConfig] = useState<TaskConfig>({
+    taskName: '',
+    description: '',
+    inputType: 'multiple_choice',
+    labellingChoices: [],
+    instructions: '',
+    labellersRequired: 1,
+    tasks: [{ id: '1', data: '', file: null }],
+    deadline: new Date(),
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const router = useRouter()
+
+  const stepLabels = {
+    [AnnotationStep.DATA_TYPE]: 'Select Data Type',
+    [AnnotationStep.CONFIGURE]: 'Configure Task',
+    [AnnotationStep.PREVIEW]: 'Review & Preview',
+    [AnnotationStep.SUBMIT]: 'Success',
+  }
+
+  const getStepNumber = (step: AnnotationStep): number => {
+    return Object.values(AnnotationStep).indexOf(step) + 1
+  }
+
+  const getCurrentProgress = (): number => {
+    return (
+      (getStepNumber(currentStep) / Object.values(AnnotationStep).length) * 100
+    )
+  }
+
+  const canProceed = (): boolean => {
+    switch (currentStep) {
+      case AnnotationStep.DATA_TYPE:
+        return !!dataType
+      case AnnotationStep.CONFIGURE:
+        return !!(
+          taskConfig.taskName &&
+          taskConfig.description &&
+          taskConfig.instructions &&
+          taskConfig.tasks.length > 0 &&
+          taskConfig.tasks.every((task) => task.data.trim()) &&
+          (taskConfig.inputType === 'text' ||
+            taskConfig.labellingChoices.length > 0) &&
+          taskConfig.deadline &&
+          taskConfig.deadline.getTime() - Date.now() > 24 * 60 * 60 * 1000
+        )
+      case AnnotationStep.PREVIEW:
+        return true
+      default:
+        return false
+    }
+  }
+
+  const handleNext = () => {
+    const steps = Object.values(AnnotationStep)
+    const currentIndex = steps.indexOf(currentStep)
+    if (currentIndex < steps.length - 1) {
+      setCurrentStep(steps[currentIndex + 1])
+    }
+  }
+
+  const handleBack = () => {
+    const steps = Object.values(AnnotationStep)
+    const currentIndex = steps.indexOf(currentStep)
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1])
+    } else {
+      router.back()
+    }
+  }
+
+  console.log(taskConfig.tasks[0])
+
+  const validateAndSubmit = async () => {
+    if (!dataType || !canProceed()) {
+      toast('Validation Error', {
+        description: 'Please complete all required fields before submitting.',
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    let uploadedFileUrl = ''
+    if (taskConfig.inputType !== 'text') {
+      // Assume first task item contains the file (customize as needed)
+      const fileTask = taskConfig.tasks[0].file
+      if (fileTask) {
+        try {
+          uploadedFileUrl = await uploadToCloudinary(fileTask)
+          // Replace file data with URL for backend
+          setTaskConfig((prev) => ({
+            ...prev,
+            tasks: [
+              {
+                ...prev.tasks[0],
+                // file: {
+                //   ...prev.tasks[0].file,
+                // },
+              },
+            ],
+          }))
+        } catch (err) {
+          console.log(err)
+          toast('File Upload Error', { description: 'Failed to upload file.' })
+          setIsSubmitting(false)
+          return
+        }
+      }
+    }
+    try {
+      if (taskConfig.inputType !== 'text' && !uploadedFileUrl) {
+        toast('File Upload Error', { description: 'File upload not found' })
+        setIsSubmitting(false)
+        return
+      }
+      // TODO: Replace with API call FROM Backend
+      await createTaskCluster({
+        tasks: taskConfig.tasks.map((task) => ({
+          data: task.data,
+          file: {
+            file_url: uploadedFileUrl,
+            file_name: task.file?.name || '',
+            file_size_bytes: task.file?.size || 0,
+            file_type: task.file?.type || '',
+          },
+        })),
+        labelling_choices: taskConfig.labellingChoices,
+        input_type: taskConfig.inputType,
+        labeller_instructions: taskConfig.instructions,
+        deadline: taskConfig.deadline?.toISOString().split('T')[0],
+        labeller_per_item_count: taskConfig.labellersRequired,
+        task_type: dataType,
+        annotation_method: 'manual',
+        project: Number(projectId),
+        ...(uploadedFileUrl ? { file_url: uploadedFileUrl } : {}),
+      })
+
+      setCurrentStep(AnnotationStep.SUBMIT)
+      toast('Task Submitted Successfully!', {
+        description:
+          'Your annotation task has been created and will be processed by our labellers.',
+      })
+    } catch (error) {
+      console.log('Submission Error:', error)
+      toast('Submission Failed', {
+        description:
+          'There was an error submitting your task. Please try again.',
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case AnnotationStep.DATA_TYPE:
+        return (
+          <DataTypeSelection
+            onSelect={(type) => {
+              setDataType(type)
+              setTimeout(() => handleNext(), 300)
+            }}
+            selected={dataType || undefined}
+          />
+        )
+
+      case AnnotationStep.CONFIGURE:
+        return (
+          <div className="space-y-6">
+            <div className="mb-8 text-center">
+              <h2 className="mb-2 text-2xl font-semibold">
+                Configure Your Task
+              </h2>
+              <p className="text-muted-foreground">
+                Set up how you want your {dataType?.toLowerCase()} data labeled
+              </p>
+            </div>
+            <div className="mx-auto max-w-4xl bg-black/5">
+              <TaskConfiguration
+                dataType={dataType!}
+                onConfigChange={setTaskConfig}
+                initialConfig={taskConfig}
+              />
+            </div>
+          </div>
+        )
+
+      case AnnotationStep.PREVIEW:
+        return (
+          <div className="space-y-6">
+            <div className="mb-8 text-center">
+              <h2 className="mb-2 text-2xl font-semibold">Review & Preview</h2>
+              <p className="text-muted-foreground">
+                Confirm your task details and data preview
+              </p>
+            </div>
+            <div className="mx-auto max-w-4xl">
+              <Card className="shadow-soft bg-card/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="text-primary h-5 w-5" />
+                    Task Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-muted-foreground text-sm font-medium">
+                          Data Type
+                        </h4>
+                        <p className="font-semibold">{dataType}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-muted-foreground text-sm font-medium">
+                          Task Name
+                        </h4>
+                        <p className="font-semibold">{taskConfig.taskName}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-muted-foreground text-sm font-medium">
+                          Description
+                        </h4>
+                        <p className="text-sm">{taskConfig.description}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-muted-foreground text-sm font-medium">
+                          Input Type
+                        </h4>
+                        <p className="text-sm capitalize">
+                          {taskConfig.inputType.replace('_', ' ')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {taskConfig.inputType === 'multiple_choice' && (
+                        <div>
+                          <h4 className="text-muted-foreground text-sm font-medium">
+                            Labelling Options
+                          </h4>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {taskConfig.labellingChoices.map((choice) => (
+                              <span
+                                key={choice.option_text}
+                                className="bg-primary/10 text-primary rounded-md px-2 py-1 text-xs"
+                              >
+                                {choice.option_text}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div>
+                        <h4 className="text-muted-foreground text-sm font-medium">
+                          Task Items
+                        </h4>
+                        <p className="text-sm">
+                          {taskConfig.tasks.length} items
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="text-muted-foreground text-sm font-medium">
+                          Labellers Required
+                        </h4>
+                        <p className="text-sm">
+                          {taskConfig.labellersRequired} per item
+                        </p>
+                      </div>
+                      {taskConfig.deadline && (
+                        <div>
+                          <h4 className="text-muted-foreground text-sm font-medium">
+                            Deadline
+                          </h4>
+                          <p className="text-sm">
+                            {taskConfig.deadline.toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-muted-foreground mb-2 text-sm font-medium">
+                      Sample Tasks Preview
+                    </h4>
+                    <div className="bg-muted/50 border-primary max-h-32 space-y-2 overflow-y-auto rounded-lg border p-4">
+                      {taskConfig.tasks.slice(0, 3).map((task, index) => (
+                        <div key={task.id} className="text-sm">
+                          <span className="font-medium">Task {index + 1}:</span>{' '}
+                          {task.data.slice(0, 100)}
+                          {task.data.length > 100 ? '...' : ''}
+                        </div>
+                      ))}
+                      {taskConfig.tasks.length > 3 && (
+                        <div className="text-muted-foreground text-xs">
+                          ... and {taskConfig.tasks.length - 3} more items
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )
+
+      case AnnotationStep.SUBMIT:
+        return (
+          <div className="py-12 text-center">
+            <div className="mx-auto max-w-md">
+              <CheckCircle className="text-success mx-auto mb-6 h-16 w-16" />
+              <h2 className="mb-4 text-3xl font-bold">
+                Task Submitted Successfully!
+              </h2>
+              <p className="text-muted-foreground mb-8">
+                {`Your annotation task "${taskConfig.taskName}" has been created and will be processed by our labellers. 
+                You'll receive updates as work progresses.`}
+              </p>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => router.push('/client/overview')}
+                  className="h-12 w-full"
+                >
+                  Go to Dashboard
+                </Button>
+                <Button
+                  onClick={() => {
+                    setCurrentStep(AnnotationStep.DATA_TYPE)
+                    setDataType(null)
+                    setTaskConfig({
+                      taskName: '',
+                      description: '',
+                      inputType: 'multiple_choice',
+                      labellingChoices: [],
+                      instructions: '',
+                      labellersRequired: 1,
+                      tasks: [{ id: '1', data: '', file: null }],
+                      deadline: new Date(),
+                    })
+                  }}
+                  variant="outline"
+                  className="border-primary h-12 w-full bg-transparent"
+                >
+                  Create Another Task
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
+
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="bg-card/20 min-h-screen">
+      <header className="bg-card/30 sticky top-0 z-50 border-b backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button onClick={handleBack} variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+
+              <div>
+                <h1 className="text-xl font-semibold">Annotate a Task</h1>
+                <p className="text-muted-foreground text-sm">
+                  Upload your dataset and configure how you want it labeled
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Progress Bar */}
+      {currentStep !== AnnotationStep.SUBMIT && (
+        <div className="bg-card/20 border-b">
+          <div className="container mx-auto px-4 py-4">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-sm font-medium">
+                Step {getStepNumber(currentStep)} of{' '}
+                {Object.values(AnnotationStep).length - 1}
+              </span>
+              <span className="text-muted-foreground text-sm">
+                {stepLabels[currentStep]}
+              </span>
+            </div>
+            <Progress value={getCurrentProgress()} className="h-2" />
+          </div>
+        </div>
+      )}
+
+      <main className="container mx-auto px-4 py-8">{renderStepContent()}</main>
+
+      {currentStep !== AnnotationStep.SUBMIT && (
+        <footer className="sticky bottom-0 border-t backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === AnnotationStep.DATA_TYPE}
+              >
+                Back
+              </Button>
+
+              {currentStep === AnnotationStep.PREVIEW ? (
+                <Button
+                  onClick={validateAndSubmit}
+                  disabled={!canProceed() || isSubmitting}
+                  // variant="hero"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Upload className="h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Task'
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNext}
+                  disabled={!canProceed()}
+                  variant="default"
+                >
+                  Continue
+                </Button>
+              )}
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
+  )
+}
+
+export default Annotate

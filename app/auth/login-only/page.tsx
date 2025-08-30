@@ -7,8 +7,8 @@ export default function LoginPage() {
   return (
     <Suspense fallback={null}>
       <AuthPages>
-      <LoginOnly />
-        </AuthPages>
+        <LoginOnly />
+      </AuthPages>
     </Suspense>
   )
 }

@@ -21,6 +21,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Users, FolderOpen, Plus, Loader } from 'lucide-react'
 import Link from 'next/link'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -32,6 +41,9 @@ import {
 } from '@/services/apis/reviewers'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Input } from '@/components/ui/input'
+import { isAxiosError } from 'axios'
+import { adminCreateProject } from '@/services/apis/admin'
 
 // const mockProjects = [
 //   {
@@ -116,6 +128,12 @@ export default function AdminDashboardContent() {
   const queryClient = useQueryClient()
   const [selectedProject, setSelectedProject] = useState<number | null>(null)
   const [selectedLabelers, setSelectedLabelers] = useState<number[]>([])
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState('')
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+  })
 
   const { data: labelers = [] } = useQuery({
     queryKey: ['labelers'],
@@ -148,6 +166,21 @@ export default function AdminDashboardContent() {
       },
     }
   )
+
+  const { mutate: createMutation, isPending } = useMutation({
+    mutationFn: adminCreateProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      setNewProject({ name: '', description: '' })
+      setOpen(false)
+      router.push('/client/projects/task')
+      setError('')
+    },
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      if (isAxiosError(err)) setError(err.response?.data.detail || err.message)
+    },
+  })
 
   const currentTab = searchParams.get('tab') || 'projects'
 
@@ -199,19 +232,80 @@ export default function AdminDashboardContent() {
 
         {/* Projects Tab */}
         <TabsContent value="projects" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="my-5 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Project Overview</h2>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 w-full md:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="border-white/10 bg-[#0A0A0A] text-white">
+                <DialogHeader>
+                  <DialogTitle>Create New Project</DialogTitle>
+                  <DialogDescription className="text-white/60">
+                    Fill in the details to create a new data review project.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label className="mb-2 text-sm font-medium text-white">
+                      Project Name
+                    </label>
+                    <Input
+                      placeholder="e.g., Content Moderation Project"
+                      className="border-white/10 bg-white/5 text-white"
+                      value={newProject.name}
+                      onChange={(e) =>
+                        setNewProject({ ...newProject, name: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-white">
+                      Description
+                    </label>
+                    <Input
+                      placeholder="Brief description of the project"
+                      className="border-white/10 bg-white/5 text-white"
+                      value={newProject.description}
+                      onChange={(e) =>
+                        setNewProject({
+                          ...newProject,
+                          description: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <span className="text-sm text-red-500">{error}</span>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    type="submit"
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={() => createMutation(newProject)}
+                    disabled={isPending}
+                  >
+                    {isPending ? 'Creating Project...' : 'Create Project'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="grid gap-4">
             {isFetchingProjects ? (
-              <>
+              <div className="space-y-5">
                 <Skeleton className="h-28 bg-white/5" />
                 <Skeleton className="h-28 bg-white/5" />
                 <Skeleton className="h-28 bg-white/5" />
                 <Skeleton className="h-28 bg-white/5" />
-              </>
-            ) : (
+              </div>
+            ) : projects?.projects.length ? (
               projects?.projects.map((project) => (
                 <Card key={project.id} className="bg-card/20 p-6">
                   <div className="flex items-start justify-between">
@@ -259,13 +353,20 @@ export default function AdminDashboardContent() {
                   </div>
                 </Card>
               ))
+            ) : (
+              <div className="my-10">
+                No project has been created yet
+                <Button className="mx-5" onClick={() => setOpen(true)}>
+                  Create Now
+                </Button>
+              </div>
             )}
           </div>
         </TabsContent>
 
         {/* Labelers Tab */}
         <TabsContent value="labelers" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="my-5 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Labeler Management</h2>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -281,7 +382,7 @@ export default function AdminDashboardContent() {
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Completed Tasks</TableHead>
-                  <TableHead>Accuracy</TableHead>
+                  {/* <TableHead>Accuracy</TableHead> */}
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -299,8 +400,8 @@ export default function AdminDashboardContent() {
                         {labeler.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{'labeler.completedTasks'}</TableCell>
-                    <TableCell>{'labeler.accuracy'}%</TableCell>
+                    <TableCell>{labeler.completed_clusters}</TableCell>
+                    {/* <TableCell>{'labeler.accuracy'}%</TableCell> */}
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button

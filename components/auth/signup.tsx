@@ -24,11 +24,11 @@ export const Signup = () => {
   const returnTo = searchParams.get('returnTo') || '/dashboard'
   const role = searchParams.get('role')
 
-    useEffect(() => {
-      if (!role || role !== 'individual' && role !== 'organization') {
-        router.push('/auth/role')
-      }
-  }, [ router, role])
+  useEffect(() => {
+    if (!role || (role !== 'individual' && role !== 'organization')) {
+      router.push('/auth/role')
+    }
+  }, [router, role])
 
   const signupMutation = useMutation({
     mutationFn: async (userData: {
@@ -72,7 +72,7 @@ export const Signup = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!role) return router.push('/auth/role');
+    if (!role) return router.push('/auth/role')
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
     signupMutation.mutate({ email, password, name, company })
@@ -80,79 +80,84 @@ export const Signup = () => {
 
   return (
     <>
-    <form onSubmit={handleSignup} className="space-y-4">
-      <div className='grid grid-cols-2 gap-3 w-full'> 
-      <div className="space-y-2">
-        <Label htmlFor="name">Username</Label>
-        <Input
-          id="name"
-          type="text"
-          placeholder="John Doe"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="border-white/10 bg-white/5 text-white"
-        />
+      <form onSubmit={handleSignup} className="space-y-4">
+        <div className="grid w-full grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="name">Username</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="John Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="border-white/10 bg-white/5 text-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="signupEmail">Email</Label>
+            <Input
+              id="signupEmail"
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="border-white/10 bg-white/5 text-white"
+            />
+          </div>
         </div>
+
         <div className="space-y-2">
-        <Label htmlFor="signupEmail">Email</Label>
-        <Input
-          id="signupEmail"
-          type="email"
-          placeholder="your@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="border-white/10 bg-white/5 text-white"
-        />
-      
-      </div>
-      </div>
+          <Label htmlFor="company">Company Name</Label>
+          <Input
+            id="company"
+            type="text"
+            placeholder="Acme Inc."
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            className="border-white/10 bg-white/5 text-white"
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="company">Company Name</Label>
-        <Input
-          id="company"
-          type="text"
-          placeholder="Acme Inc."
-          value={company}
-          onChange={(e) => setCompany(e.target.value)}
-          className="border-white/10 bg-white/5 text-white"
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="signupPassword">Password</Label>
+          <Input
+            id="signupPassword"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="border-white/10 bg-white/5 text-white"
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="signupPassword">Password</Label>
-        <Input
-          id="signupPassword"
-          type="password"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="border-white/10 bg-white/5 text-white"
-        />
-      </div>
+        <div className="mt-2 text-sm text-white/60">
+          Selected plan:{' '}
+          <span className="text-primary font-medium">
+            {plan.charAt(0).toUpperCase() + plan.slice(1)}
+          </span>
+        </div>
 
-      <div className="mt-2 text-sm text-white/60">
-        Selected plan:{' '}
-        <span className="text-primary font-medium">
-          {plan.charAt(0).toUpperCase() + plan.slice(1)}
-        </span>
+        <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
+        <Button
+          type="submit"
+          className="bg-primary hover:bg-primary/90 h-12 w-full"
+          disabled={signupMutation.isPending}
+        >
+          {signupMutation.isPending ? 'Creating account...' : 'Create Account'}
+        </Button>
+      </form>
+      <div className="flex items-end justify-end">
+        Have an account?{' '}
+        <Link
+          href="/auth/login"
+          className="text-primary ml-2 font-semibold hover:underline"
+        >
+          Login
+        </Link>
       </div>
-
-      <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
-      <Button
-        type="submit"
-        className="bg-primary hover:bg-primary/90 w-full h-12"
-        disabled={signupMutation.isPending}
-      >
-        {signupMutation.isPending ? 'Creating account...' : 'Create Account'}
-      </Button>
-    </form>
-     <div className='flex items-end justify-end'>
-      Have an account? <Link href='/auth/login' className='text-primary font-semibold hover:underline ml-2'>Login</Link>
-    </div>
     </>
   )
 }

@@ -51,6 +51,7 @@ export interface Reviewer {
   email: string
   is_active: boolean
   assigned_clusters: AssignedCluster[]
+  completed_clusters: number
 }
 
 interface AddReviewerPayload {

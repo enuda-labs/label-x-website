@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 import { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 
-const AuthPages = ({children}:{children: ReactNode}) => {
+const AuthPages = ({ children }: { children: ReactNode }) => {
   const router = useRouter()
 
   const handleGoBack = () => {
@@ -21,7 +21,7 @@ const AuthPages = ({children}:{children: ReactNode}) => {
 
       <button
         onClick={handleGoBack}
-        className="hover:text-primary relative top-4 left-3 z-50 flex items-center gap-x-2 hover:underline cursor-pointer"
+        className="hover:text-primary relative top-4 left-3 z-50 flex cursor-pointer items-center gap-x-2 hover:underline"
       >
         <ArrowLeft /> Back
       </button>
@@ -31,9 +31,9 @@ const AuthPages = ({children}:{children: ReactNode}) => {
         <WelcomeHeader />
         <div className="container mx-auto -mt-5 md:mt-5">
           <div className="mx-auto max-w-[550px]">
-            <Card className="max-h-[80vh]  border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
+            <Card className="max-h-[80vh] border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
               {children}
-            </Card> 
+            </Card>
           </div>
         </div>
       </section>
