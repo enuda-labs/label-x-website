@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useState } from 'react'
 //import { useParams} from "next/navigation";
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -87,14 +86,9 @@ const mockAssignments = {
       labelerId: 1,
       labelerName: 'John Doe',
       labelerEmail: 'john@example.com',
-      labelerName: 'John Doe',
-      labelerEmail: 'john@example.com',
       assignedTasks: 50,
       completedTasks: 18,
       accuracy: 95,
-      status: 'Active',
-      assignedDate: '2025-08-15',
-      lastActivity: '2025-08-25',
       status: 'Active',
       assignedDate: '2025-08-15',
       lastActivity: '2025-08-25',
@@ -103,14 +97,9 @@ const mockAssignments = {
       labelerId: 2,
       labelerName: 'Jane Smith',
       labelerEmail: 'jane@example.com',
-      labelerName: 'Jane Smith',
-      labelerEmail: 'jane@example.com',
       assignedTasks: 50,
       completedTasks: 15,
       accuracy: 92,
-      status: 'Active',
-      assignedDate: '2025-08-16',
-      lastActivity: '2025-08-26',
       status: 'Active',
       assignedDate: '2025-08-16',
       lastActivity: '2025-08-26',
@@ -119,15 +108,9 @@ const mockAssignments = {
       labelerId: 4,
       labelerName: 'Sarah Wilson',
       labelerEmail: 'sarah@example.com',
-      labelerName: 'Sarah Wilson',
-      labelerEmail: 'sarah@example.com',
       assignedTasks: 50,
       completedTasks: 12,
       accuracy: 97,
-      status: 'Active',
-      assignedDate: '2025-08-17',
-      lastActivity: '2025-08-24',
-    },
       status: 'Active',
       assignedDate: '2025-08-17',
       lastActivity: '2025-08-24',
@@ -138,14 +121,9 @@ const mockAssignments = {
       labelerId: 2,
       labelerName: 'Jane Smith',
       labelerEmail: 'jane@example.com',
-      labelerName: 'Jane Smith',
-      labelerEmail: 'jane@example.com',
       assignedTasks: 100,
       completedTasks: 45,
       accuracy: 92,
-      status: 'Active',
-      assignedDate: '2025-08-10',
-      lastActivity: '2025-08-26',
       status: 'Active',
       assignedDate: '2025-08-10',
       lastActivity: '2025-08-26',
@@ -154,22 +132,15 @@ const mockAssignments = {
       labelerId: 5,
       labelerName: 'David Brown',
       labelerEmail: 'david@example.com',
-      labelerName: 'David Brown',
-      labelerEmail: 'david@example.com',
       assignedTasks: 100,
       completedTasks: 38,
       accuracy: 91,
       status: 'Active',
       assignedDate: '2025-08-12',
       lastActivity: '2025-08-25',
-      status: 'Active',
-      assignedDate: '2025-08-12',
-      lastActivity: '2025-08-25',
     },
     {
       labelerId: 1,
-      labelerName: 'John Doe',
-      labelerEmail: 'john@example.com',
       labelerName: 'John Doe',
       labelerEmail: 'john@example.com',
       assignedTasks: 100,
@@ -323,16 +294,13 @@ const ProjectManagement = () => {
   if (!project) {
     return (
       <div className="bg-background flex min-h-screen items-center justify-center">
-      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="mb-4 text-2xl font-bold">Project Not Found</h1>
           <h1 className="mb-4 text-2xl font-bold">Project Not Found</h1>
           <Button asChild>
             <Link href="/admin">Back to Admin Dashboard</Link>
           </Button>
         </div>
       </div>
-    )
     )
   }
 
@@ -360,26 +328,11 @@ const ProjectManagement = () => {
             Back to Admin
           </Link>
         </Button>
-      <div className="bg-card/30 supports-[backdrop-filter]:bg-bcard/40 border-b py-3 backdrop-blur">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/admin">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Admin
-          </Link>
-        </Button>
         <div className="px-4 py-4">
-          <div className="flex">
-            <div className="flex flex-col gap-x-4">
           <div className="flex">
             <div className="flex flex-col gap-x-4">
               <div className="flex-1">
                 <h1 className="text-2xl font-bold">{project.name}</h1>
-                <div className="mt-1 flex items-center space-x-4">
-                  <Badge
-                    variant={
-                      project.status === 'Active' ? 'default' : 'secondary'
-                    }
-                  >
                 <div className="mt-1 flex items-center space-x-4">
                   <Badge
                     variant={
@@ -402,8 +355,6 @@ const ProjectManagement = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-4">
           <Card className="bg-card/20 p-6">
-        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-4">
-          <Card className="bg-card/20 p-6">
             <div className="flex items-center space-x-2">
               <div>
                 <p className="text-muted-foreground text-sm font-medium">
@@ -415,7 +366,6 @@ const ProjectManagement = () => {
               </div>
             </div>
           </Card>
-
 
           <Card className="p-6">
             <div className="flex items-center space-x-2">
@@ -430,13 +380,9 @@ const ProjectManagement = () => {
             </div>
           </Card>
 
-
           <Card className="p-6">
             <div className="flex items-center space-x-2">
               <div>
-                <p className="text-muted-foreground text-sm font-medium">
-                  Assigned Labelers
-                </p>
                 <p className="text-muted-foreground text-sm font-medium">
                   Assigned Labelers
                 </p>
@@ -452,9 +398,6 @@ const ProjectManagement = () => {
                 <p className="text-muted-foreground text-sm font-medium">
                   Deadline
                 </p>
-                <p className="text-muted-foreground text-sm font-medium">
-                  Deadline
-                </p>
                 <p className="text-lg font-semibold">{project.deadline}</p>
               </div>
             </div>
@@ -464,11 +407,8 @@ const ProjectManagement = () => {
         {/* Progress Overview */}
         <Card className="mb-8 p-6">
           <h3 className="mb-4 text-lg font-semibold">Project Progress</h3>
-        <Card className="mb-8 p-6">
-          <h3 className="mb-4 text-lg font-semibold">Project Progress</h3>
           <div className="space-y-4">
             <div>
-              <div className="mb-2 flex justify-between text-sm">
               <div className="mb-2 flex justify-between text-sm">
                 <span>Overall Progress</span>
                 <span>
@@ -489,7 +429,6 @@ const ProjectManagement = () => {
                 className="h-2"
               />
             </div>
-            <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="text-center">
                 <p className="text-primary text-2xl font-bold">
@@ -878,23 +817,11 @@ const ProjectManagement = () => {
                           setSelectedLabeler(Number(value))
                         }
                       >
-                      <label className="text-sm font-medium">
-                        Select Labeler
-                      </label>
-                      <Select
-                        onValueChange={(value) =>
-                          setSelectedLabeler(Number(value))
-                        }
-                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Choose a labeler" />
                         </SelectTrigger>
                         <SelectContent>
                           {availableLabelers.map((labeler) => (
-                            <SelectItem
-                              key={labeler.id}
-                              value={labeler.id.toString()}
-                            >
                             <SelectItem
                               key={labeler.id}
                               value={labeler.id.toString()}
@@ -905,11 +832,6 @@ const ProjectManagement = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button
-                      onClick={handleAssignLabeler}
-                      disabled={!selectedLabeler}
-                      className="w-full"
-                    >
                     <Button
                       onClick={handleAssignLabeler}
                       disabled={!selectedLabeler}
@@ -946,12 +868,6 @@ const ProjectManagement = () => {
                           <div className="text-muted-foreground text-sm">
                             {assignment.labelerEmail}
                           </div>
-                          <div className="font-medium">
-                            {assignment.labelerName}
-                          </div>
-                          <div className="text-muted-foreground text-sm">
-                            {assignment.labelerEmail}
-                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{assignment.assignedTasks}</TableCell>
@@ -966,21 +882,8 @@ const ProjectManagement = () => {
                                 100
                               }
                               className="h-2 flex-1"
-                            <Progress
-                              value={
-                                (assignment.completedTasks /
-                                  assignment.assignedTasks) *
-                                100
-                              }
-                              className="h-2 flex-1"
                             />
                             <span className="text-sm font-medium">
-                              {Math.round(
-                                (assignment.completedTasks /
-                                  assignment.assignedTasks) *
-                                  100
-                              )}
-                              %
                               {Math.round(
                                 (assignment.completedTasks /
                                   assignment.assignedTasks) *
@@ -1001,24 +904,11 @@ const ProjectManagement = () => {
                                 : 'destructive'
                           }
                         >
-                        <Badge
-                          variant={
-                            assignment.accuracy >= 95
-                              ? 'default'
-                              : assignment.accuracy >= 90
-                                ? 'secondary'
-                                : 'destructive'
-                          }
-                        >
                           {assignment.accuracy}%
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <Clock className="text-muted-foreground h-4 w-4" />
-                          <span className="text-sm">
-                            {assignment.lastActivity}
-                          </span>
                           <Clock className="text-muted-foreground h-4 w-4" />
                           <span className="text-sm">
                             {assignment.lastActivity}
@@ -1032,11 +922,7 @@ const ProjectManagement = () => {
                           onClick={() =>
                             handleRemoveLabeler(assignment.labelerId)
                           }
-                          onClick={() =>
-                            handleRemoveLabeler(assignment.labelerId)
-                          }
                         >
-                          <UserMinus className="mr-2 h-4 w-4" />
                           <UserMinus className="mr-2 h-4 w-4" />
                           Remove
                         </Button>
@@ -1055,17 +941,11 @@ const ProjectManagement = () => {
                 Project Information
               </h3>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <h3 className="mb-4 text-lg font-semibold">
-                Project Information
-              </h3>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
-                  <h4 className="mb-2 font-medium">Description</h4>
                   <h4 className="mb-2 font-medium">Description</h4>
                   <p className="text-muted-foreground">{project.description}</p>
                 </div>
                 <div>
-                  <h4 className="mb-2 font-medium">Type & Status</h4>
                   <h4 className="mb-2 font-medium">Type & Status</h4>
                   <div className="flex space-x-2">
                     <Badge variant="outline">{project.description}</Badge>
@@ -1086,10 +966,6 @@ const ProjectManagement = () => {
                 Labeling Instructions
               </h3>
               <div className="bg-muted/30 rounded-lg p-4">
-              <h3 className="mb-4 text-lg font-semibold">
-                Labeling Instructions
-              </h3>
-              <div className="bg-muted/30 rounded-lg p-4">
                 <p className="text-sm">{project.instructions}</p>
               </div>
             </Card>
@@ -1102,27 +978,19 @@ const ProjectManagement = () => {
                 Project Management Actions
               </h3>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <h3 className="mb-4 text-lg font-semibold">
-                Project Management Actions
-              </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Button variant="outline" className="h-20 flex-col">
-                  <AlertCircle className="mb-2 h-6 w-6" />
                   <AlertCircle className="mb-2 h-6 w-6" />
                   Pause Project
                 </Button>
                 <Button variant="outline" className="h-20 flex-col">
                   <Users className="mb-2 h-6 w-6" />
-                  <Users className="mb-2 h-6 w-6" />
                   Bulk Assign Tasks
                 </Button>
                 <Button variant="outline" className="h-20 flex-col">
                   <Target className="mb-2 h-6 w-6" />
-                  <Target className="mb-2 h-6 w-6" />
                   Export Results
                 </Button>
                 <Button variant="outline" className="h-20 flex-col">
-                  <Calendar className="mb-2 h-6 w-6" />
                   <Calendar className="mb-2 h-6 w-6" />
                   Extend Deadline
                 </Button>
@@ -1136,9 +1004,5 @@ const ProjectManagement = () => {
     </div>
   )
 }
-  )
-}
-
-export default ProjectManagement
 
 export default ProjectManagement
