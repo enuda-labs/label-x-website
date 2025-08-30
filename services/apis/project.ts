@@ -153,6 +153,7 @@ interface ProjectChartsResponse {
   message: string
   success: boolean
 }
+
 export const createProject = async (payload: CreateProjectPayload) => {
   const response = await axiosClient.post<CreateProjectPayload, Project>(
     'account/organization/project/',

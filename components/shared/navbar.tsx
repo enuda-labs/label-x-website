@@ -79,7 +79,13 @@ function Header() {
           <div className="hidden items-center gap-3 md:flex">
             {user?.id ? (
               <Link
-                href={user.is_reviewer ? '/label/overview' : '/client/overview'}
+                href={
+                  user.is_admin
+                    ? '/admin'
+                    : user.is_reviewer
+                      ? '/label/overview'
+                      : '/client/overview'
+                }
               >
                 <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
                   Dashboard
