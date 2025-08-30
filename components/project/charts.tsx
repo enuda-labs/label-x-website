@@ -50,7 +50,7 @@ import { Activity } from 'lucide-react'
 //const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 export const ProjectCharts = ({ projectId }: { projectId: number }) => {
-  const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '90d'>('30d')
+  const [dateFilter, setDateFilter] = useState<'7d' | '30d' | '90d'>('7d')
 
   const { data: chartData, isPending: isChartPending } = useQuery({
     queryKey: ['projectChart', projectId, dateFilter],
@@ -94,7 +94,7 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
   //   { date: 'Jul 16', accuracy: 97 },
   // ]
 
-  let statusDistribution = [
+  const statusDistribution = [
     {
       name: 'Completed',
       value: chartData?.data.pie_chart_data.completed || 0,
@@ -111,22 +111,6 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
       color: '#FFBB28',
     },
   ]
-
-  if (
-    chartData?.data.pie_chart_data.completed === 0 &&
-    chartData?.data.pie_chart_data.in_progress === 0 &&
-    chartData?.data.pie_chart_data.pending === 0
-  ) {
-    statusDistribution = [
-      { name: 'Completed', value: 1, color: '#00C49F' },
-      {
-        name: 'In Progress',
-        value: 1,
-        color: '#0088FE',
-      },
-      { name: 'Pending', value: 1, color: '#FFBB28' },
-    ]
-  }
 
   return (
     <div className="mb-6 space-y-6">
