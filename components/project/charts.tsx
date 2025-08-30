@@ -259,7 +259,7 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
           <CardTitle className="text-white">Task Status Distribution</CardTitle>
         </CardHeader>
         <CardContent className="p-4">
-          {statusDistribution.find((data) => data.value) ? (
+          {statusDistribution.some((data) => data.value > 0) ? (
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
