@@ -41,6 +41,34 @@ export const fetchTask = async (taskId: string) => {
   return response.data
 }
 
+export const assignReviewers = async ({
+  id,
+  reviewer_ids,
+}: {
+  id: number
+  reviewer_ids: number[]
+}) => {
+  const response = await axiosClient.post<number[]>(
+    `/tasks/cluster/${id}/assign-reviewers/`,
+    reviewer_ids
+  )
+  return response.data
+}
+
+export const removeReviewers = async ({
+  id,
+  reviewer_ids,
+}: {
+  id: number
+  reviewer_ids: number[]
+}) => {
+  const response = await axiosClient.post<number[]>(
+    `/tasks/cluster/${id}/remove-reviewers/`,
+    reviewer_ids
+  )
+  return response.data
+}
+
 export const submitReview = async (payload: Task[]) => {
   const response = await axiosClient.post<Task[]>(
     '/tasks/submit-review',

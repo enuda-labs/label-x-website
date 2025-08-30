@@ -44,10 +44,11 @@ import {
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { adminGetProject, Cluster } from '@/services/apis/admin'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import DashboardLayout from '@/components/shared/dashboard-layout'
 import { Skeleton } from '@/components/ui/skeleton'
 import { listReviewers } from '@/services/apis/reviewers'
+import { assignReviewers, removeReviewers } from '@/services/apis/task'
 
 // Mock data - would come from API
 // const mockProjects = {
@@ -180,6 +181,13 @@ const ProjectManagement = () => {
   const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
+  const { mutate: assignReviewersMutation } = useMutation({
+    mutationFn: assignReviewers,
+  })
+
+  const { mutate: removeReviewersMutation } = useMutation({
+    mutationFn: removeReviewers,
+  })
   const getTaskTypeIcon = (taskType: string) => {
     switch (taskType) {
       case 'IMAGE':
@@ -232,7 +240,7 @@ const ProjectManagement = () => {
   )
 
   const handleAddReviewer = (clusterId: number, reviewerId: number) => {
-    console.log(clusterId, reviewerId)
+    assignReviewersMutation({ id: clusterId, reviewer_ids: [reviewerId] })
     // setClusters((prev) =>
     //   prev.map((cluster) => {
     //     if (cluster.id === clusterId) {
@@ -250,6 +258,7 @@ const ProjectManagement = () => {
   }
 
   const handleRemoveReviewer = (clusterId: number, reviewerId: number) => {
+    removeReviewersMutation({ id: clusterId, reviewer_ids: [reviewerId] })
     console.log(clusterId, reviewerId)
     // setClusters((prev) =>
     //   prev.map((cluster) => {

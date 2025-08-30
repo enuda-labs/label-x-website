@@ -94,9 +94,8 @@ export const TaskCard = ({ task }: { task: TaskItem }) => {
                   {getStatusIcon(task.status)}
                   <span className="capitalize">{task.status}</span>
                 </div>
-                {/*  eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <Badge
-                  variant={getPriorityColor(task.priority) as any}
+                  variant={getPriorityColor(task.priority)}
                   className="text-xs font-medium uppercase"
                 >
                   {task.priority}
