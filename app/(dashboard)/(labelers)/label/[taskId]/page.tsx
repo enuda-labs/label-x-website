@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { AxiosError } from 'axios'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams} from 'next/navigation'
 import {
   ArrowLeft,
   Check,
@@ -89,7 +89,7 @@ const FALLBACK_LABELS = [
 
 const LabelTask = () => {
   const { taskId } = useParams()
-  const router = useRouter()
+
 
   const [taskData, setTaskData] = useState<ApiTaskResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -166,9 +166,13 @@ const LabelTask = () => {
           : Number(taskId)
         const progress = await fetchTaskProgress(idToFetch)
         setProgressData(progress)
-      } catch (err) {
-        console.error('Failed to fetch task progress', err)
-      }
+      }  catch (err: unknown) {
+  if (err instanceof Error) {
+    console.error('Failed to fetch task progress', err.message)
+  } else {
+    console.error('Failed to fetch task progress', err)
+  }
+}
     })()
   }, [taskId])
 
@@ -196,12 +200,31 @@ const LabelTask = () => {
   const inputType = taskData.input_type ?? 'multiple_choice'
   const labellingChoices = taskData.choices ?? taskData.labelling_choices ?? []
   const progress =
-    totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
+  progressData && progressData.total_tasks > 0
+    ? Math.round((progressData.completed_tasks / progressData.total_tasks) * 100)
+    : totalItems > 0
+    ? Math.round((completedItems / totalItems) * 100)
+    : 0
+
   const isLastItem = currentItemIndex === totalItems - 1
 
   const choicesToShow =
     labellingChoices.length > 0 ? labellingChoices : FALLBACK_LABELS
   const itemType = currentItem?.task_type ?? taskData.task_type ?? 'TEXT'
+
+  // helper to go to an item index and restore saved response (if present)
+  const goToItemIndex = (index: number) => {
+    if (index < 0 || index >= totalItems) return
+    setCurrentItemIndex(index)
+    const saved = responses[index]
+    if (saved) {
+      setSelectedCategories(saved.answer || [])
+      setNotes(saved.notes || '')
+    } else {
+      setSelectedCategories([])
+      setNotes('')
+    }
+  }
 
   // --- Handlers ---
   const handleCategoryToggle = (category: string) => {
@@ -220,21 +243,15 @@ const LabelTask = () => {
       })
       return
     }
-    if (inputType === 'text_input' && selectedCategories.length === 0) {
-      toast('Please provide an answer', {
-        description: 'All items must be labeled before you can continue.',
-      })
-      return
-    }
 
-    const currentTaskIdToSend = taskData?.id ?? Number(taskId)
+    const currentTaskIdToSend = currentItem?.id
+    if (!currentTaskIdToSend) return
 
     try {
       setIsSubmitting(true)
 
-      // submit only the current item
       const payload = {
-        task_id: currentTaskIdToSend,
+        task_id: currentTaskIdToSend,  // 👈 now using item id
         labels: selectedCategories,
         notes,
       }
@@ -255,55 +272,30 @@ const LabelTask = () => {
           resp?.message ?? `Item labeled as "${selectedCategories.join(', ')}"`,
       })
 
-      if (isLastItem) setShowConfirmDialog(true)
-      else handleNext()
+    setShowConfirmDialog(true)
     } catch (err: unknown) {
-      const error = err as AxiosError<{ detail?: string; message?: string }>
-      const detail = error.response?.data?.detail || error.message || ''
-
-      if (
-        typeof detail === 'string' &&
-        detail.toLowerCase().includes('already label')
-      ) {
-        toast('You already labeled this item', {
-          description: detail || 'This item has already been labeled.',
-        })
-
-        // delay the navigation a tiny bit to let the toast render
-        setTimeout(() => {
-          const nextTaskId = currentTaskId + 1
-          router.push(`/label/${nextTaskId}`)
-        }, 300) // 300ms is enough for toast to show
-        return
-      }
-
-      console.error('Submit label failed', err)
-      toast('Failed to submit label', {
-        description: detail || 'An error occurred while submitting the label.',
-      })
-    } finally {
+  if (err instanceof Error) {
+    console.error('Failed to fetch task progress', err.message)
+  } else {
+    console.error('Failed to fetch task progress', err)
+  }
+} finally {
       setIsSubmitting(false)
     }
   }
 
   const handleNext = () => {
     if (currentItemIndex < totalItems - 1) {
-      const nextIndex = currentItemIndex + 1
-      setCurrentItemIndex(nextIndex)
-      const saved = responses[nextIndex]
-      if (saved) {
-        setSelectedCategories(saved.answer || [])
-        setNotes(saved.notes || '')
-      } else {
-        setSelectedCategories([])
-        setNotes('')
-      }
+      goToItemIndex(currentItemIndex + 1)
     }
   }
 
   // Mark missing — now persists immediately via annotateMissingAsset
   const handleMarkMissing = async () => {
-    const taskIdToSend = taskData?.id ?? Number(taskId)
+    // ✅ always send the current item id
+    const taskIdToSend = currentItem?.id
+    if (!taskIdToSend) return
+
     const serial = currentItem?.serial_no ?? currentItem?.id
     const noteForServer = `Marked missing${serial ? ` (serial: ${serial})` : ''}`
 
@@ -325,8 +317,7 @@ const LabelTask = () => {
       setResponses(newResponses)
       setCompletedItems((prev) => prev + 1)
 
-      if (isLastItem) setShowConfirmDialog(true)
-      else handleNext()
+setShowConfirmDialog(true)
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string; message?: string }>
       const detail = error.response?.data?.detail || error.message || ''
@@ -339,11 +330,13 @@ const LabelTask = () => {
           description: detail || 'This item has already been labeled.',
         })
 
-        // delay the navigation a tiny bit to let the toast render
-        setTimeout(() => {
-          const nextTaskId = currentTaskId + 1
-          router.push(`/label/${nextTaskId}`)
-        }, 300) // 300ms is enough for toast to show
+        // advance in-cluster instead of navigating to another cluster id
+        const nextIndex = currentItemIndex + 1
+        if (nextIndex < totalItems) {
+          setTimeout(() => goToItemIndex(nextIndex), 250)
+        } else {
+          setTimeout(() => setShowConfirmDialog(true), 250)
+        }
         return
       }
 
@@ -357,108 +350,115 @@ const LabelTask = () => {
   }
 
   // Build payload (labels + notes)
-  const buildLabelsForSubmission = () => {
-    const labels: string[] = []
-    const notesArr: string[] = []
+  // const buildLabelsForSubmission = () => {
+  //   const labels: string[] = []
+  //   const notesArr: string[] = []
+  //
+  //   for (const r of responses) {
+  //     if (r.answer && r.answer.length > 0) {
+  //       labels.push(...r.answer) // merge all answers
+  //     }
+  //     if (r.notes && r.notes.trim() !== '') {
+  //       notesArr.push(r.notes.trim())
+  //     }
+  //   }
+  //
+  //   return {
+  //     task_id: taskData?.id ?? Number(taskId),
+  //     labels,
+  //     notes: notesArr.join(' | ') || '',
+  //   }
+  // }
 
-    for (const r of responses) {
-      if (r.answer && r.answer.length > 0) {
-        labels.push(...r.answer) // merge all answers
-      }
-      if (r.notes && r.notes.trim() !== '') {
-        notesArr.push(r.notes.trim())
-      }
-    }
-
-    return {
-      task_id: taskData?.id ?? Number(taskId),
-      labels,
-      notes: notesArr.join(' | ') || '',
-    }
-  }
-
-  // Submit labels using annotateTask helper
+  // Submit labels using annotateTask helper (final / batch submit)
   const currentTaskId = Array.isArray(taskId)
     ? Number(taskId[0])
     : Number(taskId) || 0
 
-  const submitLabels = async () => {
-    const payload = buildLabelsForSubmission()
+  // const submitLabels = async () => {
+  //   const payload = buildLabelsForSubmission()
+  //
+  //   if (payload.labels.length === 0 && !payload.notes) {
+  //     toast('Nothing to submit', {
+  //       description: 'Please provide at least one label or note.',
+  //     })
+  //     return
+  //   }
+  //
+  //   try {
+  //     setIsSubmitting(true)
+  //     const resp = await annotateTask(payload)
+  //
+  //     toast('Task labels submitted successfully', {
+  //       description: resp?.message ?? 'Submission succeeded',
+  //     })
+  //     setShowConfirmDialog(false)
+  //
+  //     // After final/batch submission: advance to next item in cluster if present,
+  //     // otherwise keep on last item (you can change this to navigate to next cluster if desired)
+  //     if (currentItemIndex < totalItems - 1) {
+  //       goToItemIndex(currentItemIndex + 1)
+  //     } else {
+  //       toast('All items in this cluster submitted.')
+  //     }
+  //   } catch (err: unknown) {
+  //     const error = err as AxiosError<{ detail?: string; message?: string }>
+  //     const status = error.response?.status
+  //     const detail =
+  //       error.response?.data?.detail ||
+  //       error.response?.data?.message ||
+  //       error.message ||
+  //       ''
+  //
+  //     if (
+  //       status === 400 &&
+  //       typeof detail === 'string' &&
+  //       detail.toLowerCase().includes('already label')
+  //     ) {
+  //       toast('You already labeled this task', {
+  //         description: detail || 'This task has already been labeled.',
+  //       })
+  //       setShowConfirmDialog(false)
+  //
+  //       if (currentItemIndex < totalItems - 1) {
+  //         goToItemIndex(currentItemIndex + 1)
+  //       }
+  //       return
+  //     }
+  //
+  //     if (status === 401 || status === 403) {
+  //       toast('Not authorized', {
+  //         description: detail || 'Please sign in and try again.',
+  //       })
+  //       setShowConfirmDialog(false)
+  //       return
+  //     }
+  //
+  //     console.error('Annotate failed', status, error)
+  //     toast('Failed to submit labels', {
+  //       description: detail || 'An error occurred while submitting labels.',
+  //     })
+  //   } finally {
+  //     setIsSubmitting(false)
+  //   }
+  // }
+  //
 
-    if (payload.labels.length === 0 && !payload.notes) {
-      toast('Nothing to submit', {
-        description: 'Please provide at least one label or note.',
-      })
-      return
-    }
 
-    try {
-      setIsSubmitting(true)
-      const resp = await annotateTask(payload)
-
-      toast('Task labels submitted successfully', {
-        description: resp?.message ?? 'Submission succeeded',
-      })
-      setShowConfirmDialog(false)
-
-      // move to next task
-      const nextTaskId = currentTaskId + 1
-      router.push(`/label/${nextTaskId}`)
-    } catch (err: unknown) {
-      const error = err as AxiosError<{ detail?: string; message?: string }>
-      const status = error.response?.status
-      const detail =
-        error.response?.data?.detail ||
-        error.response?.data?.message ||
-        error.message ||
-        ''
-
-      if (
-        status === 400 &&
-        typeof detail === 'string' &&
-        detail.toLowerCase().includes('already label')
-      ) {
-        toast('You already labeled this task', {
-          description: detail || 'This task has already been labeled.',
-        })
-        setShowConfirmDialog(false)
-
-        const nextTaskId = currentTaskId + 1
-        router.push(`/label/${nextTaskId}`)
-        return
-      }
-
-      if (status === 401 || status === 403) {
-        toast('Not authorized', {
-          description: detail || 'Please sign in and try again.',
-        })
-        setShowConfirmDialog(false)
-        return
-      }
-
-      console.error('Annotate failed', status, error)
-      toast('Failed to submit labels', {
-        description: detail || 'An error occurred while submitting labels.',
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleFinalSubmit = async () => {
-    await submitLabels()
-  }
-
+  // Next/Previous should move between items within the cluster
   const handleNextTask = () => {
-    const nextId = currentTaskId + 1
-    router.push(`/label/${nextId}`)
+    if (currentItemIndex < totalItems - 1) {
+      goToItemIndex(currentItemIndex + 1)
+    } else {
+      toast('This is the last item in the cluster.')
+    }
   }
 
   const handlePreviousTask = () => {
-    if (currentTaskId > 1) {
-      // prevent going to task 0 or negative
-      const prevId = currentTaskId - 1
-      router.push(`/label/${prevId}`)
+    if (currentItemIndex > 0) {
+      goToItemIndex(currentItemIndex - 1)
+    } else {
+      toast('This is the first item in the cluster.')
     }
   }
 
@@ -858,46 +858,53 @@ const LabelTask = () => {
       </div>
 
       {/* Submission Confirmation Modal */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="border py-8 shadow-sm">
-          <DialogHeader>
-            <DialogTitle>Confirm Task Completion</DialogTitle>
-            <DialogDescription>
-              You have completed all {totalItems} items in this task. Please
-              review your work before final submission.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Item Confirmation Modal */}
+  <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+    <DialogContent className="border py-8 shadow-sm">
+      <DialogHeader>
+        <DialogTitle>Confirm Item Annotation</DialogTitle>
+        <DialogDescription>
+          Please review your response for this item before continuing.
+        </DialogDescription>
+      </DialogHeader>
 
-          <div className="max-h-[300px] space-y-4 overflow-y-auto">
-            <h4 className="font-medium">Review Your Responses:</h4>
-            {responses.map((response, index) => (
-              <div key={index} className="bg-muted/50 rounded-lg p-3 text-sm">
-                <div className="font-medium">Item {index + 1}:</div>
-                <div className="text-muted-foreground">
-                  Answer: {response.answer}
-                </div>
-                {response.notes && (
-                  <div className="text-muted-foreground">
-                    Notes: {response.notes}
-                  </div>
-                )}
-              </div>
-            ))}
+      <div className="space-y-4">
+        <div className="bg-muted/50 rounded-lg p-3 text-sm">
+          <div className="font-medium">Item {currentItemIndex + 1}:</div>
+          <div className="text-muted-foreground">
+            Answer: {responses[currentItemIndex]?.answer?.join(', ') || '—'}
           </div>
+          {responses[currentItemIndex]?.notes && (
+            <div className="text-muted-foreground">
+              Notes: {responses[currentItemIndex]?.notes}
+            </div>
+          )}
+        </div>
+      </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-            >
-              Review Again
-            </Button>
-            <Button onClick={handleFinalSubmit} disabled={isSubmitting}>
-              {isSubmitting ? 'Submitting…' : 'Submit All Labels'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogFooter>
+        <Button
+          variant="outline"
+          onClick={() => setShowConfirmDialog(false)}
+        >
+          Edit Response
+        </Button>
+        <Button
+          onClick={() => {
+            setShowConfirmDialog(false)
+            if (currentItemIndex < totalItems - 1) {
+              goToItemIndex(currentItemIndex + 1)
+            } else {
+              toast('All items completed in this cluster.')
+            }
+          }}
+        >
+          Confirm & Continue
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
     </div>
   )
 }

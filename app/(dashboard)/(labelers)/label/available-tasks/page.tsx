@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   ChevronRight,
   FileText,
-  ImageIcon,
+  Image as ImageIcon,
   Video,
   Database,
   Clock,
@@ -24,7 +24,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { AvailableTask } from '@/types/availableTasks'
+import { AvailableCluster } from '@/types/availableTasks'
 import { fetchAvailableTasks, assignTaskToMe } from '@/services/apis/clusters'
 import { getUserDetails } from '@/services/apis/user'
 
@@ -44,11 +44,19 @@ const getTypeIcon = (type: string) => {
   }
 }
 
-const AvailableTasksPage = () => {
-  const [tasks, setTasks] = useState<AvailableTask[]>([])
+const AvailableClustersPage = () => {
+  const [clusters, setClusters] = useState<AvailableCluster[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState<number | null>(null)
-  const [selectedTask, setSelectedTask] = useState<AvailableTask | null>(null)
+  const [selectedCluster, setSelectedCluster] = useState<AvailableCluster | null>(null)
+
+
+  interface BackendError {
+    error?: string
+    message?: string
+    detail?: string
+  }
+
 
   // fetch user details
   const { data: userData, isLoading: userLoading } = useQuery({
@@ -64,43 +72,62 @@ const AvailableTasksPage = () => {
   else if (userData?.user?.is_reviewer) role = 'Reviewer'
   else role = 'User'
 
-  // Load tasks on mount
+  // Load clusters on mount
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadClusters = async () => {
       try {
         setLoading(true)
         const data = await fetchAvailableTasks()
-        setTasks(data)
+        setClusters(data)
       } catch {
-        toast.error('Failed to fetch available tasks')
+        toast.error('Failed to fetch available clusters')
       } finally {
         setLoading(false)
       }
     }
-    loadTasks()
+    loadClusters()
   }, [])
 
-  const handleAssign = async (taskId: number) => {
-    setAssigning(taskId)
+  const handleAssign = async (clusterId: number) => {
+    setAssigning(clusterId)
     try {
-      await assignTaskToMe(taskId)
-      toast.success('Task assigned successfully!', {
+      await assignTaskToMe(clusterId)
+      toast.success('Cluster assigned successfully!', {
         description: 'Check your Assigned tab.',
       })
-      setTasks((prev) => prev.filter((t) => t.id !== taskId))
-      setSelectedTask(null)
+      setClusters((prev) => prev.filter((c) => c.id !== clusterId))
+      setSelectedCluster(null)
     } catch (err: unknown) {
-      let backendError = 'Failed to assign task. Please try again.'
+  let backendError = 'Failed to assign cluster. Please try again.'
 
-      if (err instanceof Error) {
-        backendError = err.message
-      } else if ((err as AxiosError)?.response) {
-        const resp = (err as AxiosError).response
-        backendError = (resp?.data as { error?: string })?.error ?? backendError
-      }
+  if (err instanceof AxiosError) {
+    const status = err.response?.status
+    const data = err.response?.data
 
-      toast.error(backendError)
-    } finally {
+    // Check common backend fields
+    if (data) {
+    const backendData = data as BackendError
+    backendError =
+      backendData.error ||
+      backendData.message ||
+      backendData.detail ||
+      JSON.stringify(data)
+  }
+
+    if (status === 400) {
+      backendError = backendError || 'Bad Request: Invalid input'
+    } else if (status === 403) {
+      backendError = backendError || 'Forbidden: You are not authorized'
+    } else if (status === 404) {
+      backendError = backendError || 'Not Found: Cluster does not exist'
+    }
+  } else if (err instanceof Error) {
+    backendError = err.message
+  }
+
+  toast.error(backendError)
+}
+ finally {
       setAssigning(null)
     }
   }
@@ -109,7 +136,7 @@ const AvailableTasksPage = () => {
     <div className="container mx-auto space-y-6 py-8">
       <header className="bg-card/20 border-b backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <h1 className="text-2xl font-bold">Available Tasks</h1>
+          <h1 className="text-2xl font-bold">Available Clusters</h1>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <User className="h-4 w-4" />
             {userLoading ? 'Loading...' : `${username} (${role})`}
@@ -117,29 +144,31 @@ const AvailableTasksPage = () => {
         </div>
       </header>
 
-      {loading && <p className="text-muted-foreground">Loading tasks...</p>}
-      {!loading && tasks.length === 0 && (
-        <p className="text-muted-foreground">No available tasks right now.</p>
+      {loading && <p className="text-muted-foreground">Loading clusters...</p>}
+      {!loading && clusters.length === 0 && (
+        <p className="text-muted-foreground">No available clusters right now.</p>
       )}
 
       <div className="grid gap-6">
-        {tasks.map((task) => (
+        {clusters.map((cluster) => (
           <Card
-            key={task.id}
+            key={cluster.id}
             className="shadow-soft bg-card/20 hover:shadow-glow transition-all duration-300"
           >
             <CardHeader>
               <div className="flex items-start gap-3">
                 <div className="bg-primary/10 rounded-lg p-2">
-                  {getTypeIcon(task.task_type)}
+                  {getTypeIcon(cluster.task_type)}
                 </div>
                 <div>
-                  <CardTitle className="text-lg">{task.cluster_name}</CardTitle>
+                  <CardTitle className="text-lg">
+                    {cluster.labeller_instructions}
+                  </CardTitle>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    #{task.serial_no}
+                    Cluster #{cluster.id}
                   </p>
                   <Badge variant="outline" className="mt-2">
-                    {task.task_type}
+                    {cluster.task_type}
                   </Badge>
                 </div>
               </div>
@@ -148,12 +177,12 @@ const AvailableTasksPage = () => {
             <CardContent className="space-y-4">
               <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4" />
-                Created: {new Date(task.created_at).toLocaleDateString()}
+                Deadline: {new Date(cluster.deadline).toLocaleDateString()}
               </div>
 
               <Button
-                onClick={() => setSelectedTask(task)}
-                disabled={assigning === task.id}
+                onClick={() => setSelectedCluster(cluster)}
+                disabled={assigning === cluster.id}
               >
                 Assign to Me
                 <ChevronRight className="ml-2 h-4 w-4" />
@@ -164,25 +193,25 @@ const AvailableTasksPage = () => {
       </div>
 
       {/* Confirmation Modal */}
-      <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
+      <Dialog open={!!selectedCluster} onOpenChange={() => setSelectedCluster(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Assignment</DialogTitle>
             <DialogDescription>
-              Are you sure you want to assign task{' '}
-              <b>{selectedTask?.cluster_name}</b> ({selectedTask?.serial_no}) to
+              Are you sure you want to assign cluster{' '}
+              <b>{selectedCluster?.labeller_instructions}</b> (#{selectedCluster?.id}) to
               yourself?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedTask(null)}>
+            <Button variant="outline" onClick={() => setSelectedCluster(null)}>
               Cancel
             </Button>
             <Button
-              onClick={() => selectedTask && handleAssign(selectedTask.id)}
-              disabled={assigning === selectedTask?.id}
+              onClick={() => selectedCluster && handleAssign(selectedCluster.id)}
+              disabled={assigning === selectedCluster?.id}
             >
-              {assigning === selectedTask?.id ? 'Assigning...' : 'Yes, Assign'}
+              {assigning === selectedCluster?.id ? 'Assigning...' : 'Yes, Assign'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -191,4 +220,4 @@ const AvailableTasksPage = () => {
   )
 }
 
-export default AvailableTasksPage
+export default AvailableClustersPage
