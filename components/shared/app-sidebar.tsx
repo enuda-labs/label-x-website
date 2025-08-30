@@ -67,12 +67,12 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       icon: LayoutDashboard,
     },
     {
-      title: 'Tasks',
+      title: 'Clusters',
       url: '/label/tasks',
       icon: Clock,
     },
     {
-      title: 'Available Tasks',
+      title: 'Available Clusters',
       url: '/label/available-tasks',
       icon: ClipboardList,
     },

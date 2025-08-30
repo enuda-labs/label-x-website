@@ -40,13 +40,7 @@ const getTypeIcon = (type: string) => {
   }
 }
 
-// 🔹 Hardcoded label categories
-const HARDCODED_LABEL_CHOICES = [
-  'Electronics',
-  'Clothing',
-  'Home & Garden',
-  'Sports',
-]
+
 
 const LabelerDashboard = () => {
   const [clusters, setClusters] = useState<
@@ -273,19 +267,22 @@ const LabelerDashboard = () => {
                     />
                   </div>
 
-                  {/* Hardcoded Label Options */}
+
                   <div>
                     <p className="mb-2 text-sm font-medium">Label Options:</p>
                     <div className="flex flex-wrap gap-2">
-                      {HARDCODED_LABEL_CHOICES.map((choice, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {choice}
-                        </Badge>
-                      ))}
+                    {task.choices?.length
+  ? task.choices.map((choice, index) => (
+      <Badge key={index} variant="outline" className="text-xs">
+        {choice.option_text}
+      </Badge>
+    ))
+  : task.input_type === 'text_input' && (
+      <Badge variant="outline" className="text-xs">
+        Text Input
+      </Badge>
+    )}
+
                       {task.input_type === 'text_input' && (
                         <Badge variant="outline" className="text-xs">
                           Text Input

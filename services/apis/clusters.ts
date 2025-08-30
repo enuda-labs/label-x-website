@@ -1,6 +1,6 @@
 import { AxiosClient } from '@/utils/axios'
 import { AssignedCluster } from '@/types/clusters'
-import { AvailableTask } from '@/types/availableTasks'
+import { AvailableCluster } from '@/types/availableTasks'
 import { TaskProgress } from '@/types/taskProgress'
 import { ApiResponse } from '@/types/ApiResponse'
 
@@ -28,17 +28,15 @@ export const fetchTaskById = async (taskId: string | number) => {
   return response.data // full task details
 }
 
-export const fetchAvailableTasks = async (): Promise<AvailableTask[]> => {
-  const response = await axiosClient.get<{
-    status: string
-    data: {
-      available_tasks: AvailableTask[]
-      total_available: number
-      assigned_clusters: number
-    }
-  }>('/tasks/available-for-annotation/')
-  return response.data.data.available_tasks
+// still keep the function name!
+export const fetchAvailableTasks = async (): Promise<AvailableCluster[]> => {
+  const response = await axiosClient.get<AvailableCluster[]>(
+    '/tasks/cluster/available/'
+  )
+  return response.data
 }
+
+
 
 export const assignTaskToMe = async (clusterId: number) => {
   const response = await axiosClient.post('/tasks/cluster/assign-to-self/', {
