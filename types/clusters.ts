@@ -10,7 +10,7 @@ export interface AssignedCluster {
   labeller_instructions: string
   tasks_count: number
   pending_tasks: number
-
+choices?: Choice[]
   // add this if backend includes it
   status?: 'pending' | 'in_progress' | 'completed' | string
 }

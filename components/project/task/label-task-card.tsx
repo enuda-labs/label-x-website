@@ -19,6 +19,7 @@ import Link from 'next/link'
 export const TaskCard = ({ task }: { task: TaskItem }) => {
   const progressPercentage =
     (task.completedItems / task.labeller_per_item_count) * 100
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'TEXT':
