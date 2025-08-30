@@ -1,14 +1,23 @@
-// types/tasks.ts
-
-export type AvailableTask = {
+// types/clusters.ts
+export interface TaskChoice {
   id: number
-  serial_no: string
+  label: string
+  value?: string // optional, depending on backend
+}
+
+export interface AvailableCluster {
+  id: number
+  choices: TaskChoice[]
+  input_type: 'multiple_choice' | 'text' | string
+  labeller_instructions: string
+  deadline: string
+  labeller_per_item_count: number
   task_type: 'IMAGE' | 'TEXT'
-  data: string
-  cluster_id: number
-  cluster_name: string
-  priority: string
+  annotation_method: string
   created_at: string
-  ai_confidence: number
-  predicted_label: string | null
+  updated_at: string
+  status: 'pending' | 'completed' | 'in_progress' | string
+  project: number
+  created_by: number
+  assigned_reviewers: number[]
 }
