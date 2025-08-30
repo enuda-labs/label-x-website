@@ -9,12 +9,13 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   getSubscriptionPlans,
   initializeSubscription,
+  SubscriptionPlan,
 } from '@/services/apis/subscription'
 import { getUserDetails } from '@/services/apis/user'
 import { planFeats } from '@/utils'
+import { UserData } from '@/services/apis/auth'
 
 const Subscriptions = () => {
-  const router = useRouter()
   const { data } = useQuery({
     queryKey: ['plan'],
     queryFn: getSubscriptionPlans,
@@ -23,13 +24,6 @@ const Subscriptions = () => {
   const { data: user } = useQuery({
     queryKey: ['user'],
     queryFn: getUserDetails,
-  })
-
-  const { mutate: subscriptionMutation, isPending } = useMutation({
-    mutationFn: initializeSubscription,
-    onSuccess: (data) => {
-      router.push(data.data.payment_url)
-    },
   })
 
   return (
@@ -64,49 +58,7 @@ const Subscriptions = () => {
             <div className="mt-12 grid gap-8 md:grid-cols-3">
               {data?.detail &&
                 data.detail.map((plan) => (
-                  <div
-                    className={`border bg-white/5 backdrop-blur-sm ${
-                      plan.name === 'pro'
-                        ? 'border-primary/30'
-                        : 'border-white/10'
-                    } relative rounded-xl p-8 transition-colors hover:bg-white/10`}
-                    key={plan.id}
-                  >
-                    {plan.name === 'pro' && (
-                      <div className="bg-primary absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full px-4 py-1 text-xs font-medium">
-                        POPULAR
-                      </div>
-                    )}
-                    <h3 className="font-heading mb-4 text-xl font-semibold capitalize">
-                      {plan.name}
-                    </h3>
-                    <div className="mb-4 text-4xl font-bold">
-                      ${plan.monthly_fee}
-                      <span className="text-lg text-white/60">/mo</span>
-                    </div>
-                    <ul className="mb-8 space-y-3 text-left text-white/70">
-                      {planFeats(plan.name).map((feat) => (
-                        <li key={feat}>• {feat}</li>
-                      ))}
-                    </ul>
-                    <Button
-                      className="bg-primary hover:bg-primary/90 w-full cursor-pointer"
-                      onClick={() =>
-                        user
-                          ? subscriptionMutation(plan.id)
-                          : router.push(
-                              `/auth/login?plan=${plan.name}&returnTo=%2Fdashboard`
-                            )
-                      }
-                      disabled={isPending}
-                    >
-                      {isPending ? (
-                        <div className="mx-auto h-[24px] w-[24px] animate-spin rounded-full border-[3px] border-solid border-[rgba(0,0,0,0.2)] border-t-[#fff]"></div>
-                      ) : (
-                        'Get Started'
-                      )}
-                    </Button>
-                  </div>
+                  <Plan plan={plan} key={plan.id} user={user?.user} />
                 ))}
             </div>
           </div>
@@ -117,3 +69,56 @@ const Subscriptions = () => {
 }
 
 export default Subscriptions
+
+const Plan = ({ plan, user }: { plan: SubscriptionPlan; user?: UserData }) => {
+  const router = useRouter()
+
+  const { mutate: subscriptionMutation, isPending } = useMutation({
+    mutationFn: initializeSubscription,
+    onSuccess: (data) => {
+      router.push(data.data.payment_url)
+    },
+  })
+  return (
+    <div
+      className={`border bg-white/5 backdrop-blur-sm ${
+        plan.name === 'pro' ? 'border-primary/30' : 'border-white/10'
+      } relative rounded-xl p-8 transition-colors hover:bg-white/10`}
+    >
+      {plan.name === 'pro' && (
+        <div className="bg-primary absolute -top-3 left-1/2 -translate-x-1/2 transform rounded-full px-4 py-1 text-xs font-medium">
+          POPULAR
+        </div>
+      )}
+      <h3 className="font-heading mb-4 text-xl font-semibold capitalize">
+        {plan.name}
+      </h3>
+      <div className="mb-4 text-4xl font-bold">
+        ${plan.monthly_fee}
+        <span className="text-lg text-white/60">/mo</span>
+      </div>
+      <ul className="mb-8 space-y-3 text-left text-white/70">
+        {planFeats(plan.name).map((feat) => (
+          <li key={feat}>• {feat}</li>
+        ))}
+      </ul>
+      <Button
+        className="bg-primary hover:bg-primary/90 w-full cursor-pointer"
+        onClick={() =>
+          user
+            ? subscriptionMutation(plan.id)
+            : router.push(
+                `/auth/login?plan=${plan.name}&returnTo=%client/overview`
+              )
+        }
+        disabled={isPending}
+      >
+        {isPending ? (
+          <div className="mx-auto h-[24px] w-[24px] animate-spin rounded-full border-[3px] border-solid border-[rgba(0,0,0,0.2)] border-t-[#fff]"></div>
+        ) : (
+          'Get Started'
+        )}
+      </Button>
+    </div>
+  )
+}

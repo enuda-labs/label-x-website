@@ -44,7 +44,7 @@ import {
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { adminGetProject, Cluster } from '@/services/apis/admin'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import DashboardLayout from '@/components/shared/dashboard-layout'
 import { Skeleton } from '@/components/ui/skeleton'
 import { listReviewers } from '@/services/apis/reviewers'
@@ -81,78 +81,78 @@ import { assignReviewers, removeReviewers } from '@/services/apis/task'
 //   },
 // }
 
-const mockAssignments = {
-  1: [
-    {
-      labelerId: 1,
-      labelerName: 'John Doe',
-      labelerEmail: 'john@example.com',
-      assignedTasks: 50,
-      completedTasks: 18,
-      accuracy: 95,
-      status: 'Active',
-      assignedDate: '2025-08-15',
-      lastActivity: '2025-08-25',
-    },
-    {
-      labelerId: 2,
-      labelerName: 'Jane Smith',
-      labelerEmail: 'jane@example.com',
-      assignedTasks: 50,
-      completedTasks: 15,
-      accuracy: 92,
-      status: 'Active',
-      assignedDate: '2025-08-16',
-      lastActivity: '2025-08-26',
-    },
-    {
-      labelerId: 4,
-      labelerName: 'Sarah Wilson',
-      labelerEmail: 'sarah@example.com',
-      assignedTasks: 50,
-      completedTasks: 12,
-      accuracy: 97,
-      status: 'Active',
-      assignedDate: '2025-08-17',
-      lastActivity: '2025-08-24',
-    },
-  ],
-  2: [
-    {
-      labelerId: 2,
-      labelerName: 'Jane Smith',
-      labelerEmail: 'jane@example.com',
-      assignedTasks: 100,
-      completedTasks: 45,
-      accuracy: 92,
-      status: 'Active',
-      assignedDate: '2025-08-10',
-      lastActivity: '2025-08-26',
-    },
-    {
-      labelerId: 5,
-      labelerName: 'David Brown',
-      labelerEmail: 'david@example.com',
-      assignedTasks: 100,
-      completedTasks: 38,
-      accuracy: 91,
-      status: 'Active',
-      assignedDate: '2025-08-12',
-      lastActivity: '2025-08-25',
-    },
-    {
-      labelerId: 1,
-      labelerName: 'John Doe',
-      labelerEmail: 'john@example.com',
-      assignedTasks: 100,
-      completedTasks: 37,
-      accuracy: 95,
-      status: 'Active',
-      assignedDate: '2025-08-14',
-      lastActivity: '2025-08-26',
-    },
-  ],
-}
+// const mockAssignments = {
+//   1: [
+//     {
+//       labelerId: 1,
+//       labelerName: 'John Doe',
+//       labelerEmail: 'john@example.com',
+//       assignedTasks: 50,
+//       completedTasks: 18,
+//       accuracy: 95,
+//       status: 'Active',
+//       assignedDate: '2025-08-15',
+//       lastActivity: '2025-08-25',
+//     },
+//     {
+//       labelerId: 2,
+//       labelerName: 'Jane Smith',
+//       labelerEmail: 'jane@example.com',
+//       assignedTasks: 50,
+//       completedTasks: 15,
+//       accuracy: 92,
+//       status: 'Active',
+//       assignedDate: '2025-08-16',
+//       lastActivity: '2025-08-26',
+//     },
+//     {
+//       labelerId: 4,
+//       labelerName: 'Sarah Wilson',
+//       labelerEmail: 'sarah@example.com',
+//       assignedTasks: 50,
+//       completedTasks: 12,
+//       accuracy: 97,
+//       status: 'Active',
+//       assignedDate: '2025-08-17',
+//       lastActivity: '2025-08-24',
+//     },
+//   ],
+//   2: [
+//     {
+//       labelerId: 2,
+//       labelerName: 'Jane Smith',
+//       labelerEmail: 'jane@example.com',
+//       assignedTasks: 100,
+//       completedTasks: 45,
+//       accuracy: 92,
+//       status: 'Active',
+//       assignedDate: '2025-08-10',
+//       lastActivity: '2025-08-26',
+//     },
+//     {
+//       labelerId: 5,
+//       labelerName: 'David Brown',
+//       labelerEmail: 'david@example.com',
+//       assignedTasks: 100,
+//       completedTasks: 38,
+//       accuracy: 91,
+//       status: 'Active',
+//       assignedDate: '2025-08-12',
+//       lastActivity: '2025-08-25',
+//     },
+//     {
+//       labelerId: 1,
+//       labelerName: 'John Doe',
+//       labelerEmail: 'john@example.com',
+//       assignedTasks: 100,
+//       completedTasks: 37,
+//       accuracy: 95,
+//       status: 'Active',
+//       assignedDate: '2025-08-14',
+//       lastActivity: '2025-08-26',
+//     },
+//   ],
+// }
 
 // const availableLabelers = [
 //   { id: 3, name: 'Mike Johnson', email: 'mike@example.com', accuracy: 88 },
@@ -162,9 +162,7 @@ const mockAssignments = {
 const ProjectManagement = () => {
   const { projectId } = useParams()
   // const [selectedLabeler, setSelectedLabeler] = useState<number | null>(null)
-
-  const assignments =
-    mockAssignments[Number(projectId) as keyof typeof mockAssignments] || []
+  const queryClient = useQueryClient()
 
   const { data: project, isPending } = useQuery({
     queryKey: ['project', projectId],
@@ -183,10 +181,16 @@ const ProjectManagement = () => {
 
   const { mutate: assignReviewersMutation } = useMutation({
     mutationFn: assignReviewers,
+    onSuccess() {
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+    },
   })
 
   const { mutate: removeReviewersMutation } = useMutation({
     mutationFn: removeReviewers,
+    onSuccess() {
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+    },
   })
   const getTaskTypeIcon = (taskType: string) => {
     switch (taskType) {
@@ -259,7 +263,6 @@ const ProjectManagement = () => {
 
   const handleRemoveReviewer = (clusterId: number, reviewerId: number) => {
     removeReviewersMutation({ id: clusterId, reviewer_ids: [reviewerId] })
-    console.log(clusterId, reviewerId)
     // setClusters((prev) =>
     //   prev.map((cluster) => {
     //     if (cluster.id === clusterId) {
@@ -380,10 +383,23 @@ const ProjectManagement = () => {
             <div className="flex items-center space-x-2">
               <div>
                 <p className="text-muted-foreground text-sm font-medium">
-                  Completed
+                  Completed Tasks
                 </p>
                 <p className="text-2xl font-bold">
                   {project.cluster_stats.completed_clusters}
+                </p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6">
+            <div className="flex items-center space-x-2">
+              <div>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Pending Tasks
+                </p>
+                <p className="text-2xl font-bold">
+                  {project.cluster_stats.total_clusters -
+                    project.cluster_stats.completed_clusters}
                 </p>
               </div>
             </div>
@@ -395,7 +411,9 @@ const ProjectManagement = () => {
                 <p className="text-muted-foreground text-sm font-medium">
                   Assigned Labelers
                 </p>
-                <p className="text-2xl font-bold">{assignments.length}</p>
+                <p className="text-2xl font-bold">
+                  {project.cluster_stats.assigned_labellers}
+                </p>
               </div>
             </div>
           </Card>
