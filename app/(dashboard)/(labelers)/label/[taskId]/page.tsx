@@ -326,15 +326,25 @@ const handleConfirmSubmit = async () => {
     } else {
       toast('All items completed in this cluster.')
     }
-  } catch (err: unknown) {
-    const error = err as AxiosError<{ detail?: string; message?: string }>
-    const detail = error.response?.data?.detail || error.message || ''
+  } catch (err) {
+  const error = err as AxiosError<any>
+  const status = error.response?.status
+  const detail = error.response?.data?.detail || error.message || ''
 
-    toast('Failed to submit labels', {
-      description: detail || 'An error occurred while submitting labels.',
+  if (status === 400 && detail?.toLowerCase().includes('already')) {
+    toast('You already labeled this task', {
+      description: detail,
     })
-    console.error('Failed to submit task', err)
-  } finally {
+    setShowConfirmDialog(false)
+    if (currentItemIndex < totalItems - 1) goToItemIndex(currentItemIndex + 1)
+    return
+  }
+
+  toast('Failed to submit labels', {
+    description: detail || 'An error occurred while submitting labels.',
+  })
+  console.error('Failed to submit task', err)
+} finally {
     setIsSubmitting(false)
     setShowConfirmDialog(false)
   }
