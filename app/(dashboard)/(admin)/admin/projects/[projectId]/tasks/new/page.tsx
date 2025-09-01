@@ -144,14 +144,14 @@ const Annotate = () => {
       }
     }
     try {
-      if (taskConfig.inputType !== 'text' && !uploadedFileUrl) {
+      if (dataType !== 'TEXT' && !uploadedFileUrl) {
         toast('File Upload Error', { description: 'File upload not found' })
         setIsSubmitting(false)
         return
       }
 
       const taskBody = (task: TaskItem) =>
-        taskConfig.inputType === 'text'
+        dataType === 'TEXT'
           ? {
               data: task.data,
             }
@@ -188,7 +188,7 @@ const Annotate = () => {
       if (isAxiosError(error))
         toast('Submission Failed', {
           description:
-            error.response?.data ||
+            error.response?.data.error ||
             'There was an error submitting your task. Please try again.',
         })
       else
