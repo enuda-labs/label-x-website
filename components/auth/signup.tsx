@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,15 +15,27 @@ import Link from 'next/link'
 export const Signup = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
   const [name, setName] = useState('')
   const [company, setCompany] = useState('')
   const [error, setError] = useState('')
+  const [passwordTouched, setPasswordTouched] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') || 'free'
   const role = searchParams.get('role')
+
+  // Password validation rules
+  const passwordValidation = {
+    minLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /\d/.test(password),
+    hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+  }
+
+  const isPasswordValid = Object.values(passwordValidation).every(Boolean)
 
   useEffect(() => {
     if (!role || (role !== 'individual' && role !== 'organization')) {
@@ -73,18 +85,33 @@ export const Signup = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
     if (!role) return router.push('/auth/role')
+
+    if (!isPasswordValid) {
+      setError('Please ensure your password meets all requirements')
+      setPasswordTouched(true)
+      return
+    }
+
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
     signupMutation.mutate({ email, password, name, company })
   }
+
+  const ValidationIcon = ({ isValid }: { isValid: boolean }) =>
+    isValid ? (
+      <Check size={16} className="text-green-500" />
+    ) : (
+      <X size={16} className="text-red-500" />
+    )
 
   return (
     <>
       <form onSubmit={handleSignup} className="space-y-4">
         <div className="grid w-full grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor="name">Username</Label>
+            <Label htmlFor="name">Username *</Label>
             <Input
               id="name"
               type="text"
@@ -96,7 +123,7 @@ export const Signup = () => {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="signupEmail">Email</Label>
+            <Label htmlFor="signupEmail">Email *</Label>
             <Input
               id="signupEmail"
               type="email"
@@ -110,7 +137,7 @@ export const Signup = () => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="company">Company Name</Label>
+          <Label htmlFor="company">Company Name (Optional)</Label>
           <Input
             id="company"
             type="text"
@@ -122,27 +149,103 @@ export const Signup = () => {
         </div>
 
         <div className="space-y-2">
-    <Label htmlFor="signupPassword">Password</Label>
-    <div className="relative">
-      <Input
-        id="signupPassword"
-        type={showPassword ? 'text' : 'password'}
-        placeholder="••••••••"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        className="w-full border-white/10 bg-white/5 text-white pr-12 py-3"
-      />
-      <button
-        type="button"
-        onClick={() => setShowPassword(!showPassword)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 bg-black/20 rounded-full text-white hover:bg-black/30"
-      >
-        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-      </button>
-    </div>
-  </div>
+          <Label htmlFor="signupPassword">Password *</Label>
+          <div className="relative">
+            <Input
+              id="signupPassword"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                if (!passwordTouched) setPasswordTouched(true)
+              }}
+              onBlur={() => setPasswordTouched(true)}
+              required
+              className={`w-full border-white/10 bg-white/5 py-3 pr-12 text-white ${
+                passwordTouched && !isPasswordValid ? 'border-red-500/50' : ''
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-black/20 p-1 text-white hover:bg-black/30"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
+          {/* Password Requirements */}
+          {passwordTouched && password && (
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="font-medium text-white/80">
+                Password Requirements:
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.minLength} />
+                  <span
+                    className={
+                      passwordValidation.minLength
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    At least 8 characters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasUppercase} />
+                  <span
+                    className={
+                      passwordValidation.hasUppercase
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    One uppercase letter
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasLowercase} />
+                  <span
+                    className={
+                      passwordValidation.hasLowercase
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    One lowercase letter
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasNumber} />
+                  <span
+                    className={
+                      passwordValidation.hasNumber
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    One number
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasSpecialChar} />
+                  <span
+                    className={
+                      passwordValidation.hasSpecialChar
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    {`One special character (!@#$%^&*()_+-=[]{}|;':",./<>?)`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="mt-2 text-sm text-white/60">
           Selected plan:{' '}
@@ -155,7 +258,7 @@ export const Signup = () => {
         <Button
           type="submit"
           className="bg-primary hover:bg-primary/90 h-12 w-full"
-          disabled={signupMutation.isPending}
+          disabled={signupMutation.isPending || !isPasswordValid}
         >
           {signupMutation.isPending ? 'Creating account...' : 'Create Account'}
         </Button>
