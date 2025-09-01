@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,9 +23,8 @@ export const LoginOnly = () => {
   const [verificationCode, setVerificationCode] = useState('')
 
   const router = useRouter()
-  const searchParams = useSearchParams()
-  //TODO: Implement return USERS based on their roles (client or labeler)
-  const returnTo = searchParams.get('returnTo') || '/label/overview'
+
+  const returnTo = '/label/overview'
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginBody) => {
@@ -95,27 +94,26 @@ export const LoginOnly = () => {
         </div>
 
         <div className="space-y-2">
-    <Label htmlFor="password">Password</Label>
-    <div className="relative">
-      <Input
-        id="password"
-        type={showPassword ? 'text' : 'password'}
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="••••••••"
-        required
-        className="w-full border-white/10 bg-white/5 text-white pr-12 py-3"
-      />
-      <button
-        type="button"
-        onClick={() => setShowPassword(!showPassword)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 bg-black/20 rounded-full text-white hover:bg-black/30"
-      >
-        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-      </button>
-    </div>
-  </div>
-  
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              className="w-full border-white/10 bg-white/5 py-3 pr-12 text-white"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-black/20 p-1 text-white hover:bg-black/30"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </div>
 
         {show2fa && (
           <div>

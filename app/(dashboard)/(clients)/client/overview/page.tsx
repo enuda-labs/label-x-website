@@ -6,8 +6,8 @@ import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { ArrowRight, Check } from 'lucide-react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { ArrowRight, Check, Plus } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getMyPlan,
   getSubscriptionPlans,
@@ -16,9 +16,13 @@ import {
 } from '@/services/apis/subscription'
 import { useRouter } from 'next/navigation'
 import { planFeats } from '@/utils'
-import { getProjects, getStats, Project } from '@/services/apis/project'
+import {
+  createProject,
+  getProjects,
+  getStats,
+  Project,
+} from '@/services/apis/project'
 import { Progress } from '@/components/ui/progress'
-import Link from 'next/link'
 import { fetchDataPoints } from '@/services/apis/datapoints'
 import {
   Dialog,
@@ -28,16 +32,25 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
+  DialogTrigger,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { isAxiosError } from 'axios'
 
 const Dashboard = () => {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(true)
   const [dataPoints, setDataPoints] = useState<number | null>(null)
   const [recentProjects, setRecentProjects] = useState<Project[]>([])
   const [showPlans, setShowPlans] = useState(false)
   const [showModal, setShowModal] = useState(false)
-
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+  })
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState('')
   const [stats, setStats] = useState({
     pending: 0,
     inProgress: 0,
@@ -134,6 +147,20 @@ const Dashboard = () => {
 
     loadDataPoints()
   }, [router])
+
+  const { mutate: createMutation, isPending } = useMutation({
+    mutationFn: createProject,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      setNewProject({ name: '', description: '' })
+      setOpen(false)
+      setError('')
+    },
+    onError: (err) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      if (isAxiosError(err)) setError(err.response?.data.detail || err.message)
+    },
+  })
 
   return (
     <DashboardLayout title="Dashboard">
@@ -251,7 +278,11 @@ const Dashboard = () => {
         <div className="space-y-4">
           {recentProjects.length ? (
             recentProjects.slice(0, 3).map((project) => (
-              <Card key={project.id} className="border-white/10 bg-white/5 p-4">
+              <Card
+                key={project.id}
+                className="border-white/10 bg-white/5 p-4"
+                onClick={() => router.push(`/client/projects/${project.id}`)}
+              >
                 <div className="flex flex-col justify-between md:flex-row md:items-center">
                   <div className="mb-3 md:mb-0">
                     <h3 className="font-medium text-white">{project.name}</h3>
@@ -299,12 +330,67 @@ const Dashboard = () => {
           ) : (
             <div className="my-10 flex items-center">
               No project has been created for this account
-              <Link
-                href={'/client/projects'}
-                className="text-primary ml-3 underline"
-              >
-                Create now
-              </Link>
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-primary hover:bg-primary/90 mx-5 w-full md:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="border-white/10 bg-[#0A0A0A] text-white">
+                  <DialogHeader>
+                    <DialogTitle>Create New Project</DialogTitle>
+                    <DialogDescription className="text-white/60">
+                      Fill in the details to create a new data review project.
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <label className="mb-2 text-sm font-medium text-white">
+                        Project Name
+                      </label>
+                      <Input
+                        placeholder="e.g., Content Moderation Project"
+                        className="border-white/10 bg-white/5 text-white"
+                        value={newProject.name}
+                        onChange={(e) =>
+                          setNewProject({ ...newProject, name: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">
+                        Description
+                      </label>
+                      <Input
+                        placeholder="Brief description of the project"
+                        className="border-white/10 bg-white/5 text-white"
+                        value={newProject.description}
+                        onChange={(e) =>
+                          setNewProject({
+                            ...newProject,
+                            description: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <span className="text-sm text-red-500">{error}</span>
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="submit"
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={() => createMutation(newProject)}
+                      disabled={isPending}
+                    >
+                      {isPending ? 'Creating Project...' : 'Create Project'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
           {recentProjects.length > 3 && (
