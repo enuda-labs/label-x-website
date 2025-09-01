@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { AxiosError } from 'axios'
-import { useParams} from 'next/navigation'
+import { useParams, useRouter} from 'next/navigation'
 import {
   ArrowLeft,
   Check,
@@ -62,7 +62,43 @@ interface ApiTaskResponse {
   input_type?: 'multiple_choice' | 'text_input'
   labeller_instructions?: string
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV'
+  /** 👇 existing user’s annotations in order of tasks */
+  my_labels?: string[]
 }
+
+
+interface Label {
+  label?: string
+  notes?: string
+}
+
+const buildHydratedResponses = (payload: ApiTaskResponse) => {
+  const items = payload.tasks ?? []
+  const labels: Label[] = (payload.my_labels ?? []).map((l) => ({ label: l }))
+  const sameLength = labels.length === items.length
+
+  return items.map((task, idx) => {
+    let labelObj: Label | undefined
+    if (sameLength) {
+      labelObj = labels[idx]
+    } else if (labels.length > 0) {
+      labelObj = labels[0]
+    }
+
+    const val = labelObj?.label
+    const notes = labelObj?.notes ?? ''
+
+    return { answer: val ? [String(val)] : [], notes }
+  })
+}
+
+
+interface ApiErrorResponse {
+  detail?: string
+  message?: string
+}
+
+
 
 const getTaskTypeIcon = (type?: string) => {
   switch (type) {
@@ -90,6 +126,7 @@ const FALLBACK_LABELS = [
 const LabelTask = () => {
   const { taskId } = useParams()
 
+  const router = useRouter()
 
   const [taskData, setTaskData] = useState<ApiTaskResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -108,7 +145,6 @@ const LabelTask = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
 
-
   const refreshTaskData = async () => {
     if (!taskId) return
 
@@ -119,11 +155,15 @@ const LabelTask = () => {
       const payload: ApiTaskResponse = 'data' in resp && resp.data ? resp.data : (resp as ApiTaskResponse)
 
       setTaskData(payload || null)
-      const items = payload?.tasks ?? []
-      setResponses(new Array(items.length).fill({ answer: [], notes: '' }))
-      setCompletedItems(0)
+
+      // hydrate existing labels instead of wiping
+      const hydrated = buildHydratedResponses(payload)
+      setResponses(hydrated)
+      setCompletedItems(hydrated.filter(r => r.answer.length > 0).length)
+
       setCurrentItemIndex(0)
-      setNotes('')
+      setSelectedCategory(hydrated[0]?.answer?.[0] ?? '')
+      setNotes(hydrated[0]?.notes ?? '')
 
       const progress = await fetchTaskProgress(idToFetch)
       setProgressData(progress)
@@ -162,11 +202,22 @@ const LabelTask = () => {
         if (cancelled) return
         setTaskData(payload || null)
 
-        const items = payload?.tasks ?? []
-        setResponses(new Array(items.length).fill({ answer: [], notes: '' }))
-        setCompletedItems(0)
-        setCurrentItemIndex(0)
-        setNotes('')
+        // ✅ Hydrate answers from API
+        const hydrated = buildHydratedResponses(payload)
+        console.log("Hydrated responses:", hydrated)
+
+        setResponses(hydrated)
+
+  // Prefill the current input (works for both multiple_choice & text_input)
+  const firstAnswer = hydrated[0]?.answer?.[0] ?? ''
+  setSelectedCategory(firstAnswer)
+
+  // Completed count = how many items already have an answer
+  setCompletedItems(hydrated.filter(r => r.answer.length > 0).length)
+
+  setCurrentItemIndex(0)
+  setNotes('') // you can later hydrate notes if your API returns them
+
       } catch (err: unknown) {
         let message = 'Failed to load task. Please try again.'
         if (err instanceof Error) {
@@ -276,81 +327,108 @@ const LabelTask = () => {
 
 
   // --- Handlers ---
-const handleSubmitLabelLocal = () => {
-  const selectedCategoryToSend = selectedCategory || null
+  const handleSubmitLabelLocal = () => {
+    const selectedCategoryToSend = selectedCategory?.trim() || ''
 
-  if (inputType === 'multiple_choice' && !selectedCategoryToSend) {
-    toast('Please select a category', {
-      description: 'All items must be labeled before you can continue.',
-    })
-    return
-  }
-
-  // ✅ Just open confirm dialog
-  setShowConfirmDialog(true)
-}
-
-const handleConfirmSubmit = async () => {
-  const selectedCategoryToSend = selectedCategory || null
-  const currentTaskIdToSend = currentItem?.id
-  if (!currentTaskIdToSend) return
-
-  try {
-    setIsSubmitting(true)
-
-    const payload = {
-      task_id: currentTaskIdToSend,
-      labels: selectedCategoryToSend ? [selectedCategoryToSend] : [],
-      notes,
+    if (
+      (inputType === 'multiple_choice' && !selectedCategoryToSend) ||
+      (inputType === 'text_input' && selectedCategoryToSend.length === 0)
+    ) {
+      toast('Please provide an answer', {
+        description: 'All items must be labeled before you can continue.',
+      })
+      return
     }
 
-    const resp = await annotateTask(payload)
-
-    const newResponses = [...responses]
-    newResponses[currentItemIndex] = {
-      answer: selectedCategoryToSend ? [selectedCategoryToSend] : [],
-      notes,
-    }
-    setResponses(newResponses)
-    setCompletedItems((prev) => prev + 1)
-
-    toast('Item labeled', {
-      description: resp?.message ?? `Item labeled as "${selectedCategoryToSend}"`,
-    })
-
-    await refreshTaskData()
-
-    // move forward
-    if (currentItemIndex < totalItems - 1) {
-      goToItemIndex(currentItemIndex + 1)
-    } else {
-      toast('All items completed in this cluster.')
-    }
-  } catch (err) {
-  const error = err as AxiosError<any>
-  const status = error.response?.status
-  const detail = error.response?.data?.detail || error.message || ''
-
-  if (status === 400 && detail?.toLowerCase().includes('already')) {
-    toast('You already labeled this task', {
-      description: detail,
-    })
-    setShowConfirmDialog(false)
-    if (currentItemIndex < totalItems - 1) goToItemIndex(currentItemIndex + 1)
-    return
+    setShowConfirmDialog(true)
   }
 
-  toast('Failed to submit labels', {
-    description: detail || 'An error occurred while submitting labels.',
-  })
-  console.error('Failed to submit task', err)
-} finally {
-    setIsSubmitting(false)
-    setShowConfirmDialog(false)
+
+  const handleConfirmSubmit = async () => {
+    const currentTaskIdToSend = currentItem?.id
+    if (!currentTaskIdToSend) return
+
+    try {
+      setIsSubmitting(true)
+
+      // Build labels depending on input type
+      let labelsToSend: string[] = []
+      if (inputType === "text_input") {
+        if (selectedCategory && selectedCategory.trim() !== "") {
+          labelsToSend = [selectedCategory.trim()]
+        }
+      } else {
+        if (selectedCategory) {
+          labelsToSend = [selectedCategory]
+        }
+      }
+
+      const payload = {
+        task_id: currentTaskIdToSend,
+        labels: labelsToSend,
+        notes,
+      }
+
+      const resp = await annotateTask(payload)
+
+      // update local responses
+      const newResponses = [...responses]
+      newResponses[currentItemIndex] = {
+        answer: labelsToSend,
+        notes,
+      }
+      setResponses(newResponses)
+
+      // completed count: only increment if this item didn’t have an answer before
+      setCompletedItems((prev) =>
+        newResponses[currentItemIndex]?.answer?.length > 0 ? prev : prev + 1
+      )
+
+      toast("Item labeled", {
+        description:
+          resp?.message ??
+          `Item labeled as "${labelsToSend.length > 0 ? labelsToSend[0] : "—"}"`,
+      })
+
+      await refreshTaskData()
+
+      // move forward
+      if (currentItemIndex < totalItems - 1) {
+        goToItemIndex(currentItemIndex + 1)
+      } else {
+        toast("All items completed in this cluster.")
+        router.push("/label/overview")
+      }
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorResponse>
+      const status = error.response?.status
+
+      // ✅ Always use DB error (never generic)
+      const dbError =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Unknown server error"
+
+      if (status === 400 && dbError.toLowerCase().includes("already")) {
+        toast("You already labeled this task", {
+          description: dbError,
+        })
+        setShowConfirmDialog(false)
+      } else {
+        toast("Task not available", {
+          description: dbError, // 👈 always DB error
+        })
+      }
+
+      console.error("handleConfirmSubmit error:", {
+        status,
+        dbError,
+        raw: error,
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-}
-
-
 
   const handleNext = () => {
     if (currentItemIndex < totalItems - 1) {
@@ -369,7 +447,6 @@ const handleConfirmSubmit = async () => {
     try {
       setIsSubmitting(true)
 
-      // Make sure the API gets the expected payload
       const resp = await annotateMissingAsset(taskIdToSend, {
         labels: ["MISSING_ASSET"],
         notes: noteForServer,
@@ -389,11 +466,12 @@ const handleConfirmSubmit = async () => {
       setResponses(newResponses)
       setCompletedItems(prev => prev + 1)
 
-      // ✅ advance to the next item if available
+      // ✅ advance or redirect if last item
       if (currentItemIndex < totalItems - 1) {
         goToItemIndex(currentItemIndex + 1)
       } else {
-        setShowConfirmDialog(true)
+        toast('All items completed in this cluster.')
+        router.push('/label/tasks') // 👈 redirect after last item
       }
 
     } catch (err: unknown) {
@@ -408,6 +486,7 @@ const handleConfirmSubmit = async () => {
       setIsSubmitting(false)
     }
   }
+
 
   // Build payload (labels + notes)
   // const buildLabelsForSubmission = () => {
@@ -431,9 +510,9 @@ const handleConfirmSubmit = async () => {
   // }
 
   // Submit labels using annotateTask helper (final / batch submit)
-  const currentTaskId = Array.isArray(taskId)
-    ? Number(taskId[0])
-    : Number(taskId) || 0
+  // const currentTaskId = Array.isArray(taskId)
+  //   ? Number(taskId[0])
+  //   : Number(taskId) || 0
 
   // const submitLabels = async () => {
   //   const payload = buildLabelsForSubmission()
@@ -896,7 +975,7 @@ const handleConfirmSubmit = async () => {
             <div className="flex gap-2">
               <Button
                 onClick={handlePreviousTask}
-                disabled={currentTaskId <= 1}
+                disabled={currentItemIndex === 0}
                 variant="ghost"
                 className="bg-card/20 flex-1"
               >
