@@ -251,7 +251,11 @@ const Dashboard = () => {
         <div className="space-y-4">
           {recentProjects.length ? (
             recentProjects.slice(0, 3).map((project) => (
-              <Card key={project.id} className="border-white/10 bg-white/5 p-4">
+              <Card
+                key={project.id}
+                className="border-white/10 bg-white/5 p-4"
+                onClick={() => router.push(`/client/projects/${project.id}`)}
+              >
                 <div className="flex flex-col justify-between md:flex-row md:items-center">
                   <div className="mb-3 md:mb-0">
                     <h3 className="font-medium text-white">{project.name}</h3>
@@ -286,9 +290,6 @@ const Dashboard = () => {
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-white/60 hover:text-white"
-                      onClick={() =>
-                        router.push(`/client/projects/${project.id}`)
-                      }
                     >
                       <ArrowRight className="h-4 w-4" />
                     </Button>
