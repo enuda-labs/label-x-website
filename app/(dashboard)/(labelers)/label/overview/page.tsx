@@ -292,21 +292,27 @@ const LabelerDashboard = () => {
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="text-muted-foreground text-sm">
-                      <Clock className="mr-1 inline h-4 w-4" />
-                      Due:{' '}
-                      {new Date(
-                        task.progress?.deadline || task.deadline
-                      ).toLocaleDateString()}
-                    </div>
-                    <Link href={`/label/${task.id}`}>
-                      <Button variant="default">
-                        Continue Labeling
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
+                  {/* Footer */}
+  <div className="flex items-center justify-between pt-2">
+    <div className="text-muted-foreground text-sm">
+      <Clock className="mr-1 inline h-4 w-4" />
+      Due:{' '}
+      {new Date(task.progress?.deadline || task.deadline).toLocaleDateString()}
+    </div>
+
+    <Link href={`/label/${task.id}`}>
+  <Button variant="default">
+    {task.pending_tasks === 0
+      ? "Review"
+      : task.pending_tasks < task.tasks_count
+      ? "Continue Labeling"
+      : "Start Labeling"}
+    <ChevronRight className="ml-2 h-4 w-4" />
+  </Button>
+</Link>
+
+  </div>
+
                 </CardContent>
               </Card>
             ))}

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'   // ✅ import router
 import { AxiosError } from 'axios'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,13 +51,13 @@ const AvailableClustersPage = () => {
   const [assigning, setAssigning] = useState<number | null>(null)
   const [selectedCluster, setSelectedCluster] = useState<AvailableCluster | null>(null)
 
+  const router = useRouter()   // ✅ initialize router
 
   interface BackendError {
     error?: string
     message?: string
     detail?: string
   }
-
 
   // fetch user details
   const { data: userData, isLoading: userLoading } = useQuery({
@@ -97,37 +98,32 @@ const AvailableClustersPage = () => {
       })
       setClusters((prev) => prev.filter((c) => c.id !== clusterId))
       setSelectedCluster(null)
+       router.push(`/label/tasks`)
     } catch (err: unknown) {
-  let backendError = 'Failed to assign cluster. Please try again.'
+      let backendError = 'Failed to assign cluster. Please try again.'
 
-  if (err instanceof AxiosError) {
-    const status = err.response?.status
-    const data = err.response?.data
+      if (err instanceof AxiosError) {
+        const status = err.response?.status
+        const data = err.response?.data
 
-    // Check common backend fields
-    if (data) {
-    const backendData = data as BackendError
-    backendError =
-      backendData.error ||
-      backendData.message ||
-      backendData.detail ||
-      JSON.stringify(data)
-  }
+        if (data) {
+          const backendData = data as BackendError
+          backendError =
+            backendData.error ||
+            backendData.message ||
+            backendData.detail ||
+            JSON.stringify(data)
+        }
 
-    if (status === 400) {
-      backendError = backendError || 'Bad Request: Invalid input'
-    } else if (status === 403) {
-      backendError = backendError || 'Forbidden: You are not authorized'
-    } else if (status === 404) {
-      backendError = backendError || 'Not Found: Cluster does not exist'
-    }
-  } else if (err instanceof Error) {
-    backendError = err.message
-  }
+        if (status === 400) backendError ||= 'Bad Request: Invalid input'
+        else if (status === 403) backendError ||= 'Forbidden: You are not authorized'
+        else if (status === 404) backendError ||= 'Not Found: Cluster does not exist'
+      } else if (err instanceof Error) {
+        backendError = err.message
+      }
 
-  toast.error(backendError)
-}
- finally {
+      toast.error(backendError)
+    } finally {
       setAssigning(null)
     }
   }
@@ -175,25 +171,34 @@ const AvailableClustersPage = () => {
             </CardHeader>
 
             <CardContent className="space-y-4">
-    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-      <Clock className="h-4 w-4" />
-      Deadline: {new Date(cluster.deadline).toLocaleDateString()}
-    </div>
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4" />
+                Deadline: {new Date(cluster.deadline).toLocaleDateString()}
+              </div>
 
-    <div className="text-muted-foreground flex items-center gap-2 text-sm">
-      <User className="h-4 w-4" />
-      Labellers allowed: {cluster.labeller_per_item_count}
-    </div>
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <User className="h-4 w-4" />
+                Labellers allowed: {cluster.labeller_per_item_count}
+              </div>
 
-    <Button
-      onClick={() => setSelectedCluster(cluster)}
-      disabled={assigning === cluster.id}
-    >
-      Assign to Me
-      <ChevronRight className="ml-2 h-4 w-4" />
-    </Button>
-  </CardContent>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setSelectedCluster(cluster)}
+                  disabled={assigning === cluster.id}
+                >
+                  Assign to Me
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
 
+
+                <Button
+                  variant="outline"
+                   onClick={() => router.push(`/label/reviewTasks/${cluster.id}`)}
+                >
+                  Review Task
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         ))}
       </div>
