@@ -82,7 +82,7 @@ const ProjectDetail = ({ id }: { id: number }) => {
     return (
       <DashboardLayout title="Project Not Found">
         <div className="py-8 text-center">
-          <p className="text-white/60">Project not found</p>
+          <p className="text-white/60">No Task in this project found</p>
         </div>
       </DashboardLayout>
     )
