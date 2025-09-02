@@ -200,7 +200,7 @@ interface TaskClusterPayload {
   labeller_instructions: string
   deadline: string
   labeller_per_item_count: number
-  task_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'CSV' | 'PDF'
+  task_type: 'TEXT' | 'AUDIO' | 'IMAGE' | 'VIDEO' | 'CSV' | 'PDF'
   annotation_method: 'manual'
   project: number
 }
