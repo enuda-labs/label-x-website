@@ -45,82 +45,6 @@ import { Input } from '@/components/ui/input'
 import { isAxiosError } from 'axios'
 import { adminCreateProject } from '@/services/apis/admin'
 
-// const mockProjects = [
-//   {
-//     id: 1,
-//     name: 'Image Classification Project',
-//     type: 'IMAGE',
-//     status: 'Active',
-//     totalTasks: 150,
-//     completedTasks: 45,
-//     assignedLabelers: 3,
-//     deadline: '2025-09-15',
-//   },
-//   {
-//     id: 2,
-//     name: 'Text Sentiment Analysis',
-//     type: 'TEXT',
-//     status: 'Active',
-//     totalTasks: 300,
-//     completedTasks: 120,
-//     assignedLabelers: 5,
-//     deadline: '2025-09-30',
-//   },
-//   {
-//     id: 3,
-//     name: 'Document Review',
-//     type: 'PDF',
-//     status: 'Completed',
-//     totalTasks: 50,
-//     completedTasks: 50,
-//     assignedLabelers: 2,
-//     deadline: '2025-08-20',
-//   },
-// ]
-
-// const mockLabelers = [
-//   {
-//     id: 1,
-//     name: 'John Doe',
-//     email: 'john@example.com',
-//     status: 'Active',
-//     completedTasks: 45,
-//     accuracy: 95,
-//   },
-//   {
-//     id: 2,
-//     name: 'Jane Smith',
-//     email: 'jane@example.com',
-//     status: 'Active',
-//     completedTasks: 78,
-//     accuracy: 92,
-//   },
-//   {
-//     id: 3,
-//     name: 'Mike Johnson',
-//     email: 'mike@example.com',
-//     status: 'Inactive',
-//     completedTasks: 23,
-//     accuracy: 88,
-//   },
-//   {
-//     id: 4,
-//     name: 'Sarah Wilson',
-//     email: 'sarah@example.com',
-//     status: 'Active',
-//     completedTasks: 67,
-//     accuracy: 97,
-//   },
-//   {
-//     id: 5,
-//     name: 'David Brown',
-//     email: 'david@example.com',
-//     status: 'Active',
-//     completedTasks: 34,
-//     accuracy: 91,
-//   },
-// ]
-
 export default function AdminDashboardContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -197,7 +121,6 @@ export default function AdminDashboardContent() {
   // }, [projectsData])
 
   const handleAssignLabelers = () => {
-    // integrate with API here
     if (!selectedProject) return
 
     selectedLabelers.map((labelerId) => {

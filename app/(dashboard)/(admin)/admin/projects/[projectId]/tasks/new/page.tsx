@@ -127,6 +127,7 @@ const Annotate = () => {
       if (fileTask) {
         try {
           uploadedFileUrl = await uploadToCloudinary(fileTask)
+
           setTaskConfig((prev) => ({
             ...prev,
             tasks: [

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,8 +23,8 @@ export const LoginOnly = () => {
   const [verificationCode, setVerificationCode] = useState('')
 
   const router = useRouter()
-
-  const returnTo = '/label/overview'
+  const searchParams = useSearchParams()
+  const returnTo = searchParams.get('returnTo') || '/label/overview'
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginBody) => {

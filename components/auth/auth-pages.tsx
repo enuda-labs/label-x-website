@@ -11,7 +11,7 @@ const AuthPages = ({ children }: { children: ReactNode }) => {
   const router = useRouter()
 
   const handleGoBack = () => {
-    router.back()
+    router.push('/')
   }
 
   return (
@@ -23,10 +23,10 @@ const AuthPages = ({ children }: { children: ReactNode }) => {
         onClick={handleGoBack}
         className="hover:text-primary relative top-4 left-3 z-50 flex cursor-pointer items-center gap-x-2 hover:underline"
       >
-        <ArrowLeft /> Back
+        <ArrowLeft /> Back Home
       </button>
 
-      <section className="relative px-4 pt-5 pb-20 md:pt-16 lg:overflow-y-hidden">
+      <section className="relative px-4 pt-5 pb-20 md:pt-12 lg:overflow-y-hidden">
         <GridBackground />
         <WelcomeHeader />
         <div className="container mx-auto -mt-5 md:mt-5">

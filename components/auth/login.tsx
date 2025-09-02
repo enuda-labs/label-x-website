@@ -26,7 +26,6 @@ export const Login = () => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
-
   const returnTo = searchParams.get('returnTo') || '/client/overview'
 
   const loginMutation = useMutation({

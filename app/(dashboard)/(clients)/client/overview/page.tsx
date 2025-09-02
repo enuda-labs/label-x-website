@@ -317,9 +317,6 @@ const Dashboard = () => {
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-white/60 hover:text-white"
-                      onClick={() =>
-                        router.push(`/client/projects/${project.id}`)
-                      }
                     >
                       <ArrowRight className="h-4 w-4" />
                     </Button>
