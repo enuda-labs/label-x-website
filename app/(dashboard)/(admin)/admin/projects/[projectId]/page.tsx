@@ -325,7 +325,11 @@ const ProjectManagement = () => {
             <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="text-center">
                 <p className="text-primary text-2xl font-bold">
-                  {project.cluster_stats.assigned_labellers}
+                  {
+                    project.clusters.filter(
+                      (cluster) => cluster.assigned_reviewers.length
+                    ).length
+                  }
                 </p>
                 <p className="text-muted-foreground text-sm">Tasks Assigned</p>
               </div>

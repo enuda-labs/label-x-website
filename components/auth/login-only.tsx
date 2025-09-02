@@ -13,8 +13,6 @@ import { AxiosError } from 'axios'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp'
 import { useGlobalStore } from '@/context/store'
 
-// This login file is for labelers
-
 export const LoginOnly = () => {
   const { setIsLoggedIn } = useGlobalStore()
   const [email, setEmail] = useState('')

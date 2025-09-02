@@ -3,7 +3,7 @@ import { FileText, Image, Video, FileSpreadsheet, FileType } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-export type DataType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'CSV' | 'PDF'
+export type DataType = 'TEXT' | 'AUDIO' | 'IMAGE' | 'VIDEO' | 'CSV' | 'PDF'
 
 interface DataTypeSelectionProps {
   onSelect: (type: DataType) => void

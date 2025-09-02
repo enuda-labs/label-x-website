@@ -2,7 +2,15 @@
 
 import React, { useState } from 'react'
 import { uploadToCloudinary } from '@/utils/cloudinary'
-import { ArrowLeft, CheckCircle, Upload, Settings } from 'lucide-react'
+import {
+  ArrowLeft,
+  CheckCircle,
+  Upload,
+  Settings,
+  Play,
+  FileText,
+  Image as ImageIcon,
+} from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +25,7 @@ import TaskConfiguration, {
 import { createTaskCluster } from '@/services/apis/task'
 import { TaskItem } from '@/components/project/task/task-item'
 import { isAxiosError } from 'axios'
+import Image from 'next/image'
 
 enum AnnotationStep {
   DATA_TYPE = 'data_type',
@@ -62,15 +71,6 @@ const Annotate = () => {
       (getStepNumber(currentStep) / Object.values(AnnotationStep).length) * 100
     )
   }
-  console.log(
-    taskConfig.taskName,
-    taskConfig.description,
-    taskConfig.instructions,
-    taskConfig.tasks.length > 0,
-    taskConfig.tasks.every((task) => task.data.trim()),
-    taskConfig.inputType === 'text' || taskConfig.labellingChoices.length > 0,
-    taskConfig.deadline
-  )
 
   const canProceed = (): boolean => {
     switch (currentStep) {
@@ -123,21 +123,15 @@ const Annotate = () => {
     setIsSubmitting(true)
     let uploadedFileUrl = ''
     if (dataType !== 'TEXT') {
-      // Assume first task item contains the file (customize as needed)
       const fileTask = taskConfig.tasks[0].file
-      console.log(fileTask)
       if (fileTask) {
         try {
           uploadedFileUrl = await uploadToCloudinary(fileTask)
-          // Replace file data with URL for backend
           setTaskConfig((prev) => ({
             ...prev,
             tasks: [
               {
                 ...prev.tasks[0],
-                // file: {
-                //   ...prev.tasks[0].file,
-                // },
               },
             ],
           }))
@@ -162,6 +156,7 @@ const Annotate = () => {
               data: task.data,
             }
           : {
+              data: task.data,
               file: {
                 file_url: uploadedFileUrl,
                 file_name: task.file?.name || '',
@@ -193,7 +188,7 @@ const Annotate = () => {
       if (isAxiosError(error))
         toast('Submission Failed', {
           description:
-            error.response?.data.error ||
+            error.response?.data ||
             'There was an error submitting your task. Please try again.',
         })
       else
@@ -203,6 +198,232 @@ const Annotate = () => {
         })
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  // Enhanced preview component for different data types
+  const renderDataPreview = () => {
+    if (!dataType || taskConfig.tasks.length === 0) return null
+
+    const getFileUrl = (file: File | null) => {
+      if (dataType === 'CSV') return null
+      return file ? URL.createObjectURL(file) : null
+    }
+
+    switch (dataType) {
+      case 'VIDEO':
+        const firstVideoTask = taskConfig.tasks[0]
+        const videoUrl = getFileUrl(firstVideoTask.file)
+
+        return (
+          <Card className="shadow-soft bg-card/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Play className="text-primary h-5 w-5" />
+                Video Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {videoUrl ? (
+                <div className="space-y-3">
+                  <video
+                    controls
+                    className="max-h-64 w-full rounded-lg bg-black"
+                    preload="metadata"
+                  >
+                    <source src={videoUrl} type={firstVideoTask.file?.type} />
+                    Your browser does not support the video tag.
+                  </video>
+                  <p className="text-muted-foreground text-sm">
+                    {firstVideoTask.file?.name} (
+                    {(firstVideoTask.file?.size || 0 / (1024 * 1024)).toFixed(
+                      2
+                    )}{' '}
+                    MB)
+                  </p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No video file found</p>
+              )}
+            </CardContent>
+          </Card>
+        )
+
+      case 'IMAGE':
+        const imageUrls = taskConfig.tasks
+          .slice(0, 2)
+          .map((task) => ({ url: getFileUrl(task.file), task }))
+          .filter((item) => item.url)
+
+        return (
+          <Card className="shadow-soft bg-card/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="text-primary h-5 w-5" />
+                Image Preview ({taskConfig.tasks.length} total)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {imageUrls.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {imageUrls.map((item, index) => (
+                    <div key={index} className="space-y-2">
+                      <Image
+                        width={500}
+                        height={500}
+                        src={item.url!}
+                        alt={`Preview ${index + 1}`}
+                        className="h-48 w-full rounded-lg border object-cover"
+                      />
+                      <p className="text-muted-foreground text-xs">
+                        {item.task.file?.name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No image files found</p>
+              )}
+              {taskConfig.tasks.length > 2 && (
+                <p className="text-muted-foreground mt-3 text-xs">
+                  ... and {taskConfig.tasks.length - 2} more images
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )
+
+      case 'AUDIO':
+        const firstAudioTask = taskConfig.tasks[0]
+        const audioUrl = getFileUrl(firstAudioTask.file)
+
+        return (
+          <Card className="shadow-soft bg-card/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="text-primary h-5 w-5" />
+                Audio Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {audioUrl ? (
+                <div className="space-y-3">
+                  <audio controls className="w-full" preload="metadata">
+                    <source src={audioUrl} type={firstAudioTask.file?.type} />
+                    Your browser does not support the audio tag.
+                  </audio>
+                  <p className="text-muted-foreground text-sm">
+                    {firstAudioTask.file?.name} (
+                    {((firstAudioTask.file?.size || 0) / (1024 * 1024)).toFixed(
+                      2
+                    )}{' '}
+                    MB)
+                  </p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No audio file found</p>
+              )}
+            </CardContent>
+          </Card>
+        )
+
+      case 'CSV':
+        const firstCSVTask = taskConfig.tasks[0]
+        return (
+          <Card className="shadow-soft bg-card/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="text-primary h-5 w-5" />
+                {dataType} Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">
+                {firstCSVTask.file?.name} (
+                {((firstCSVTask.file?.size || 0) / (1024 * 1024)).toFixed(2)}{' '}
+                MB)
+              </p>
+            </CardContent>
+          </Card>
+        )
+
+      case 'PDF':
+        const firstFileTask = taskConfig.tasks[0]
+        const fileUrl = getFileUrl(firstFileTask.file)
+
+        return (
+          <Card className="shadow-soft bg-card/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="text-primary h-5 w-5" />
+                {dataType} Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {fileUrl ? (
+                <div className="space-y-3">
+                  <iframe
+                    src={fileUrl}
+                    className="h-64 w-full rounded-lg border"
+                    title="File Preview"
+                  />
+                  <div className="text-muted-foreground flex items-center justify-between text-sm">
+                    <span>{firstFileTask.file?.name}</span>
+                    <span>
+                      {(
+                        (firstFileTask.file?.size || 0) /
+                        (1024 * 1024)
+                      ).toFixed(2)}{' '}
+                      MB
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(fileUrl, '_blank')}
+                  >
+                    Open in New Tab
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No {dataType.toLowerCase()} file found
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )
+
+      case 'TEXT':
+        return (
+          <Card className="shadow-soft bg-card/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="text-primary h-5 w-5" />
+                Text Data Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted/50 border-primary max-h-32 space-y-2 overflow-y-auto rounded-lg border p-4">
+                {taskConfig.tasks.slice(0, 3).map((task, index) => (
+                  <div key={task.id} className="text-sm">
+                    <span className="font-medium">Task {index + 1}:</span>{' '}
+                    {task.data.slice(0, 100)}
+                    {task.data.length > 100 ? '...' : ''}
+                  </div>
+                ))}
+                {taskConfig.tasks.length > 3 && (
+                  <div className="text-muted-foreground text-xs">
+                    ... and {taskConfig.tasks.length - 3} more items
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )
+
+      default:
+        return null
     }
   }
 
@@ -249,7 +470,8 @@ const Annotate = () => {
                 Confirm your task details and data preview
               </p>
             </div>
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto max-w-4xl space-y-6">
+              {/* Task Summary Card */}
               <Card className="shadow-soft bg-card/30">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -334,28 +556,11 @@ const Annotate = () => {
                       )}
                     </div>
                   </div>
-
-                  <div>
-                    <h4 className="text-muted-foreground mb-2 text-sm font-medium">
-                      Sample Tasks Preview
-                    </h4>
-                    <div className="bg-muted/50 border-primary max-h-32 space-y-2 overflow-y-auto rounded-lg border p-4">
-                      {taskConfig.tasks.slice(0, 3).map((task, index) => (
-                        <div key={task.id} className="text-sm">
-                          <span className="font-medium">Task {index + 1}:</span>{' '}
-                          {task.data.slice(0, 100)}
-                          {task.data.length > 100 ? '...' : ''}
-                        </div>
-                      ))}
-                      {taskConfig.tasks.length > 3 && (
-                        <div className="text-muted-foreground text-xs">
-                          ... and {taskConfig.tasks.length - 3} more items
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
+
+              {/* Data Preview Card */}
+              {renderDataPreview()}
             </div>
           </div>
         )
@@ -467,7 +672,6 @@ const Annotate = () => {
                 <Button
                   onClick={validateAndSubmit}
                   disabled={!canProceed() || isSubmitting}
-                  // variant="hero"
                 >
                   {isSubmitting ? (
                     <>
