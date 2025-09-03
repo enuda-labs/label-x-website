@@ -16,13 +16,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import {
-  fetchAssignedClusters,
-  fetchTaskProgress,
-} from '@/services/apis/clusters'
+import { fetchAssignedClusters } from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
 import { getUserDetails } from '@/services/apis/user'
-import { TaskProgress } from '@/types/taskProgress'
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -40,12 +36,8 @@ const getTypeIcon = (type: string) => {
   }
 }
 
-
-
 const LabelerDashboard = () => {
-  const [clusters, setClusters] = useState<
-    (AssignedCluster & { progress?: TaskProgress | null })[]
-  >([])
+  const [clusters, setClusters] = useState<AssignedCluster[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,20 +60,7 @@ const LabelerDashboard = () => {
       try {
         setLoading(true)
         const data = await fetchAssignedClusters()
-
-        // fetch progress for each cluster
-        const enriched = await Promise.all(
-          data.map(async (cluster) => {
-            try {
-              const progress = await fetchTaskProgress(cluster.id)
-              return { ...cluster, progress }
-            } catch {
-              return { ...cluster, progress: null }
-            }
-          })
-        )
-
-        setClusters(enriched)
+        setClusters(data)
       } catch {
         setError('Failed to load tasks')
       } finally {
@@ -249,70 +228,50 @@ const LabelerDashboard = () => {
                     <div className="mb-2 flex justify-between text-sm">
                       <span>Progress</span>
                       <span>
-                        {task.progress
-                          ? `${task.progress.completed_tasks}/${task.progress.total_tasks}`
-                          : `${task.tasks_count - task.pending_tasks}/${task.tasks_count}`}{' '}
-                        items
+                        {task.user_labels_count}/{task.tasks_count} items
                       </span>
                     </div>
                     <Progress
-                      value={
-                        task.progress
-                          ? task.progress.completion_percentage
-                          : ((task.tasks_count - task.pending_tasks) /
-                              task.tasks_count) *
-                            100
-                      }
+                      value={(task.user_labels_count / task.tasks_count) * 100}
                       className="h-2"
                     />
                   </div>
 
-
                   <div>
                     <p className="mb-2 text-sm font-medium">Label Options:</p>
                     <div className="flex flex-wrap gap-2">
-                    {task.choices?.length
-  ? task.choices.map((choice, index) => (
-      <Badge key={index} variant="outline" className="text-xs">
-        {choice.option_text}
-      </Badge>
-    ))
-  : task.input_type === 'text_input' && (
-      <Badge variant="outline" className="text-xs">
-        Text Input
-      </Badge>
-    )}
-
-                      {task.input_type === 'text_input' && (
+                      {task.choices?.length ? (
+                        task.choices.map((choice, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {choice.option_text}
+                          </Badge>
+                        ))
+                      ) : task.input_type === 'text_input' ? (
                         <Badge variant="outline" className="text-xs">
                           Text Input
                         </Badge>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
                   {/* Footer */}
-                  {/* Footer */}
-  <div className="flex items-center justify-between pt-2">
-    <div className="text-muted-foreground text-sm">
-      <Clock className="mr-1 inline h-4 w-4" />
-      Due:{' '}
-      {new Date(task.progress?.deadline || task.deadline).toLocaleDateString()}
-    </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-muted-foreground text-sm">
+                      <Clock className="mr-1 inline h-4 w-4" />
+                      Due: {new Date(task.deadline).toLocaleDateString()}
+                    </div>
 
-    <Link href={`/label/${task.id}`}>
-  <Button variant="default">
-    {task.pending_tasks === 0
-      ? "Review"
-      : task.pending_tasks < task.tasks_count
-      ? "Continue Labeling"
-      : "Start Labeling"}
-    <ChevronRight className="ml-2 h-4 w-4" />
-  </Button>
-</Link>
-
-  </div>
-
+                    <Link href={`/label/${task.id}`}>
+                      <Button variant="default">
+                        {task.pending_tasks === 0
+                          ? 'Review'
+                          : task.pending_tasks < task.tasks_count
+                          ? 'Continue Labeling'
+                          : 'Start Labeling'}
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             ))}

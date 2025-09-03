@@ -62,8 +62,7 @@ interface ApiTaskResponse {
   input_type?: 'multiple_choice' | 'text_input'
   labeller_instructions?: string
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV'
-  /** 👇 existing user’s annotations in order of tasks */
-  my_labels?: string[]
+ my_labels?: Array<{ id: number; label: string; notes?: string }>
 }
 
 
@@ -74,7 +73,11 @@ interface Label {
 
 const buildHydratedResponses = (payload: ApiTaskResponse) => {
   const items = payload.tasks ?? []
-  const labels: Label[] = (payload.my_labels ?? []).map((l) => ({ label: l }))
+  const labels: Label[] = (payload.my_labels ?? []).map((l) => ({
+    label: l.label,
+    notes: l.notes ?? '',
+  }))
+
   const sameLength = labels.length === items.length
 
   return items.map((task, idx) => {
@@ -85,10 +88,10 @@ const buildHydratedResponses = (payload: ApiTaskResponse) => {
       labelObj = labels[0]
     }
 
-    const val = labelObj?.label
+    const val = labelObj?.label ?? ''
     const notes = labelObj?.notes ?? ''
 
-    return { answer: val ? [String(val)] : [], notes }
+    return { answer: val ? [val] : [], notes }
   })
 }
 

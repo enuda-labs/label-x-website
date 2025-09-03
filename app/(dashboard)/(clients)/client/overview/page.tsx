@@ -72,7 +72,7 @@ const Dashboard = () => {
     queryKey: ['stats'],
     queryFn: getStats,
   })
-  const { data: projectsData } = useQuery({
+  const { data: projectsData, isPending: isFetchingProjects } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
   })
@@ -268,7 +268,7 @@ const Dashboard = () => {
       {/* Recent Projects */}
       <h2 className="mb-4 text-xl font-semibold text-white">Recent Projects</h2>
 
-      {loading ? (
+      {isFetchingProjects ? (
         <div className="space-y-4">
           <Skeleton className="h-20 bg-white/5" />
           <Skeleton className="h-20 bg-white/5" />
@@ -402,14 +402,13 @@ const Dashboard = () => {
       )}
 
       {/* Subscription Info */}
+      <h2 className="mt-8 mb-4 text-xl font-semibold text-white">
+        Your Subscription
+      </h2>
       {isCheckingPlan ? (
         <Skeleton className="h-40 bg-white/5" />
       ) : myPlan && !showPlans ? (
         <div>
-          <h2 className="mt-8 mb-4 text-xl font-semibold text-white">
-            Your Subscription
-          </h2>
-
           <Card className="border-primary/20 bg-white/5 p-6">
             <div className="flex flex-col justify-between md:flex-row md:items-center">
               <div>

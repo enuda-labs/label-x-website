@@ -166,7 +166,7 @@ export function AppSidebar({ userRole }: { userRole: string }) {
     toast('Logged out successfully', {
       description: 'You have been logged out of your account',
     })
-    queryClient.invalidateQueries({ queryKey: ['offer-ride'] })
+    queryClient.clear()
     router.push('/auth/login')
   }
 
