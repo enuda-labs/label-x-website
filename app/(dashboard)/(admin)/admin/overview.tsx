@@ -156,10 +156,12 @@ export default function AdminDashboardContent() {
         {/* Projects Tab */}
         <TabsContent value="projects" className="space-y-6">
           <div className="my-5 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Project Overview</h2>
+            <h2 className="w-full flex-1 text-xl font-semibold">
+              Project Overview
+            </h2>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-primary hover:bg-primary/90 w-full md:w-auto">
+                <Button className="bg-primary hover:bg-primary/90 md:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   New Project
                 </Button>

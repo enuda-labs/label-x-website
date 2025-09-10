@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,7 @@ export const Login = () => {
   const [verificationCode, setVerificationCode] = useState('')
 
   const router = useRouter()
+  const queryClient = useQueryClient()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/client/overview'
 
@@ -42,12 +43,15 @@ export const Login = () => {
     onSuccess: (data) => {
       localStorage.setItem(ACCESS_TOKEN_KEY, data.access)
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh)
+      queryClient.clear()
       setIsLoggedIn(true)
       toast('Login successful', {
         description: 'Welcome back to Label X',
       })
       if (data.user_data.is_admin) {
         router.push('/admin?tab=projects')
+      } else if (data.user_data.is_reviewer) {
+        router.push('/label/overview')
       } else {
         router.push(returnTo)
       }
