@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
-
 export default function VoiceVideoSubmission() {
   const maxAudioSec = 60; // seconds
   const maxVideoSec = 30;
@@ -42,10 +41,8 @@ export default function VoiceVideoSubmission() {
         videoRecorderRef.current.stop();
       if (audioTimerRef.current) window.clearInterval(audioTimerRef.current);
       if (videoTimerRef.current) window.clearInterval(videoTimerRef.current);
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
-      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      // Note: object URLs are revoked where they are created/cleared (discardAudio/discardVideo/onstop)
     };
-
   }, []);
 
   const formatTime = (s: number) => {
@@ -92,39 +89,89 @@ export default function VoiceVideoSubmission() {
     return "";
   };
 
-  // Utility to safely attach a blob to a media element and attempt to load/play
+  // ---------- Add near top of file (helpers) ----------
+  const isIOS = typeof navigator !== "undefined" && /iP(hone|od|ad)/.test(navigator.userAgent);
+
+  // Helper to test if an element can play a mime string
+  const elementCanPlay = (el: HTMLMediaElement | null, mime: string) => {
+    if (!el || typeof el.canPlayType !== "function") return "";
+    return el.canPlayType(mime || "") || "";
+  };
+
+  // ---------- Replace attachBlobToElement with this improved version ----------
   const attachBlobToElement = async (
     el: HTMLMediaElement | null,
     blob: Blob,
     setDuration: (n: number | null) => void
   ) => {
-    if (!el) return;
+    if (!el || !blob) return;
+
     try {
-      const url = URL.createObjectURL(blob);
+      // if this is a <video>, ensure mobile inline attributes for iOS
+      if (el instanceof HTMLVideoElement) {
+        // set both attributes so iOS Safari respects inline playback
+        el.setAttribute("playsinline", "");
+        el.setAttribute("webkit-playsinline", "");
+        // don't force muted here — leave as recorded audio; mute only if you need autoplay
+
+        // clear srcObject safely
+        if ("srcObject" in el && el.srcObject) {
+          el.srcObject = null;
+        }
+      }
+    } catch {}
+
+    // create object URL
+    const url = URL.createObjectURL(blob);
+    // test whether the element declares it can play the blob's type
+    const canPlay = elementCanPlay(el, blob.type);
+
+    if (!canPlay) {
+      // some browsers (older Safari) return empty for webm — show friendly message
+      setError(
+        isIOS
+          ? "This device/browser doesn't support playback of the recorded format (WebM). On iOS Safari recordings must be MP4/H.264 — please transcode on server or record in a compatible format."
+          : `Recorded format (${blob.type || "unknown"}) may not be playable in this browser.`
+      );
+      // still attach the URL so users can download if they want to test
       el.src = url;
       el.load();
-
-      await new Promise<void>((resolve) => {
-        const onMeta = () => {
-          el.removeEventListener("loadedmetadata", onMeta);
-          resolve();
-        };
-        el.addEventListener("loadedmetadata", onMeta);
-        setTimeout(resolve, 1500);
-      });
-
-      const dur = el.duration;
-      if (!isFinite(dur) || isNaN(dur)) {
-        setDuration(null);
-      } else {
-        setDuration(Math.round(dur));
-      }
-      el.play().catch(() => {});
-    } catch (err) {
-      console.warn("attachBlobToElement error:", err);
-      setDuration(null);
-      setError("Recorded media format is not supported by this browser.");
+      return;
     }
+
+    // attach and attempt to load/play
+    el.src = url;
+    // for <video srcObject> flow ensure we clear any srcObject
+    try {
+      if (el instanceof HTMLVideoElement && el.srcObject) {
+        el.srcObject = null;
+      }
+    } catch {}
+
+    // load metadata then set duration
+    el.load();
+
+    await new Promise<void>((resolve) => {
+      const onMeta = () => {
+        el.removeEventListener("loadedmetadata", onMeta);
+        resolve();
+      };
+      el.addEventListener("loadedmetadata", onMeta);
+      // fallback timeout: resolve after 1500ms
+      setTimeout(resolve, 1500);
+    });
+
+    const dur = el.duration;
+    if (!isFinite(dur) || isNaN(dur)) {
+      setDuration(null);
+    } else {
+      setDuration(Math.round(dur));
+    }
+
+    // attempt to play if allowed (will fail silently if autoplay not permitted)
+    el.play().catch(() => {
+      // if play fails it's likely due to autoplay policy — ignore
+    });
   };
 
   // ===== AUDIO =====
@@ -421,10 +468,26 @@ export default function VoiceVideoSubmission() {
             </div>
 
             <div className="w-full overflow-hidden rounded-md bg-black/30">
-              <video ref={cameraPreviewRef} className="h-[180px] w-full object-cover" playsInline muted />
+              <video
+                ref={cameraPreviewRef}
+                className="h-[180px] w-full object-cover"
+                playsInline
+                // legacy iOS attribute
+                webkit-playsinline="true"
+                muted
+                autoPlay
+              />
             </div>
 
-            <video ref={recordedVideoRef} controls src={videoUrl ?? undefined} className="w-full rounded-md" />
+            <video
+              ref={recordedVideoRef}
+              controls
+              src={videoUrl ?? undefined}
+              className="w-full rounded-md"
+              playsInline
+              // legacy iOS attribute
+              webkit-playsinline="true"
+            />
           </div>
         </div>
       </div>
