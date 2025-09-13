@@ -92,13 +92,9 @@ export default function VoiceVideoSubmission() {
   // ---------- Add near top of file (helpers) ----------
   const isIOS = typeof navigator !== "undefined" && /iP(hone|od|ad)/.test(navigator.userAgent);
 
-  // Helper to test if an element can play a mime string
-  const elementCanPlay = (el: HTMLMediaElement | null, mime: string) => {
-    if (!el || typeof el.canPlayType !== "function") return "";
-    return el.canPlayType(mime || "") || "";
-  };
 
-  // ---------- Replace attachBlobToElement with this improved version ----------
+
+  // --- replace existing attachBlobToElement with this ---
   const attachBlobToElement = async (
     el: HTMLMediaElement | null,
     blob: Blob,
@@ -106,73 +102,114 @@ export default function VoiceVideoSubmission() {
   ) => {
     if (!el || !blob) return;
 
+    // create URL early so we can attach / offer download
+    const url = URL.createObjectURL(blob);
+
     try {
-      // if this is a <video>, ensure mobile inline attributes for iOS
+      // For <video>, ensure inline playback attributes for iOS
       if (el instanceof HTMLVideoElement) {
-        // set both attributes so iOS Safari respects inline playback
         el.setAttribute("playsinline", "");
         el.setAttribute("webkit-playsinline", "");
-        // don't force muted here — leave as recorded audio; mute only if you need autoplay
+        // ensure controls present so user can manually play if autoplay blocked
+        el.controls = true;
+        // clear any srcObject (camera preview) safely
+        if ("srcObject" in el && el.srcObject) el.srcObject = null;
+      }
 
-        // clear srcObject safely
-        if ("srcObject" in el && el.srcObject) {
-          el.srcObject = null;
+      // Attach the blob URL before probing playback to ensure consistent behavior
+      el.src = url;
+
+      // Some browsers return empty string from canPlayType even though playback could work.
+      // Use canPlayType as a hint but never treat it as absolute truth on mobile Safari.
+      let canPlayHint = "";
+      try {
+        canPlayHint = typeof el.canPlayType === "function" ? (el.canPlayType(blob.type || "") || "") : "";
+      } catch {
+  canPlayHint = "";
+}
+
+      // If the browser *claims* not to play it, still attach the URL and try to load/play.
+      // On iOS older versions this is common for WebM; we'll provide a download fallback.
+      el.load();
+
+      // Wait for metadata or fallback timeout
+      await new Promise<void>((resolve) => {
+        let resolved = false;
+        const onMeta = () => {
+          if (resolved) return;
+          resolved = true;
+          el.removeEventListener("loadedmetadata", onMeta);
+          resolve();
+        };
+        el.addEventListener("loadedmetadata", onMeta);
+        // fallback timeout (short) so we don't hang forever
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            el.removeEventListener("loadedmetadata", onMeta);
+            resolve();
+          }
+        }, 1500);
+      });
+
+      // Determine duration if available
+      const dur = el.duration;
+      if (!isFinite(dur) || isNaN(dur)) {
+        setDuration(null);
+      } else {
+        setDuration(Math.round(dur));
+      }
+
+      // attempt to play only if it makes sense (user likely initiated recording)
+      try {
+        // On many iOS variants, `.play()` will reject if autoplay policy or unsupported codec.
+        await el.play();
+        // Clear any previous error state
+        setError(null);
+      } catch (playErr) {
+        // Play failed — report to console and show helpful message
+        // If canPlay hint is empty or negative, inform user about format mismatch
+        console.warn("Media play() failed:", playErr);
+        if (isIOS && (canPlayHint === "" || canPlayHint === "no")) {
+          setError(
+            "Playback failed on this iOS version. The recorded format may not be supported in-browser. Try downloading the clip or use a device with newer Safari (or transcode server-side to MP4/H.264)."
+          );
+        } else {
+          setError("Preview couldn't autoplay — tap the play button to try manually. If that fails, download the file to test it.");
         }
       }
-    } catch {}
 
-    // create object URL
-    const url = URL.createObjectURL(blob);
-    // test whether the element declares it can play the blob's type
-    const canPlay = elementCanPlay(el, blob.type);
-
-    if (!canPlay) {
-      // some browsers (older Safari) return empty for webm — show friendly message
-      setError(
-        isIOS
-          ? "This device/browser doesn't support playback of the recorded format (WebM). On iOS Safari recordings must be MP4/H.264 — please transcode on server or record in a compatible format."
-          : `Recorded format (${blob.type || "unknown"}) may not be playable in this browser.`
-      );
-      // still attach the URL so users can download if they want to test
-      el.src = url;
-      el.load();
-      return;
-    }
-
-    // attach and attempt to load/play
-    el.src = url;
-    // for <video srcObject> flow ensure we clear any srcObject
-    try {
-      if (el instanceof HTMLVideoElement && el.srcObject) {
-        el.srcObject = null;
-      }
-    } catch {}
-
-    // load metadata then set duration
-    el.load();
-
-    await new Promise<void>((resolve) => {
-      const onMeta = () => {
-        el.removeEventListener("loadedmetadata", onMeta);
-        resolve();
+      // Attach an error event listener to surface decoding/format errors
+      const onError = () => {
+        // el.error is a MediaError
+        const mediaErr = (el as HTMLMediaElement).error;
+        console.warn("Media element error:", mediaErr);
+        setError(
+          isIOS
+            ? "This iOS/Safari version couldn't decode the recorded file. Please download and test locally; consider server-side transcoding to MP4/H.264 for compatibility."
+            : "Playback failed. Try downloading the file or use another browser."
+        );
       };
-      el.addEventListener("loadedmetadata", onMeta);
-      // fallback timeout: resolve after 1500ms
-      setTimeout(resolve, 1500);
-    });
+      el.removeEventListener("error", onError);
+      el.addEventListener("error", onError);
 
-    const dur = el.duration;
-    if (!isFinite(dur) || isNaN(dur)) {
+      // Save URL in state (caller already does this, but ensure we leave URL available)
+      // Caller will call URL.revokeObjectURL when replacing/clearing — so we don't revoke here.
+    } catch (err) {
+      console.warn("attachBlobToElement unexpected error:", err);
       setDuration(null);
-    } else {
-      setDuration(Math.round(dur));
+      setError("Unable to prepare preview for this recording.");
+      // still attach URL so user can download manually
+      try {
+        el.src = url;
+        el.load();
+      } catch {}
     }
 
-    // attempt to play if allowed (will fail silently if autoplay not permitted)
-    el.play().catch(() => {
-      // if play fails it's likely due to autoplay policy — ignore
-    });
+    // helpful: expose download link in UI by returning URL or ensure caller saved it via setAudioUrl/setVideoUrl
+    return;
   };
+
 
   // ===== AUDIO =====
   const startAudioRecording = async () => {
@@ -415,6 +452,14 @@ export default function VoiceVideoSubmission() {
             </div>
 
             <audio ref={audioRef} controls src={audioUrl ?? undefined} className="w-full" />
+            {audioUrl && (
+  <div className="mt-2 text-xs">
+    <a href={audioUrl} download="recording_audio.webm" className="underline">
+      Download audio
+    </a>
+  </div>
+)}
+
           </div>
         </div>
 
@@ -488,6 +533,14 @@ export default function VoiceVideoSubmission() {
               // legacy iOS attribute
               webkit-playsinline="true"
             />
+            {videoUrl && (
+  <div className="mt-2 text-xs">
+    <a href={videoUrl} download="recording_video.webm" className="underline">
+      Download video
+    </a>
+  </div>
+)}
+
           </div>
         </div>
       </div>
