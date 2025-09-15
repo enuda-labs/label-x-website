@@ -908,7 +908,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
             </Card>
 
             {inputType === "video" || inputType === "voice" ? (
-    <VoiceVideoSubmission type={inputType} taskId={currentItem?.id} />
+    <VoiceVideoSubmission type={inputType} taskId={currentItem?.id ? String(currentItem.id) : ""}  />
   ) : (
     <>
       <Card className="bg-card/20">

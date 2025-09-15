@@ -109,7 +109,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       // ✅ Post to backend
       const payload = {
         task_id: Number(taskId),
-        labels: [url],  // <-- Cloudinary URL instead of { type, value }
+         labels: url ? [url] : [],  // <-- Cloudinary URL instead of { type, value }
       };
       await annotateTask(payload);
     } catch (err: unknown) {
@@ -135,7 +135,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       // ✅ Post to backend
       const payload = {
         task_id: Number(taskId),
-        labels: [url],  // <-- Cloudinary URL instead of { type, value }
+      labels: url ? [url] : [], // <-- Cloudinary URL instead of { type, value }
       };
       await annotateTask(payload);
     } catch (err: unknown) {
