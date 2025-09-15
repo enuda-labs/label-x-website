@@ -254,104 +254,75 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
 
   // ===== VIDEO =====
  const startVideoRecording = async () => {
-  setError(null);
-  try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error("MediaDevices API not supported in this browser.");
-    }
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      videoStreamRef.current = stream;
 
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    videoStreamRef.current = stream;
+      if (cameraPreviewRef.current) {
+        cameraPreviewRef.current.srcObject = stream;
+        cameraPreviewRef.current.muted = true;
+        cameraPreviewRef.current.play().catch(() => {});
+      }
 
-    if (cameraPreviewRef.current) {
-      cameraPreviewRef.current.srcObject = stream;
-      cameraPreviewRef.current.muted = true;
-      cameraPreviewRef.current.play().catch(() => {});
-    }
+      const videoMime = getSupportedMime([
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+      ]);
+      const mr = videoMime ? new MediaRecorder(stream, { mimeType: videoMime }) : new MediaRecorder(stream);
 
-    // ✅ Force Safari to plain webm
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const videoMime = isSafari
-      ? getSupportedMime(["video/webm"])
-      : getSupportedMime([
-          "video/webm;codecs=vp9,opus",
-          "video/webm;codecs=vp8,opus",
-          "video/webm"
-        ]);
+      videoChunksRef.current = [];
 
-    if (!videoMime) {
-      throw new Error("No supported video format available for recording on this device.");
-    }
+      mr.ondataavailable = (e) => {
+        if (e.data && e.data.size) videoChunksRef.current.push(e.data);
+      };
 
-    const mr = new MediaRecorder(stream, { mimeType: videoMime });
-    videoChunksRef.current = [];
+      mr.onstop = async () => {
+        try {
+          const blob = new Blob(videoChunksRef.current, { type: videoMime || "video/webm" });
+          if (!blob || blob.size === 0) {
+            setError("Recording failed — no video captured.");
+            if (videoStreamRef.current) {
+              videoStreamRef.current.getTracks().forEach((t) => t.stop());
+              videoStreamRef.current = null;
+            }
+            stopVideoTimer();
+            return;
+          }
 
-    mr.ondataavailable = (e) => {
-      if (e.data && e.data.size) videoChunksRef.current.push(e.data);
-    };
+          if (videoUrl) URL.revokeObjectURL(videoUrl);
+          setVideoBlob(blob);
+          const url = URL.createObjectURL(blob);
+          setVideoUrl(url);
 
-    mr.onstop = async () => {
-      try {
-        const blob = new Blob(videoChunksRef.current, { type: videoMime });
-        if (!blob || blob.size === 0) {
-          setError("Recording failed — no video captured.");
+          await attachBlobToElement(recordedVideoRef.current, blob, (d) => setVideoDuration(d));
+        } finally {
           if (videoStreamRef.current) {
             videoStreamRef.current.getTracks().forEach((t) => t.stop());
             videoStreamRef.current = null;
           }
+          if (cameraPreviewRef.current) cameraPreviewRef.current.srcObject = null;
           stopVideoTimer();
-          return;
         }
+      };
 
-        if (videoUrl) URL.revokeObjectURL(videoUrl);
-        setVideoBlob(blob);
-        const url = URL.createObjectURL(blob);
-        setVideoUrl(url);
+      mr.start();
+      videoRecorderRef.current = mr;
+      setIsRecordingVideo(true);
+      startVideoTimer();
 
-        await attachBlobToElement(
-          recordedVideoRef.current,
-          blob,
-          (d) => setVideoDuration(d),
-          setError
-        );
-      } finally {
-        if (videoStreamRef.current) {
-          videoStreamRef.current.getTracks().forEach((t) => t.stop());
-          videoStreamRef.current = null;
+      setTimeout(() => {
+        if (mr.state === "recording") {
+          mr.stop();
+          setIsRecordingVideo(false);
         }
-        if (cameraPreviewRef.current) cameraPreviewRef.current.srcObject = null;
-        stopVideoTimer();
-      }
-    };
-
-    mr.start();
-    videoRecorderRef.current = mr;
-    setIsRecordingVideo(true);
-    startVideoTimer();
-
-    setTimeout(() => {
-      if (mr.state === "recording") {
-        mr.stop();
-        setIsRecordingVideo(false);
-      }
-    }, maxVideoSec * 1000);
-
-  } catch (err: unknown) {
-    console.error(err);
-
-    if ((err as DOMException)?.name === "NotAllowedError") {
-      setError(
-        "Permission denied: please allow camera & microphone access. On iOS Safari, go to Settings → Safari → Camera & Microphone."
-      );
-    } else if ((err as DOMException)?.name === "NotFoundError") {
-      setError("No camera or microphone found on this device.");
-    } else if ((err as DOMException)?.name === "NotReadableError") {
-      setError("Camera or microphone is already in use by another app or browser tab.");
-    } else {
-      setError(`Failed to start video recording: ${(err as Error).message}`);
+      }, maxVideoSec * 1000);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to start video recording.");
     }
-  }
-};
+  };
 
 
 
