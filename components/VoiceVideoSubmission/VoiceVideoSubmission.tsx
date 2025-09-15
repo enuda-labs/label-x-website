@@ -253,7 +253,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   };
 
   // ===== VIDEO =====
-const startVideoRecording = async () => {
+ const startVideoRecording = async () => {
   setError(null);
   try {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -354,7 +354,6 @@ const startVideoRecording = async () => {
 };
 
 
-  
 
   const stopVideoRecording = () => {
     try {
