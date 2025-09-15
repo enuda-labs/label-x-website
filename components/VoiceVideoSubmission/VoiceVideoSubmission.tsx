@@ -269,13 +269,12 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
         cameraPreviewRef.current.play().catch(() => {});
       }
 
-      const videoMime = getSupportedMime([
-        "video/mp4;codecs=h264,aac",
-        "video/quicktime",
-        "video/webm;codecs=vp9,opus",
-        "video/webm;codecs=vp8,opus",
-        "video/webm",
-      ]);
+     const videoMime = getSupportedMime([
+  "video/webm;codecs=vp9,opus",
+  "video/webm;codecs=vp8,opus",
+  "video/webm",
+]);
+
 
       if (!videoMime) {
         throw new Error("No supported video format available for recording on this device.");
