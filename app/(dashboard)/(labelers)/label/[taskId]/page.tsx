@@ -38,6 +38,8 @@ import {
   fetchTaskProgress,
 } from '@/services/apis/clusters'
 import { ApiResponse } from '@/types/ApiResponse'
+import VoiceVideoSubmission from "@/components/VoiceVideoSubmission/VoiceVideoSubmission";
+
 
 interface TaskFile {
   file_url?: string
@@ -59,7 +61,7 @@ interface ApiTaskResponse {
   title?: string
   labelling_choices?: Array<{ option_text: string }>
   choices?: Array<{ option_text: string }>
-  input_type?: 'multiple_choice' | 'text_input'
+input_type?: 'multiple_choice' | 'text_input' | 'voice' | 'video'
   labeller_instructions?: string
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV'
  my_labels?: Array<{ id: number; label: string; notes?: string }>
@@ -293,7 +295,7 @@ const LabelTask = () => {
   const items = taskData.tasks ?? []
   const totalItems = items.length
   const currentItem = items[currentItemIndex] ?? { data: '' }
-  const inputType = taskData.input_type ?? 'multiple_choice'
+const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLowerCase()
   const labellingChoices = taskData.choices ?? taskData.labelling_choices ?? []
   const progress =
   progressData && progressData.total_tasks > 0
@@ -654,9 +656,9 @@ const LabelTask = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <div className="flex flex-col lg:flex-row gap-8">
           {/* MAIN CONTENT (left) */}
-          <div className="lg:col-span-2">
+        <div className="flex-1">
             <Card className="shadow-soft bg-card/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -890,7 +892,7 @@ const LabelTask = () => {
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div className="space-y-6">
+         <div className="w-full lg:w-[360px] space-y-6">
             <Card className="bg-card/20 border-primary border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -905,75 +907,100 @@ const LabelTask = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-card/20">
-              <CardHeader>
-                <CardTitle className="text-base">
-                  {inputType === 'multiple_choice' && choicesToShow.length > 0
-                    ? 'Select Label Option *'
-                    : 'Provide Answer *'}
-                </CardTitle>
-              </CardHeader>
+            {inputType === "video" || inputType === "voice" ? (
+    <VoiceVideoSubmission type={inputType} taskId={currentItem?.id} />
+  ) : (
+    <>
+      <Card className="bg-card/20">
+        <CardHeader>
+          <CardTitle className="text-base">
+            {inputType === "multiple_choice" && choicesToShow.length > 0
+              ? "Select Label Option *"
+              : "Provide Answer *"}
+          </CardTitle>
+        </CardHeader>
 
-              <CardContent className="space-y-3">
-                {inputType === 'multiple_choice' && choicesToShow.length > 0 ? (
-                  choicesToShow.map((choice, index) => (
-                    <Button
-                    key={index}
-                    variant={selectedCategory === choice.option_text ? 'default' : 'outline'}
-                    className="w-full justify-start"
-                    onClick={() => handleCategorySelect(choice.option_text)}
-                    >
-                    {selectedCategory === choice.option_text && (
-                      <Check className="mr-2 h-4 w-4" />
-                    )}
-                    {choice.option_text}
-                    </Button>
-                  ))
-
-                ) : (
-                  <Textarea
-                  placeholder="Enter your response here..."
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="min-h-[100px] resize-none"
-                  />
-
+        <CardContent className="space-y-3">
+          {inputType === "multiple_choice" && choicesToShow.length > 0 ? (
+            choicesToShow.map((choice, index) => (
+              <Button
+                key={index}
+                variant={
+                  selectedCategory === choice.option_text
+                    ? "default"
+                    : "outline"
+                }
+                className="w-full justify-start cursor-pointer"
+                onClick={() => handleCategorySelect(choice.option_text)}
+              >
+                {selectedCategory === choice.option_text && (
+                  <Check className="mr-2 h-4 w-4" />
                 )}
-              </CardContent>
-            </Card>
+                {choice.option_text}
+              </Button>
+            ))
+          ) : (
+            <Textarea
+              placeholder="Enter your response here..."
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+          )}
+        </CardContent>
+      </Card>
 
-            <Card className="bg-card/20">
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Additional Notes (Optional)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Add any additional notes or observations..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[80px]"
-                />
-              </CardContent>
-            </Card>
+      <Card className="bg-card/20">
+        <CardHeader>
+          <CardTitle className="text-base">Additional Notes (Optional)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Add any additional notes or observations..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="min-h-[80px]"
+          />
+        </CardContent>
+      </Card>
+    </>
+  )}
+
 
             <div className="space-y-3">
-            <Button
-            onClick={handleSubmitLabelLocal}
-            disabled={inputType === 'multiple_choice' && !selectedCategory}
-            className="w-full"
-            variant="default"
-            >
+      {inputType === 'video' || inputType === 'voice' ? (
+        <Button
+          onClick={() => {
+            const idToUse = currentItem?.id
+            if (!idToUse) return
+            // pass the normalized inputType so recorder knows which mode to open
+            router.push(`/label/recorder/${idToUse}?type=${inputType}`)
+          }}
+          className="w-full"
+          variant="default"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          {inputType === 'voice' ? 'Go to Voice Recorder' : 'Go to Video Recorder'}
+        </Button>
+      ) : (
+        <Button
+          onClick={handleSubmitLabelLocal}
+          disabled={inputType === 'multiple_choice' && !selectedCategory}
+          className="w-full"
+          variant="default"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          {inputType === 'multiple_choice'
+            ? (isLastItem ? 'Complete Task' : 'Submit Choice')
+            : (isLastItem ? 'Complete Task' : 'Submit & Continue')}
+        </Button>
+      )}
 
-                <Save className="mr-2 h-4 w-4" />
-                {isLastItem ? 'Complete Task' : 'Submit & Continue'}
-              </Button>
+      <p className="text-muted-foreground text-center text-xs">
+        * All items must be labeled to complete the task
+      </p>
+    </div>
 
-              <p className="text-muted-foreground text-center text-xs">
-                * All items must be labeled to complete the task
-              </p>
-            </div>
 
             <div className="flex gap-2">
               <Button

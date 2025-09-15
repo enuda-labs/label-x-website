@@ -1,9 +1,22 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import {
+  formatTime,
+  getSupportedMime,
+  readableSize,
+  attachBlobToElement,
+} from "@/utils/mediaHelpers";
+import { uploadToCloudinary, copyToClipboard } from "@/utils/cloudinaryUpload";
+import { annotateTask } from '@/services/apis/clusters'
+
+type Props = {
+  type: "voice" | "video";
+  taskId: string;
+};
 
 
-export default function VoiceVideoSubmission() {
+export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const maxAudioSec = 60; // seconds
   const maxVideoSec = 30;
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -17,6 +30,12 @@ export default function VoiceVideoSubmission() {
   const [audioElapsed, setAudioElapsed] = useState(0);
   const [videoElapsed, setVideoElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  // Cloudinary upload states
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [audioCloudUrl, setAudioCloudUrl] = useState<string | null>(null);
+  const [videoCloudUrl, setVideoCloudUrl] = useState<string | null>(null);
 
   const audioRecorderRef = useRef<MediaRecorder | null>(null);
   const videoRecorderRef = useRef<MediaRecorder | null>(null);
@@ -42,17 +61,10 @@ export default function VoiceVideoSubmission() {
         videoRecorderRef.current.stop();
       if (audioTimerRef.current) window.clearInterval(audioTimerRef.current);
       if (videoTimerRef.current) window.clearInterval(videoTimerRef.current);
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
-      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      // Note: object URLs are revoked where they are created/cleared (discardAudio/discardVideo/onstop)
     };
-
   }, []);
 
-  const formatTime = (s: number) => {
-    const mm = Math.floor(s / 60).toString().padStart(2, "0");
-    const ss = Math.floor(s % 60).toString().padStart(2, "0");
-    return `${mm}:${ss}`;
-  };
 
   const startAudioTimer = () => {
     setAudioElapsed(0);
@@ -78,52 +90,59 @@ export default function VoiceVideoSubmission() {
     }
   };
 
-  const getSupportedMime = (candidates: string[]) => {
-    const isSupported = (MediaRecorder as unknown as { isTypeSupported?: (type: string) => boolean }).isTypeSupported;
 
-    if (typeof isSupported !== "function") return "";
-    for (const m of candidates) {
-      try {
-        if (isSupported(m)) return m;
-      } catch {
-        // ignore
-      }
+
+
+
+  const handleUploadAudio = async () => {
+    if (!audioBlob) {
+      setError("No audio to upload.");
+      return;
     }
-    return "";
+    setError(null);
+    setUploadingAudio(true);
+    setAudioCloudUrl(null);
+    try {
+      const url = await uploadToCloudinary(audioBlob, "raw");
+      setAudioCloudUrl(url);
+
+      // ✅ Post to backend
+      const payload = {
+        task_id: Number(taskId),
+        labels: [url],  // <-- Cloudinary URL instead of { type, value }
+      };
+      await annotateTask(payload);
+    } catch (err: unknown) {
+      console.error(err);
+      setError((err as Error)?.message || "Audio upload failed.");
+    } finally {
+      setUploadingAudio(false);
+    }
   };
 
-  // Utility to safely attach a blob to a media element and attempt to load/play
-  const attachBlobToElement = async (
-    el: HTMLMediaElement | null,
-    blob: Blob,
-    setDuration: (n: number | null) => void
-  ) => {
-    if (!el) return;
+  const handleUploadVideo = async () => {
+    if (!videoBlob) {
+      setError("No video to upload.");
+      return;
+    }
+    setError(null);
+    setUploadingVideo(true);
+    setVideoCloudUrl(null);
     try {
-      const url = URL.createObjectURL(blob);
-      el.src = url;
-      el.load();
+      const url = await uploadToCloudinary(videoBlob, "video");
+      setVideoCloudUrl(url);
 
-      await new Promise<void>((resolve) => {
-        const onMeta = () => {
-          el.removeEventListener("loadedmetadata", onMeta);
-          resolve();
-        };
-        el.addEventListener("loadedmetadata", onMeta);
-        setTimeout(resolve, 1500);
-      });
-
-      const dur = el.duration;
-      if (!isFinite(dur) || isNaN(dur)) {
-        setDuration(null);
-      } else {
-        setDuration(Math.round(dur));
-      }
-      el.play().catch(() => {});
-    } catch (err) {
-      console.warn("attachBlobToElement error:", err);
-      setDuration(null);
-      setError("Recorded media format is not supported by this browser.");
+      // ✅ Post to backend
+      const payload = {
+        task_id: Number(taskId),
+        labels: [url],  // <-- Cloudinary URL instead of { type, value }
+      };
+      await annotateTask(payload);
+    } catch (err: unknown) {
+      console.error(err);
+      setError((err as Error)?.message || "Video upload failed.");
+    } finally {
+      setUploadingVideo(false);
     }
   };
 
@@ -131,11 +150,24 @@ export default function VoiceVideoSubmission() {
   const startAudioRecording = async () => {
     setError(null);
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("MediaDevices API not supported in this browser.");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
 
-      const audioMime = getSupportedMime(["audio/webm;codecs=opus", "audio/webm"]);
-      const mr = audioMime ? new MediaRecorder(stream, { mimeType: audioMime }) : new MediaRecorder(stream);
+      const audioMime = getSupportedMime([
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/aac",
+      ]);
+      if (!audioMime) {
+        throw new Error("No supported audio format available for recording on this device.");
+      }
+
+      const mr = new MediaRecorder(stream, { mimeType: audioMime });
 
       mr.ondataavailable = (e) => {
         if (e.data && e.data.size) audioChunksRef.current.push(e.data);
@@ -143,7 +175,7 @@ export default function VoiceVideoSubmission() {
 
       mr.onstop = async () => {
         try {
-          const blob = new Blob(audioChunksRef.current, { type: audioMime || "audio/webm" });
+          const blob = new Blob(audioChunksRef.current, { type: audioMime });
           if (!blob || blob.size === 0) {
             setError("Recording failed — no audio captured.");
             stream.getTracks().forEach((t) => t.stop());
@@ -156,7 +188,7 @@ export default function VoiceVideoSubmission() {
           const url = URL.createObjectURL(blob);
           setAudioUrl(url);
 
-          await attachBlobToElement(audioRef.current, blob, (d) => setAudioDuration(d));
+          await attachBlobToElement(audioRef.current, blob, (d) => setAudioDuration(d), setError);
         } finally {
           stream.getTracks().forEach((t) => t.stop());
           stopAudioTimer();
@@ -174,11 +206,25 @@ export default function VoiceVideoSubmission() {
           setIsRecordingAudio(false);
         }
       }, maxAudioSec * 1000);
-    } catch (err) {
+
+    } catch (err: unknown) {
       console.error(err);
-      setError("Failed to start audio recording.");
+
+      if ((err as DOMException)?.name === "NotAllowedError") {
+        setError(
+          "Permission denied: please allow microphone access. On iOS Safari, go to Settings → Safari → Camera & Microphone."
+        );
+      } else if ((err as DOMException)?.name === "NotFoundError") {
+        setError("No microphone found on this device.");
+      } else if ((err as DOMException)?.name === "NotReadableError") {
+        setError("Microphone is already in use by another app or browser tab.");
+      } else {
+        setError(`Failed to start audio recording: ${(err as Error).message}`);
+      }
     }
   };
+
+
 
   const stopAudioRecording = () => {
     try {
@@ -203,12 +249,17 @@ export default function VoiceVideoSubmission() {
       audioRef.current.pause();
       audioRef.current.removeAttribute("src");
     }
+    setAudioCloudUrl(null);
   };
 
   // ===== VIDEO =====
   const startVideoRecording = async () => {
     setError(null);
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("MediaDevices API not supported in this browser.");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       videoStreamRef.current = stream;
 
@@ -219,12 +270,18 @@ export default function VoiceVideoSubmission() {
       }
 
       const videoMime = getSupportedMime([
+        "video/mp4;codecs=h264,aac",
+        "video/quicktime",
         "video/webm;codecs=vp9,opus",
         "video/webm;codecs=vp8,opus",
         "video/webm",
       ]);
-      const mr = videoMime ? new MediaRecorder(stream, { mimeType: videoMime }) : new MediaRecorder(stream);
 
+      if (!videoMime) {
+        throw new Error("No supported video format available for recording on this device.");
+      }
+
+      const mr = new MediaRecorder(stream, { mimeType: videoMime });
       videoChunksRef.current = [];
 
       mr.ondataavailable = (e) => {
@@ -233,7 +290,7 @@ export default function VoiceVideoSubmission() {
 
       mr.onstop = async () => {
         try {
-          const blob = new Blob(videoChunksRef.current, { type: videoMime || "video/webm" });
+          const blob = new Blob(videoChunksRef.current, { type: videoMime });
           if (!blob || blob.size === 0) {
             setError("Recording failed — no video captured.");
             if (videoStreamRef.current) {
@@ -249,7 +306,7 @@ export default function VoiceVideoSubmission() {
           const url = URL.createObjectURL(blob);
           setVideoUrl(url);
 
-          await attachBlobToElement(recordedVideoRef.current, blob, (d) => setVideoDuration(d));
+          await attachBlobToElement(recordedVideoRef.current, blob, (d) => setVideoDuration(d), setError);
         } finally {
           if (videoStreamRef.current) {
             videoStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -271,11 +328,25 @@ export default function VoiceVideoSubmission() {
           setIsRecordingVideo(false);
         }
       }, maxVideoSec * 1000);
-    } catch (err) {
+
+    } catch (err: unknown) {
       console.error(err);
-      setError("Failed to start video recording.");
+
+      if ((err as DOMException)?.name === "NotAllowedError") {
+        setError(
+          "Permission denied: please allow camera & microphone access. On iOS Safari, go to Settings → Safari → Camera & Microphone."
+        );
+      } else if ((err as DOMException)?.name === "NotFoundError") {
+        setError("No camera or microphone found on this device.");
+      } else if ((err as DOMException)?.name === "NotReadableError") {
+        setError("Camera or microphone is already in use by another app or browser tab.");
+      } else {
+        setError(`Failed to start video recording: ${(err as Error).message}`);
+      }
     }
   };
+
+
 
   const stopVideoRecording = () => {
     try {
@@ -300,25 +371,25 @@ export default function VoiceVideoSubmission() {
       recordedVideoRef.current.pause();
       recordedVideoRef.current.removeAttribute("src");
     }
+    setVideoCloudUrl(null);
   };
 
-  const readableSize = (b: number) => {
-    if (b < 1024) return `${b} B`;
-    if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
-    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
-  };
+
 
   // UI
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-white">Attach Voice Note & Video</h3>
+      <h3 className="text-lg font-semibold text-white">
+       {type === "voice" ? "Attach Voice Note" : "Attach Video"}
+      </h3>
 
       {error && (
         <div className="rounded-md border border-red-600/40 bg-red-600/10 p-3 text-red-200">{error}</div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-1">
         {/* Audio Card */}
+         {type === "voice" && (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-start justify-between">
             <div>
@@ -331,21 +402,30 @@ export default function VoiceVideoSubmission() {
           <div className="mt-4 space-y-3">
             <div className="flex items-center gap-2">
               {!isRecordingAudio ? (
-                <button type="button" className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white" onClick={startAudioRecording}>
+                <button type="button" className="rounded-md bg-red-600 px-3 py-2 text-sm cursor-pointer font-medium text-white" onClick={startAudioRecording}>
                   Record
                 </button>
               ) : (
-                <button type="button" className="rounded-md bg-zinc-700 px-3 py-2 text-sm font-medium text-white" onClick={stopAudioRecording}>
+                <button type="button" className="rounded-md bg-zinc-700 px-3 py-2 text-sm cursor-pointer font-medium text-white" onClick={stopAudioRecording}>
                   Stop
                 </button>
               )}
 
-              <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80" onClick={() => audioRef.current?.play()} disabled={!audioBlob}>
+              <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80" onClick={() => audioRef.current?.play()} disabled={!audioBlob}>
                 Play
               </button>
 
-              <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80" onClick={discardAudio} disabled={!audioBlob}>
+              <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80" onClick={discardAudio} disabled={!audioBlob}>
                 Discard
+              </button>
+
+              <button
+                type="button"
+                onClick={handleUploadAudio}
+                disabled={!audioBlob || uploadingAudio}
+                className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80"
+              >
+                {uploadingAudio ? "Uploading…" : "Upload"}
               </button>
 
               {audioBlob && (
@@ -368,10 +448,28 @@ export default function VoiceVideoSubmission() {
             </div>
 
             <audio ref={audioRef} controls src={audioUrl ?? undefined} className="w-full" />
+            {audioUrl && (
+              <div className="mt-2 text-xs">
+                <a href={audioUrl} download="recording_audio.webm" className="underline">
+                  Download audio
+                </a>
+              </div>
+            )}
+
+            {audioCloudUrl && (
+              <div className="mt-2 text-xs flex items-center gap-2">
+                <a href={audioCloudUrl} target="_blank" rel="noreferrer" className="underline">
+                  Open uploaded audio
+                </a>
+                <button onClick={() => copyToClipboard(audioCloudUrl)} className="text-xs underline">Copy URL</button>
+              </div>
+            )}
           </div>
         </div>
+      )}
 
         {/* Video Card */}
+         {type === "video" && (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-start justify-between">
             <div>
@@ -401,6 +499,15 @@ export default function VoiceVideoSubmission() {
                 Discard
               </button>
 
+              <button
+                type="button"
+                onClick={handleUploadVideo}
+                disabled={!videoBlob || uploadingVideo}
+                className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
+              >
+                {uploadingVideo ? "Uploading…" : "Upload"}
+              </button>
+
               {videoBlob && (
                 <div className="ml-auto text-xs text-white/60">{readableSize(videoBlob.size)} • {videoDuration ? `${formatTime(videoDuration)}` : 'Recorded'}</div>
               )}
@@ -421,12 +528,45 @@ export default function VoiceVideoSubmission() {
             </div>
 
             <div className="w-full overflow-hidden rounded-md bg-black/30">
-              <video ref={cameraPreviewRef} className="h-[180px] w-full object-cover" playsInline muted />
+              <video
+                ref={cameraPreviewRef}
+                className="h-[180px] w-full object-cover"
+                playsInline
+                // legacy iOS attribute
+                webkit-playsinline="true"
+                muted
+                autoPlay
+              />
             </div>
 
-            <video ref={recordedVideoRef} controls src={videoUrl ?? undefined} className="w-full rounded-md" />
+            <video
+              ref={recordedVideoRef}
+              controls
+              src={videoUrl ?? undefined}
+              className="w-full rounded-md"
+              playsInline
+              // legacy iOS attribute
+              webkit-playsinline="true"
+            />
+            {videoUrl && (
+              <div className="mt-2 text-xs">
+                <a href={videoUrl} download="recording_video.webm" className="underline">
+                  Download video
+                </a>
+              </div>
+            )}
+
+            {videoCloudUrl && (
+              <div className="mt-2 text-xs flex items-center gap-2">
+                <a href={videoCloudUrl} target="_blank" rel="noreferrer" className="underline">
+                  Open uploaded video
+                </a>
+                <button onClick={() => copyToClipboard(videoCloudUrl)} className="text-xs underline">Copy URL</button>
+              </div>
+            )}
           </div>
         </div>
+        )}
       </div>
 
       <div className="text-sm text-white/60">Tips: Keep clips short (under {maxAudioSec}s / {maxVideoSec}s). The component records in webm if supported; server should accept webm or transcode. If permissions are blocked, open Chrome → lock icon → Site settings → Allow Camera & Microphone for localhost.</div>
