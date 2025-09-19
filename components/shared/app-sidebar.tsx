@@ -77,6 +77,16 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       icon: ClipboardList,
     },
     {
+      title: 'Earnings',
+      url: '/label/earnings',
+      icon: ClipboardList,
+    },
+    {
+      title: 'Add Bank',
+      url: '/label/add-bank',
+      icon: ClipboardList,
+    },
+    {
       title: 'Profile',
       url: '/label/profile',
       icon: User,
