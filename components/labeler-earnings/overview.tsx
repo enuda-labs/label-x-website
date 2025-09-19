@@ -8,8 +8,6 @@ import {
   Calendar,
   TrendingUp,
   Clock,
-  CheckCircle,
-  XCircle,
   Eye,
   Filter,
   Search,
