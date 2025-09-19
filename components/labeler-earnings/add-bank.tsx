@@ -1,5 +1,9 @@
-import { CreditCard, Eye, Plus, X } from 'lucide-react'
+'use client'
+
+import { CreditCard, Eye, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { Dialog, DialogContent } from '../ui/dialog'
+import { Button } from '../ui/button'
 
 const banks = [
   {
@@ -48,25 +52,25 @@ export const BanksContent = () => {
           <h1 className="mb-2 text-2xl font-bold text-white">Bank Accounts</h1>
           <p className="text-gray-400">Manage your withdrawal accounts</p>
         </div>
-        <button
+        <Button
           onClick={() => setShowAddBankModal(true)}
-          className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600"
+          className="flex items-center gap-2"
         >
           <Plus size={16} />
           Add Bank Account
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-4">
         {banks.map((bank) => (
           <div
             key={bank.id}
-            className="rounded-lg border border-gray-700 bg-gray-800 p-6"
+            className="border-card bg-card rounded-lg border p-6"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="rounded-lg bg-blue-500/20 p-3">
-                  <CreditCard className="text-blue-400" size={24} />
+                <div className="bg-primary/20 rounded-lg p-3">
+                  <CreditCard className="text-primary" size={24} />
                 </div>
                 <div>
                   <h3 className="font-medium text-white">{bank.name}</h3>
@@ -89,18 +93,12 @@ export const BanksContent = () => {
         ))}
       </div>
       {showAddBankModal && (
-        <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-          <div className="mx-4 w-full max-w-md rounded-lg border border-gray-700 bg-gray-800 p-6">
+        <Dialog open={showAddBankModal} onOpenChange={setShowAddBankModal}>
+          <DialogContent>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">
                 Add Bank Account
               </h3>
-              <button
-                onClick={() => setShowAddBankModal(false)}
-                className="text-gray-400 transition-colors hover:text-white"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             <div className="space-y-4">
@@ -115,7 +113,7 @@ export const BanksContent = () => {
                   onChange={(e) =>
                     setNewBank({ ...newBank, name: e.target.value })
                   }
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="bg-card focus:ring-primary w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:outline-none"
                 />
               </div>
 
@@ -130,7 +128,7 @@ export const BanksContent = () => {
                   onChange={(e) =>
                     setNewBank({ ...newBank, accountNumber: e.target.value })
                   }
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="bg-card focus:ring-primary w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:outline-none"
                 />
               </div>
 
@@ -145,7 +143,7 @@ export const BanksContent = () => {
                   onChange={(e) =>
                     setNewBank({ ...newBank, accountName: e.target.value })
                   }
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="bg-card focus:ring-primary w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:outline-none"
                 />
               </div>
 
@@ -160,32 +158,32 @@ export const BanksContent = () => {
                   onChange={(e) =>
                     setNewBank({ ...newBank, routingNumber: e.target.value })
                   }
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="bg-card focus:ring-primary w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:outline-none"
                 />
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   onClick={() => setShowAddBankModal(false)}
                   className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-white transition-colors hover:bg-gray-600"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleAddBank}
                   disabled={
                     !newBank.name ||
                     !newBank.accountNumber ||
                     !newBank.accountName
                   }
-                  className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-600"
+                  className="flex-1 rounded-lg disabled:cursor-not-allowed"
                 >
                   Add Bank
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

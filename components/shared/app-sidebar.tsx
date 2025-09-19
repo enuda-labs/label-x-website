@@ -83,7 +83,7 @@ export function AppSidebar({ userRole }: { userRole: string }) {
     },
     {
       title: 'Add Bank',
-      url: '/label/add-bank',
+      url: '/label/bank',
       icon: ClipboardList,
     },
     {
