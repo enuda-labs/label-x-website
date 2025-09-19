@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { CreditCard, Eye, Plus } from 'lucide-react'
@@ -11,6 +12,7 @@ const banks = [
     name: 'Chase Bank',
     accountNumber: '****1234',
     accountName: 'John Doe',
+    routingNumber: '111000025',
     isDefault: true,
   },
   {
@@ -18,12 +20,15 @@ const banks = [
     name: 'Bank of America',
     accountNumber: '****5678',
     accountName: 'John Doe',
+    routingNumber: '222000111',
     isDefault: false,
   },
 ]
 
 export const BanksContent = () => {
-  const [showAddBankModal, setShowAddBankModal] = useState(false)
+  const [showBankModal, setShowBankModal] = useState(false)
+  const [selectedBank, setSelectedBank] = useState<any | null>(null)
+
   const [newBank, setNewBank] = useState({
     name: '',
     accountNumber: '',
@@ -31,17 +36,31 @@ export const BanksContent = () => {
     routingNumber: '',
   })
 
-  const handleAddBank = () => {
+  const openAddBankModal = () => {
+    setSelectedBank(null)
+    setNewBank({
+      name: '',
+      accountNumber: '',
+      accountName: '',
+      routingNumber: '',
+    })
+    setShowBankModal(true)
+  }
+
+  const openViewBankModal = (bank: any) => {
+    setSelectedBank(bank)
+    setNewBank(bank)
+    setShowBankModal(true)
+  }
+
+  const handleSaveBank = () => {
     if (newBank.name && newBank.accountNumber && newBank.accountName) {
-      // Handle add bank logic here
-      console.log('Adding new bank:', newBank)
-      setShowAddBankModal(false)
-      setNewBank({
-        name: '',
-        accountNumber: '',
-        accountName: '',
-        routingNumber: '',
-      })
+      if (selectedBank) {
+        console.log('Updating bank:', newBank)
+      } else {
+        console.log('Adding new bank:', newBank)
+      }
+      setShowBankModal(false)
     }
   }
 
@@ -52,10 +71,7 @@ export const BanksContent = () => {
           <h1 className="mb-2 text-2xl font-bold text-white">Bank Accounts</h1>
           <p className="text-gray-400">Manage your withdrawal accounts</p>
         </div>
-        <Button
-          onClick={() => setShowAddBankModal(true)}
-          className="flex items-center gap-2"
-        >
+        <Button onClick={openAddBankModal} className="flex items-center gap-2">
           <Plus size={16} />
           Add Bank Account
         </Button>
@@ -65,7 +81,8 @@ export const BanksContent = () => {
         {banks.map((bank) => (
           <div
             key={bank.id}
-            className="border-card bg-card rounded-lg border p-6"
+            onClick={() => openViewBankModal(bank)}
+            className="border-card bg-card hover:bg-card/70 cursor-pointer rounded-lg border p-6 transition"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -84,7 +101,13 @@ export const BanksContent = () => {
                     Default
                   </span>
                 )}
-                <button className="text-gray-400 transition-colors hover:text-white">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openViewBankModal(bank)
+                  }}
+                  className="text-gray-400 transition-colors hover:text-white"
+                >
                   <Eye size={16} />
                 </button>
               </div>
@@ -92,12 +115,13 @@ export const BanksContent = () => {
           </div>
         ))}
       </div>
-      {showAddBankModal && (
-        <Dialog open={showAddBankModal} onOpenChange={setShowAddBankModal}>
+
+      {showBankModal && (
+        <Dialog open={showBankModal} onOpenChange={setShowBankModal}>
           <DialogContent>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">
-                Add Bank Account
+                {selectedBank ? 'View / Edit Bank Account' : 'Add Bank Account'}
               </h3>
             </div>
 
@@ -164,13 +188,13 @@ export const BanksContent = () => {
 
               <div className="flex gap-3 pt-4">
                 <Button
-                  onClick={() => setShowAddBankModal(false)}
+                  onClick={() => setShowBankModal(false)}
                   className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-white transition-colors hover:bg-gray-600"
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleAddBank}
+                  onClick={handleSaveBank}
                   disabled={
                     !newBank.name ||
                     !newBank.accountNumber ||
@@ -178,7 +202,7 @@ export const BanksContent = () => {
                   }
                   className="flex-1 rounded-lg disabled:cursor-not-allowed"
                 >
-                  Add Bank
+                  {selectedBank ? 'Save Changes' : 'Add Bank'}
                 </Button>
               </div>
             </div>
