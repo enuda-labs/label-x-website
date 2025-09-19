@@ -3,7 +3,7 @@
 
 import { CreditCard, Eye, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { Dialog, DialogContent } from '../ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog'
 import { Button } from '../ui/button'
 
 const banks = [
@@ -120,9 +120,9 @@ export const BanksContent = () => {
         <Dialog open={showBankModal} onOpenChange={setShowBankModal}>
           <DialogContent>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">
+              <DialogTitle className="text-xl font-semibold text-white">
                 {selectedBank ? 'View / Edit Bank Account' : 'Add Bank Account'}
-              </h3>
+              </DialogTitle>
             </div>
 
             <div className="space-y-4">

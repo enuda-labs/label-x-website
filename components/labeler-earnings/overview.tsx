@@ -10,6 +10,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { TransactionsContent } from './transactions'
+import { Button } from '../ui/button'
 
 const EarningOverview = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
@@ -132,8 +133,8 @@ const EarningOverview = () => {
       <TransactionsContent showTen />
 
       {showWithdrawModal && (
-        <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
-          <div className="mx-4 w-full max-w-md rounded-lg border border-gray-700 bg-gray-800 p-6">
+        <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-background mx-4 w-full max-w-md rounded-lg border p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-xl font-semibold text-white">
                 Withdraw Funds
@@ -146,7 +147,7 @@ const EarningOverview = () => {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
                   Available Balance: ${earnings.availableBalance.toFixed(2)}
@@ -156,7 +157,7 @@ const EarningOverview = () => {
                   placeholder="Enter amount"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 />
               </div>
 
@@ -167,7 +168,7 @@ const EarningOverview = () => {
                 <select
                   value={selectedBank}
                   onChange={(e) => setSelectedBank(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-gray-700 px-3 py-2 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 >
                   <option value="">Choose a bank account</option>
                   {banks.map((bank) => (
@@ -178,7 +179,7 @@ const EarningOverview = () => {
                 </select>
               </div>
 
-              <div className="rounded-lg bg-gray-700 p-3">
+              <div className="bg-card rounded-lg p-3">
                 <p className="text-sm text-gray-300">
                   <span className="text-yellow-400">⚠️</span> Withdrawals
                   typically take 1-3 business days to process.
@@ -186,19 +187,19 @@ const EarningOverview = () => {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   onClick={() => setShowWithdrawModal(false)}
-                  className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-white transition-colors hover:bg-gray-600"
+                  className="bg-card flex-1 rounded-lg px-4 py-2 text-white transition-colors hover:bg-gray-600"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleWithdraw}
                   disabled={!withdrawAmount || !selectedBank}
-                  className="flex-1 rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-600"
+                  className="flex-1 rounded-lg disabled:cursor-not-allowed"
                 >
                   Withdraw
-                </button>
+                </Button>
               </div>
             </div>
           </div>
