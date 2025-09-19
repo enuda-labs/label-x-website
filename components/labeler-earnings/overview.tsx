@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react'
 import {
   DollarSign,
@@ -7,6 +9,7 @@ import {
   TrendingUp,
   Clock,
 } from 'lucide-react'
+import { TransactionsContent } from './transactions'
 
 const EarningOverview = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
@@ -50,18 +53,8 @@ const EarningOverview = () => {
   }
 
   const EarningsContent = () => (
-    <div className="space-y-6 p-6">
-      <div>
-        <h1 className="mb-2 text-2xl font-bold text-white">
-          Labeler Dashboard
-        </h1>
-        <p className="text-gray-400">
-          Complete your labeling tasks to help improve AI and machine learning
-          models
-        </p>
-      </div>
-
-      <div className="rounded-lg border border-gray-700 bg-gray-800 p-6">
+    <div className="space-y-6 px-2 py-6">
+      <div className="rounded-lg py-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-white">
             Earnings Overview
@@ -76,7 +69,7 @@ const EarningOverview = () => {
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg bg-gray-700 p-4">
+          <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <DollarSign className="text-green-400" size={20} />
               <span className="text-sm text-gray-300">Total Earnings</span>
@@ -86,7 +79,7 @@ const EarningOverview = () => {
             </p>
           </div>
 
-          <div className="rounded-lg bg-gray-700 p-4">
+          <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <TrendingUp className="text-blue-400" size={20} />
               <span className="text-sm text-gray-300">Available Balance</span>
@@ -96,7 +89,7 @@ const EarningOverview = () => {
             </p>
           </div>
 
-          <div className="rounded-lg bg-gray-700 p-4">
+          <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <Clock className="text-yellow-400" size={20} />
               <span className="text-sm text-gray-300">Pending Earnings</span>
@@ -106,7 +99,7 @@ const EarningOverview = () => {
             </p>
           </div>
 
-          <div className="rounded-lg bg-gray-700 p-4">
+          <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <Calendar className="text-purple-400" size={20} />
               <span className="text-sm text-gray-300">This Month</span>
@@ -117,7 +110,7 @@ const EarningOverview = () => {
           </div>
         </div>
 
-        <div className="rounded-lg bg-gray-700 p-4">
+        <div className="bg-card rounded-lg p-4">
           <p className="text-sm text-gray-300">
             Last withdrawal:{' '}
             <span className="font-medium text-white">
@@ -131,10 +124,12 @@ const EarningOverview = () => {
   )
 
   return (
-    <div className="flex min-h-screen bg-gray-900">
+    <div className="min-h-screen">
       <div className="flex-1 overflow-auto">
         <EarningsContent />
       </div>
+
+      <TransactionsContent showTen />
 
       {showWithdrawModal && (
         <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
