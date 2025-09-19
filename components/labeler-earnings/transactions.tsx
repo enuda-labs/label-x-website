@@ -115,7 +115,7 @@ export const TransactionsContent = ({
               {transactionsToShow.map((transaction) => (
                 <tr
                   key={transaction.id}
-                  className="transition-colors hover:bg-gray-700/50"
+                  className="hover:bg-card/50 transition-colors"
                 >
                   <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
                     {transaction.date}
@@ -166,9 +166,11 @@ export const TransactionsContent = ({
             </tbody>
           </table>
         </div>
-        <Link href="/label/transactions" className="flex justify-end p-4">
-          <Button className="px-8">View All</Button>
-        </Link>
+        {showTen && (
+          <Link href="/label/earnings/history" className="flex justify-end p-4">
+            <Button className="px-8">View All</Button>
+          </Link>
+        )}
       </div>
     </div>
   )
