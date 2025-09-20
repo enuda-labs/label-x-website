@@ -7,6 +7,7 @@ import {
   User,
   LogOut,
   ClipboardList,
+  DollarSign,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -75,6 +76,16 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       title: 'Available Clusters',
       url: '/label/available-tasks',
       icon: ClipboardList,
+    },
+    {
+      title: 'Earnings',
+      url: '/label/earnings',
+      icon: DollarSign,
+    },
+    {
+      title: 'Add Bank',
+      url: '/label/bank',
+      icon: CreditCard,
     },
     {
       title: 'Profile',
