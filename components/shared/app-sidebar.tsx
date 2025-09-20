@@ -7,6 +7,7 @@ import {
   User,
   LogOut,
   ClipboardList,
+  DollarSign,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -79,12 +80,12 @@ export function AppSidebar({ userRole }: { userRole: string }) {
     {
       title: 'Earnings',
       url: '/label/earnings',
-      icon: ClipboardList,
+      icon: DollarSign,
     },
     {
       title: 'Add Bank',
       url: '/label/bank',
-      icon: ClipboardList,
+      icon: CreditCard,
     },
     {
       title: 'Profile',
