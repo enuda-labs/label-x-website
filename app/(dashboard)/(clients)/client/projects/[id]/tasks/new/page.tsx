@@ -26,6 +26,7 @@ import { createTaskCluster } from '@/services/apis/task'
 import { TaskItem } from '@/components/project/task/task-item'
 import { isAxiosError } from 'axios'
 import Image from 'next/image'
+import costBreakdown from './datapoint-cost'
 
 enum AnnotationStep {
   DATA_TYPE = 'data_type',
@@ -47,7 +48,7 @@ const Annotate = () => {
     inputType: 'multiple_choice',
     labellingChoices: [],
     instructions: '',
-    labellersRequired: 1,
+    labellersRequired: 15,
     tasks: [{ id: '1', data: '', file: null }],
     deadline: new Date(),
   })
@@ -84,6 +85,9 @@ const Annotate = () => {
           taskConfig.tasks.length > 0 &&
           taskConfig.tasks.every((task) => task.data.trim()) &&
           (taskConfig.inputType === 'text' ||
+            taskConfig.inputType === 'video' ||
+            taskConfig.inputType === 'voice' ||
+            taskConfig.inputType === 'image' ||
             taskConfig.labellingChoices.length > 0) &&
           taskConfig.deadline
         )
@@ -123,7 +127,8 @@ const Annotate = () => {
     setIsSubmitting(true)
     let uploadedFileUrl = ''
     if (dataType !== 'TEXT') {
-      const fileTask = taskConfig.tasks[0].file
+      const fileTask =
+        taskConfig.tasks[0].file || taskConfig.tasks[0].recordedBlob
       if (fileTask) {
         try {
           uploadedFileUrl = await uploadToCloudinary(fileTask)
@@ -159,11 +164,14 @@ const Annotate = () => {
               data: task.data,
               file: {
                 file_url: uploadedFileUrl,
-                file_name: task.file?.name || '',
-                file_size_bytes: task.file?.size || 0,
-                file_type: task.file?.type || '',
+                file_name: task.file?.name || task.data || '',
+                file_size_bytes:
+                  task.file?.size || task.recordedBlob?.size || 0,
+                file_type: task.file?.type || task.recordedBlob?.type || '',
               },
             }
+
+      console.log(taskBody)
 
       await createTaskCluster({
         tasks: taskConfig.tasks.map((task) => taskBody(task)),
@@ -205,7 +213,7 @@ const Annotate = () => {
   const renderDataPreview = () => {
     if (!dataType || taskConfig.tasks.length === 0) return null
 
-    const getFileUrl = (file: File | null) => {
+    const getFileUrl = (file: File | Blob | null | undefined) => {
       if (dataType === 'CSV') return null
       return file ? URL.createObjectURL(file) : null
     }
@@ -213,7 +221,9 @@ const Annotate = () => {
     switch (dataType) {
       case 'VIDEO':
         const firstVideoTask = taskConfig.tasks[0]
-        const videoUrl = getFileUrl(firstVideoTask.file)
+        const videoUrl = getFileUrl(
+          firstVideoTask.file || firstVideoTask.recordedBlob
+        )
 
         return (
           <Card className="shadow-soft bg-card/30">
@@ -231,14 +241,26 @@ const Annotate = () => {
                     className="max-h-64 w-full rounded-lg bg-black"
                     preload="metadata"
                   >
-                    <source src={videoUrl} type={firstVideoTask.file?.type} />
+                    <source
+                      src={videoUrl}
+                      type={
+                        firstVideoTask.file?.type ||
+                        firstVideoTask.recordedBlob?.type
+                      }
+                    />
                     Your browser does not support the video tag.
                   </video>
                   <p className="text-muted-foreground text-sm">
-                    {firstVideoTask.file?.name} (
-                    {(firstVideoTask.file?.size || 0 / (1024 * 1024)).toFixed(
-                      2
-                    )}{' '}
+                    {firstVideoTask.recordedBlob
+                      ? 'Video Record'
+                      : firstVideoTask.file?.name}{' '}
+                    (
+                    {(
+                      (firstVideoTask.file?.size ||
+                        firstVideoTask.recordedBlob?.size ||
+                        0) /
+                      (1024 * 1024)
+                    ).toFixed(2)}{' '}
                     MB)
                   </p>
                 </div>
@@ -533,7 +555,8 @@ const Annotate = () => {
                           Task Items
                         </h4>
                         <p className="text-sm">
-                          {taskConfig.tasks.length} items
+                          {taskConfig.tasks.length} item
+                          {taskConfig.tasks.length !== 1 && 's'}
                         </p>
                       </div>
                       <div>
@@ -554,6 +577,15 @@ const Annotate = () => {
                           </p>
                         </div>
                       )}
+                      <div>
+                        <h4 className="text-muted-foreground text-sm font-medium">
+                          Data points to be used
+                        </h4>
+                        <p className="text-sm">
+                          {dataType &&
+                            costBreakdown(taskConfig, dataType).totalCost}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

@@ -94,6 +94,20 @@ export interface BankWithDates {
   updatedAt: Date
 }
 
+interface WithdrawPayload {
+  account_number: string
+  bank_code: string
+  amount: string
+}
+
+interface WithdrawalResponse {
+  status: 'success'
+  data: null
+  message: string
+  success: boolean
+  error: string
+}
+
 /**
  * Change only the username
  */
@@ -113,6 +127,13 @@ export const listEarnings = async () => {
 export const listBanks = async () => {
   const response = await axiosClient.get<BankListResponse>(
     '/payment/paystack/banks/'
+  )
+  return response.data
+}
+export const withdraw = async (payload: WithdrawPayload) => {
+  const response = await axiosClient.post<WithdrawPayload, WithdrawalResponse>(
+    '/payment/paystack/withdrawal/initiate/',
+    payload
   )
   return response.data
 }

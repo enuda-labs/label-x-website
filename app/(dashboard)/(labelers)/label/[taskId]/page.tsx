@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { AxiosError } from 'axios'
-import { useParams, useRouter} from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   Check,
@@ -38,8 +38,7 @@ import {
   fetchTaskProgress,
 } from '@/services/apis/clusters'
 import { ApiResponse } from '@/types/ApiResponse'
-import VoiceVideoSubmission from "@/components/VoiceVideoSubmission/VoiceVideoSubmission";
-
+import VoiceVideoSubmission from '@/components/VoiceVideoSubmission/VoiceVideoSubmission'
 
 interface TaskFile {
   file_url?: string
@@ -61,12 +60,11 @@ interface ApiTaskResponse {
   title?: string
   labelling_choices?: Array<{ option_text: string }>
   choices?: Array<{ option_text: string }>
-input_type?: 'multiple_choice' | 'text_input' | 'voice' | 'video'
+  input_type?: 'multiple_choice' | 'text_input' | 'voice' | 'video'
   labeller_instructions?: string
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV'
- my_labels?: Array<{ id: number; label: string; notes?: string }>
+  my_labels?: Array<{ id: number; label: string; notes?: string }>
 }
-
 
 interface Label {
   label?: string
@@ -97,13 +95,10 @@ const buildHydratedResponses = (payload: ApiTaskResponse) => {
   })
 }
 
-
 interface ApiErrorResponse {
   detail?: string
   message?: string
 }
-
-
 
 const getTaskTypeIcon = (type?: string) => {
   switch (type) {
@@ -149,22 +144,26 @@ const LabelTask = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-
   const refreshTaskData = async () => {
     if (!taskId) return
 
     try {
-      const idToFetch = Array.isArray(taskId) ? Number(taskId[0]) : Number(taskId)
+      const idToFetch = Array.isArray(taskId)
+        ? Number(taskId[0])
+        : Number(taskId)
 
-      const resp = (await fetchTaskById(idToFetch)) as ApiResponse | { data: ApiTaskResponse }
-      const payload: ApiTaskResponse = 'data' in resp && resp.data ? resp.data : (resp as ApiTaskResponse)
+      const resp = (await fetchTaskById(idToFetch)) as
+        | ApiResponse
+        | { data: ApiTaskResponse }
+      const payload: ApiTaskResponse =
+        'data' in resp && resp.data ? resp.data : (resp as ApiTaskResponse)
 
       setTaskData(payload || null)
 
       // hydrate existing labels instead of wiping
       const hydrated = buildHydratedResponses(payload)
       setResponses(hydrated)
-      setCompletedItems(hydrated.filter(r => r.answer.length > 0).length)
+      setCompletedItems(hydrated.filter((r) => r.answer.length > 0).length)
 
       setCurrentItemIndex(0)
       setSelectedCategory(hydrated[0]?.answer?.[0] ?? '')
@@ -176,9 +175,6 @@ const LabelTask = () => {
       console.error('Failed to refresh task data', err)
     }
   }
-
-
-
 
   useEffect(() => {
     if (!taskId) return
@@ -209,20 +205,19 @@ const LabelTask = () => {
 
         // ✅ Hydrate answers from API
         const hydrated = buildHydratedResponses(payload)
-        console.log("Hydrated responses:", hydrated)
+        console.log('Hydrated responses:', hydrated)
 
         setResponses(hydrated)
 
-  // Prefill the current input (works for both multiple_choice & text_input)
-  const firstAnswer = hydrated[0]?.answer?.[0] ?? ''
-  setSelectedCategory(firstAnswer)
+        // Prefill the current input (works for both multiple_choice & text_input)
+        const firstAnswer = hydrated[0]?.answer?.[0] ?? ''
+        setSelectedCategory(firstAnswer)
 
-  // Completed count = how many items already have an answer
-  setCompletedItems(hydrated.filter(r => r.answer.length > 0).length)
+        // Completed count = how many items already have an answer
+        setCompletedItems(hydrated.filter((r) => r.answer.length > 0).length)
 
-  setCurrentItemIndex(0)
-  setNotes('') // you can later hydrate notes if your API returns them
-
+        setCurrentItemIndex(0)
+        setNotes('') // you can later hydrate notes if your API returns them
       } catch (err: unknown) {
         let message = 'Failed to load task. Please try again.'
         if (err instanceof Error) {
@@ -240,13 +235,6 @@ const LabelTask = () => {
     }
   }, [taskId])
 
-
-
-
-
-
-
-
   useEffect(() => {
     if (!taskId) return
     ;(async () => {
@@ -256,19 +244,15 @@ const LabelTask = () => {
           : Number(taskId)
         const progress = await fetchTaskProgress(idToFetch)
         setProgressData(progress)
-      }  catch (err: unknown) {
-  if (err instanceof Error) {
-    console.error('Failed to fetch task progress', err.message)
-  } else {
-    console.error('Failed to fetch task progress', err)
-  }
-}
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error('Failed to fetch task progress', err.message)
+        } else {
+          console.error('Failed to fetch task progress', err)
+        }
+      }
     })()
   }, [taskId])
-
-
-
-
 
   if (loading)
     return (
@@ -283,7 +267,6 @@ const LabelTask = () => {
       </div>
     )
 
-
   if (!taskData)
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -291,18 +274,21 @@ const LabelTask = () => {
       </div>
     )
 
-
   const items = taskData.tasks ?? []
   const totalItems = items.length
   const currentItem = items[currentItemIndex] ?? { data: '' }
-const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLowerCase()
+  const inputType = (taskData?.input_type ?? 'multiple_choice')
+    .toString()
+    .toLowerCase()
   const labellingChoices = taskData.choices ?? taskData.labelling_choices ?? []
   const progress =
-  progressData && progressData.total_tasks > 0
-    ? Math.round((progressData.completed_tasks / progressData.total_tasks) * 100)
-    : totalItems > 0
-    ? Math.round((completedItems / totalItems) * 100)
-    : 0
+    progressData && progressData.total_tasks > 0
+      ? Math.round(
+          (progressData.completed_tasks / progressData.total_tasks) * 100
+        )
+      : totalItems > 0
+        ? Math.round((completedItems / totalItems) * 100)
+        : 0
 
   const isLastItem = currentItemIndex === totalItems - 1
 
@@ -324,12 +310,10 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
     }
   }
 
-
   // --- Handlers ---
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category)
   }
-
 
   // --- Handlers ---
   const handleSubmitLabelLocal = () => {
@@ -348,7 +332,6 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
     setShowConfirmDialog(true)
   }
 
-
   const handleConfirmSubmit = async () => {
     const currentTaskIdToSend = currentItem?.id
     if (!currentTaskIdToSend) return
@@ -358,8 +341,8 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
 
       // Build labels depending on input type
       let labelsToSend: string[] = []
-      if (inputType === "text_input") {
-        if (selectedCategory && selectedCategory.trim() !== "") {
+      if (inputType === 'text_input') {
+        if (selectedCategory && selectedCategory.trim() !== '') {
           labelsToSend = [selectedCategory.trim()]
         }
       } else {
@@ -389,10 +372,10 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
         newResponses[currentItemIndex]?.answer?.length > 0 ? prev : prev + 1
       )
 
-      toast("Item labeled", {
+      toast('Item labeled', {
         description:
           resp?.message ??
-          `Item labeled as "${labelsToSend.length > 0 ? labelsToSend[0] : "—"}"`,
+          `Item labeled as "${labelsToSend.length > 0 ? labelsToSend[0] : '—'}"`,
       })
 
       await refreshTaskData()
@@ -401,8 +384,8 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
       if (currentItemIndex < totalItems - 1) {
         goToItemIndex(currentItemIndex + 1)
       } else {
-        toast("All items completed in this cluster.")
-        router.push("/label/overview")
+        toast('All items completed in this cluster.')
+        router.push('/label/overview')
       }
     } catch (err) {
       const error = err as AxiosError<ApiErrorResponse>
@@ -412,20 +395,20 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
       const dbError =
         error.response?.data?.detail ||
         error.response?.data?.message ||
-        "Unknown server error"
+        'Unknown server error'
 
-      if (status === 400 && dbError.toLowerCase().includes("already")) {
-        toast("You already labeled this task", {
+      if (status === 400 && dbError.toLowerCase().includes('already')) {
+        toast('You already labeled this task', {
           description: dbError,
         })
         setShowConfirmDialog(false)
       } else {
-        toast("Task not available", {
+        toast('Task not available', {
           description: dbError, // 👈 always DB error
         })
       }
 
-      console.error("handleConfirmSubmit error:", {
+      console.error('handleConfirmSubmit error:', {
         status,
         dbError,
         raw: error,
@@ -453,7 +436,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
       setIsSubmitting(true)
 
       const resp = await annotateMissingAsset(taskIdToSend, {
-        labels: ["MISSING_ASSET"],
+        labels: ['MISSING_ASSET'],
         notes: noteForServer,
       })
 
@@ -469,7 +452,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
         notes: noteForServer,
       }
       setResponses(newResponses)
-      setCompletedItems(prev => prev + 1)
+      setCompletedItems((prev) => prev + 1)
 
       // ✅ advance or redirect if last item
       if (currentItemIndex < totalItems - 1) {
@@ -478,7 +461,6 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
         toast('All items completed in this cluster.')
         router.push('/label/tasks') // 👈 redirect after last item
       }
-
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string; message?: string }>
       const detail = error.response?.data?.detail || error.message || ''
@@ -491,7 +473,6 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
       setIsSubmitting(false)
     }
   }
-
 
   // Build payload (labels + notes)
   // const buildLabelsForSubmission = () => {
@@ -588,7 +569,6 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
   // }
   //
 
-
   // Next/Previous should move between items within the cluster
   const handleNextTask = () => {
     if (currentItemIndex < totalItems - 1) {
@@ -609,25 +589,24 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
   // --- Render ---
   return (
     <div className="bg-card/20 min-h-screen">
-    <header className="bg-card/30 sticky top-0 z-50 border-b backdrop-blur-sm">
-<div className="container mx-auto px-4 py-4">
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-4">
-      <Link href="/label/overview">
-        <Button variant="ghost" size="sm">
-          <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-        </Button>
-      </Link>
-    </div>
-    <div className="flex items-center gap-3">
-      <Badge variant="outline">
-        {progressData?.completed_tasks ?? completedItems} completed
-      </Badge>
-    </div>
-  </div>
-</div>
-</header>
-
+      <header className="bg-card/30 sticky top-0 z-50 border-b backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link href="/label/overview">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline">
+                {progressData?.completed_tasks ?? completedItems} completed
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </header>
 
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
@@ -656,9 +635,9 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
           </div>
         </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col gap-8 lg:flex-row">
           {/* MAIN CONTENT (left) */}
-        <div className="flex-1">
+          <div className="flex-1">
             <Card className="shadow-soft bg-card/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -892,7 +871,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
           </div>
 
           {/* RIGHT SIDEBAR */}
-         <div className="w-full lg:w-[360px] space-y-6">
+          <div className="w-full space-y-6 lg:w-[360px]">
             <Card className="bg-card/20 border-primary border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -907,100 +886,115 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
               </CardContent>
             </Card>
 
-            {inputType === "video" || inputType === "voice" ? (
-    <VoiceVideoSubmission type={inputType} taskId={currentItem?.id ? String(currentItem.id) : ""}  />
-  ) : (
-    <>
-      <Card className="bg-card/20">
-        <CardHeader>
-          <CardTitle className="text-base">
-            {inputType === "multiple_choice" && choicesToShow.length > 0
-              ? "Select Label Option *"
-              : "Provide Answer *"}
-          </CardTitle>
-        </CardHeader>
+            {inputType === 'video' || inputType === 'voice' ? (
+              <VoiceVideoSubmission
+                type={inputType}
+                taskId={currentItem?.id ? String(currentItem.id) : ''}
+              />
+            ) : (
+              <>
+                <Card className="bg-card/20">
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      {inputType === 'multiple_choice' &&
+                      choicesToShow.length > 0
+                        ? 'Select Label Option *'
+                        : 'Provide Answer *'}
+                    </CardTitle>
+                  </CardHeader>
 
-        <CardContent className="space-y-3">
-          {inputType === "multiple_choice" && choicesToShow.length > 0 ? (
-            choicesToShow.map((choice, index) => (
-              <Button
-                key={index}
-                variant={
-                  selectedCategory === choice.option_text
-                    ? "default"
-                    : "outline"
-                }
-                className="w-full justify-start cursor-pointer"
-                onClick={() => handleCategorySelect(choice.option_text)}
-              >
-                {selectedCategory === choice.option_text && (
-                  <Check className="mr-2 h-4 w-4" />
-                )}
-                {choice.option_text}
-              </Button>
-            ))
-          ) : (
-            <Textarea
-              placeholder="Enter your response here..."
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="min-h-[100px] resize-none"
-            />
-          )}
-        </CardContent>
-      </Card>
+                  <CardContent className="space-y-3">
+                    {inputType === 'multiple_choice' &&
+                    choicesToShow.length > 0 ? (
+                      choicesToShow.map((choice, index) => (
+                        <Button
+                          key={index}
+                          variant={
+                            selectedCategory === choice.option_text
+                              ? 'default'
+                              : 'outline'
+                          }
+                          className="w-full cursor-pointer justify-start"
+                          onClick={() =>
+                            handleCategorySelect(choice.option_text)
+                          }
+                        >
+                          {selectedCategory === choice.option_text && (
+                            <Check className="mr-2 h-4 w-4" />
+                          )}
+                          {choice.option_text}
+                        </Button>
+                      ))
+                    ) : (
+                      <Textarea
+                        placeholder="Enter your response here..."
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="min-h-[100px] resize-none"
+                      />
+                    )}
+                  </CardContent>
+                </Card>
 
-      <Card className="bg-card/20">
-        <CardHeader>
-          <CardTitle className="text-base">Additional Notes (Optional)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            placeholder="Add any additional notes or observations..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="min-h-[80px]"
-          />
-        </CardContent>
-      </Card>
-    </>
-  )}
-
+                <Card className="bg-card/20">
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Additional Notes (Optional)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      placeholder="Add any additional notes or observations..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                  </CardContent>
+                </Card>
+              </>
+            )}
 
             <div className="space-y-3">
-      {inputType === 'video' || inputType === 'voice' ? (
-        <Button
-          onClick={() => {
-            const idToUse = currentItem?.id
-            if (!idToUse) return
-            // pass the normalized inputType so recorder knows which mode to open
-            router.push(`/label/recorder/${idToUse}?type=${inputType}`)
-          }}
-          className="w-full"
-          variant="default"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {inputType === 'voice' ? 'Go to Voice Recorder' : 'Go to Video Recorder'}
-        </Button>
-      ) : (
-        <Button
-          onClick={handleSubmitLabelLocal}
-          disabled={inputType === 'multiple_choice' && !selectedCategory}
-          className="w-full"
-          variant="default"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {inputType === 'multiple_choice'
-            ? (isLastItem ? 'Complete Task' : 'Submit Choice')
-            : (isLastItem ? 'Complete Task' : 'Submit & Continue')}
-        </Button>
-      )}
+              {inputType === 'video' || inputType === 'voice' ? (
+                <Button
+                  onClick={() => {
+                    const idToUse = currentItem?.id
+                    if (!idToUse) return
+                    // pass the normalized inputType so recorder knows which mode to open
+                    router.push(`/label/recorder/${idToUse}?type=${inputType}`)
+                  }}
+                  className="w-full"
+                  variant="default"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {inputType === 'voice'
+                    ? 'Go to Voice Recorder'
+                    : 'Go to Video Recorder'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSubmitLabelLocal}
+                  disabled={
+                    inputType === 'multiple_choice' && !selectedCategory
+                  }
+                  className="w-full"
+                  variant="default"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {inputType === 'multiple_choice'
+                    ? isLastItem
+                      ? 'Complete Task'
+                      : 'Submit Choice'
+                    : isLastItem
+                      ? 'Complete Task'
+                      : 'Submit & Continue'}
+                </Button>
+              )}
 
-      <p className="text-muted-foreground text-center text-xs">
-        * All items must be labeled to complete the task
-      </p>
-    </div>
-
+              <p className="text-muted-foreground text-center text-xs">
+                * All items must be labeled to complete the task
+              </p>
+            </div>
 
             <div className="flex gap-2">
               <Button
@@ -1022,42 +1016,40 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
 
       {/* Submission Confirmation Modal */}
       {/* Item Confirmation Modal */}
-  <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-    <DialogContent className="border shadow-sm max-w-lg w-[90%] rounded-xl p-6 flex flex-col items-center justify-center">
-      <DialogHeader>
-        <DialogTitle>Confirm Item Annotation</DialogTitle>
-        <DialogDescription>
-          Please review your response for this item before continuing.
-        </DialogDescription>
-      </DialogHeader>
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="flex w-[90%] max-w-lg flex-col items-center justify-center rounded-xl border p-6 shadow-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm Item Annotation</DialogTitle>
+            <DialogDescription>
+              Please review your response for this item before continuing.
+            </DialogDescription>
+          </DialogHeader>
 
-      <div className="space-y-4">
-      <div className="bg-muted/50 rounded-lg p-3 text-sm">
-  <div className="font-medium">Item {currentItemIndex + 1}:</div>
-  <div className="text-muted-foreground">
-    Answer: {selectedCategory || '—'}
-  </div>
-  {notes && (
-    <div className="text-muted-foreground">
-      Notes: {notes}
-    </div>
-  )}
-</div>
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <div className="font-medium">Item {currentItemIndex + 1}:</div>
+              <div className="text-muted-foreground">
+                Answer: {selectedCategory || '—'}
+              </div>
+              {notes && (
+                <div className="text-muted-foreground">Notes: {notes}</div>
+              )}
+            </div>
+          </div>
 
-      </div>
-
-      <DialogFooter>
-        <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
-          Edit Response
-        </Button>
-        <Button onClick={handleConfirmSubmit} disabled={isSubmitting}>
-          Confirm & Continue
-        </Button>
-      </DialogFooter>
-
-    </DialogContent>
-  </Dialog>
-
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDialog(false)}
+            >
+              Edit Response
+            </Button>
+            <Button onClick={handleConfirmSubmit} disabled={isSubmitting}>
+              Confirm & Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
