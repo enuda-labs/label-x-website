@@ -1,47 +1,34 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  DollarSign,
-  Download,
-  X,
-  Calendar,
-  TrendingUp,
-  Clock,
-} from 'lucide-react'
+import { Download, X, TrendingUp } from 'lucide-react'
 import { TransactionsContent } from './transactions'
 import { Button } from '../ui/button'
+import { useQuery } from '@tanstack/react-query'
+import { listBanks, listEarnings } from '@/services/apis/user'
 
 const EarningOverview = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [selectedBank, setSelectedBank] = useState('')
 
+  const { data } = useQuery({
+    queryFn: listEarnings,
+    queryKey: ['earning'],
+  })
+  const { data: listBanksData } = useQuery({
+    queryFn: listBanks,
+    queryKey: ['banks'],
+  })
   const earnings = {
-    totalEarnings: 1250.75,
-    availableBalance: 950.25,
-    pendingEarnings: 300.5,
-    thisMonth: 450.75,
-    lastWithdrawal: 300.0,
-    withdrawalDate: '2025-09-15',
+    totalEarnings: data?.data.balance,
+    availableBalance: data?.data.balance,
   }
 
-  const banks = [
-    {
-      id: 1,
-      name: 'Chase Bank',
-      accountNumber: '****1234',
-      accountName: 'John Doe',
-      isDefault: true,
-    },
-    {
-      id: 2,
-      name: 'Bank of America',
-      accountNumber: '****5678',
-      accountName: 'John Doe',
-      isDefault: false,
-    },
-  ]
+  const banks = listBanksData?.data.map((bank) => ({
+    id: bank.id,
+    name: bank.name,
+  }))
 
   const handleWithdraw = () => {
     if (withdrawAmount && selectedBank) {
@@ -70,7 +57,7 @@ const EarningOverview = () => {
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="bg-card rounded-lg p-4">
+          {/* <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <DollarSign className="text-green-400" size={20} />
               <span className="text-sm text-gray-300">Total Earnings</span>
@@ -78,7 +65,7 @@ const EarningOverview = () => {
             <p className="text-2xl font-bold text-white">
               ${earnings.totalEarnings.toFixed(2)}
             </p>
-          </div>
+          </div> */}
 
           <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
@@ -86,11 +73,11 @@ const EarningOverview = () => {
               <span className="text-sm text-gray-300">Available Balance</span>
             </div>
             <p className="text-2xl font-bold text-white">
-              ${earnings.availableBalance.toFixed(2)}
+              ${earnings.availableBalance}
             </p>
           </div>
 
-          <div className="bg-card rounded-lg p-4">
+          {/* <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <Clock className="text-yellow-400" size={20} />
               <span className="text-sm text-gray-300">Pending Earnings</span>
@@ -98,9 +85,9 @@ const EarningOverview = () => {
             <p className="text-2xl font-bold text-white">
               ${earnings.pendingEarnings.toFixed(2)}
             </p>
-          </div>
+          </div> */}
 
-          <div className="bg-card rounded-lg p-4">
+          {/* <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <Calendar className="text-purple-400" size={20} />
               <span className="text-sm text-gray-300">This Month</span>
@@ -108,10 +95,10 @@ const EarningOverview = () => {
             <p className="text-2xl font-bold text-white">
               ${earnings.thisMonth.toFixed(2)}
             </p>
-          </div>
+          </div> */}
         </div>
 
-        <div className="bg-card rounded-lg p-4">
+        {/* <div className="bg-card rounded-lg p-4">
           <p className="text-sm text-gray-300">
             Last withdrawal:{' '}
             <span className="font-medium text-white">
@@ -119,7 +106,7 @@ const EarningOverview = () => {
             </span>{' '}
             on {earnings.withdrawalDate}
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   )
@@ -150,7 +137,7 @@ const EarningOverview = () => {
             <div className="space-y-6">
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
-                  Available Balance: ${earnings.availableBalance.toFixed(2)}
+                  Available Balance: ${earnings.availableBalance}
                 </label>
                 <input
                   type="number"
@@ -171,14 +158,27 @@ const EarningOverview = () => {
                   className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 >
                   <option value="">Choose a bank account</option>
-                  {banks.map((bank) => (
+                  {banks?.map((bank) => (
                     <option key={bank.id} value={bank.id}>
-                      {bank.name} - {bank.accountNumber}
+                      {bank.name}
                     </option>
                   ))}
                 </select>
               </div>
 
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-300">
+                  Account number
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter account number"
+                  maxLength={10}
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                />
+              </div>
               <div className="bg-card rounded-lg p-3">
                 <p className="text-sm text-gray-300">
                   <span className="text-yellow-400">⚠️</span> Withdrawals

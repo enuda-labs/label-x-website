@@ -96,8 +96,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (statsData) {
       setStats({
-        completed: statsData.data.completed_tasks,
-        pending: statsData.data.total_tasks - statsData.data.completed_tasks,
+        completed:
+          statsData.data.total_projects - statsData.data.pending_projects,
+        pending: statsData.data.pending_projects,
         inProgress:
           statsData.data.completed_tasks - statsData.data.pending_projects,
         completionPercentage: statsData.data.completion_percentage,
@@ -208,7 +209,7 @@ const Dashboard = () => {
             <Card className="border-white/10 bg-white/5 p-4">
               <div className="mb-1 text-sm text-white/60">Data Points</div>
               <div className="text-3xl font-bold text-white">
-              {dataPoints?.toLocaleString('en-US') ?? '...'}
+                {dataPoints?.toLocaleString('en-US') ?? '...'}
               </div>
             </Card>
 

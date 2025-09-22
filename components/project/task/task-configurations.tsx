@@ -342,8 +342,7 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
               <Input
                 id="labellers"
                 type="number"
-                min="1"
-                max="10"
+                min="15"
                 value={config.labellersRequired}
                 onChange={(e) =>
                   updateConfig({
