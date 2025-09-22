@@ -4,13 +4,17 @@ import React, { useState } from 'react'
 import { Download, X, TrendingUp } from 'lucide-react'
 import { TransactionsContent } from './transactions'
 import { Button } from '../ui/button'
-import { useQuery } from '@tanstack/react-query'
-import { listBanks, listEarnings } from '@/services/apis/user'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { listBanks, listEarnings, withdraw } from '@/services/apis/user'
+import { toast } from 'sonner'
+import { isAxiosError } from 'axios'
 
 const EarningOverview = () => {
+  const queryClient = useQueryClient()
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [selectedBank, setSelectedBank] = useState('')
+  const [accountNo, setAccountNo] = useState('')
+  const [selectedBank, setSelectedBank] = useState(0)
 
   const { data } = useQuery({
     queryFn: listEarnings,
@@ -28,15 +32,41 @@ const EarningOverview = () => {
   const banks = listBanksData?.data.map((bank) => ({
     id: bank.id,
     name: bank.name,
+    code: bank.code,
   }))
 
+  const { mutate: withdrawMutate, isPending } = useMutation({
+    mutationFn: withdraw,
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['earning'] })
+      toast(response.message)
+      setWithdrawAmount('')
+      setAccountNo('')
+      setSelectedBank(0)
+      setShowWithdrawModal(false)
+    },
+    onError: (error) => {
+      toast(
+        isAxiosError(error)
+          ? error.response?.data.error
+          : 'Error placing withdrawal'
+      )
+    },
+  })
+
   const handleWithdraw = () => {
-    if (withdrawAmount && selectedBank) {
+    const bankCode = banks?.find((bank) => bank.id === selectedBank)?.code
+    if (!bankCode) {
+      return toast('Bank not found')
+    }
+    if (withdrawAmount && selectedBank && accountNo) {
+      withdrawMutate({
+        account_number: accountNo,
+        amount: withdrawAmount,
+        bank_code: bankCode,
+      })
       // Handle withdrawal logic here
       console.log(`Withdrawing $${withdrawAmount} to ${selectedBank}`)
-      setShowWithdrawModal(false)
-      setWithdrawAmount('')
-      setSelectedBank('')
     }
   }
 
@@ -49,7 +79,7 @@ const EarningOverview = () => {
           </h2>
           <button
             onClick={() => setShowWithdrawModal(true)}
-            className="flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600"
+            className="flex cursor-pointer items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600"
           >
             <Download size={16} />
             Withdraw
@@ -128,7 +158,7 @@ const EarningOverview = () => {
               </h3>
               <button
                 onClick={() => setShowWithdrawModal(false)}
-                className="text-gray-400 transition-colors hover:text-white"
+                className="cursor-pointer text-gray-400 transition-colors hover:text-white"
               >
                 <X size={20} />
               </button>
@@ -154,7 +184,9 @@ const EarningOverview = () => {
                 </label>
                 <select
                   value={selectedBank}
-                  onChange={(e) => setSelectedBank(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedBank(Number(e.target.value))
+                  }}
                   className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 >
                   <option value="">Choose a bank account</option>
@@ -171,11 +203,10 @@ const EarningOverview = () => {
                   Account number
                 </label>
                 <input
-                  type="number"
                   placeholder="Enter account number"
                   maxLength={10}
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  value={accountNo}
+                  onChange={(e) => setAccountNo(e.target.value)}
                   className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 />
               </div>
@@ -195,10 +226,15 @@ const EarningOverview = () => {
                 </Button>
                 <Button
                   onClick={handleWithdraw}
-                  disabled={!withdrawAmount || !selectedBank}
+                  disabled={
+                    !withdrawAmount ||
+                    !selectedBank ||
+                    accountNo.length !== 10 ||
+                    isPending
+                  }
                   className="flex-1 rounded-lg disabled:cursor-not-allowed"
                 >
-                  Withdraw
+                  {isPending ? 'Withdrawing...' : 'Withdraw'}
                 </Button>
               </div>
             </div>

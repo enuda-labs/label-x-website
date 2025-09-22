@@ -1,16 +1,22 @@
 import React, { useState } from 'react'
-import { X, GripVertical } from 'lucide-react'
+import { X, GripVertical, Upload, Mic, Video as VideoIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DataType } from '../data-type-selection'
+import AudioRecording from './AudioRecording'
+import VideoRecording from './VideoRecording'
 
 export interface TaskItem {
   id: string
   data: string
   file: File | null
+  recordedBlob?: Blob | null
+  recordedUrl?: string | null
+  recordingType?: 'audio' | 'video' | null
 }
 
 interface TaskItemProps {
@@ -28,8 +34,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onRemove,
   canRemove,
 }) => {
+  const [activeTab, setActiveTab] = useState<string>('file')
   const [data, setData] = useState(task.data)
-  const [file, setFile] = useState<File | null>(null)
+  const [file, setFile] = useState<File | null>(task.file)
 
   const handleDataChange = (newData: string) => {
     setData(newData)
@@ -37,21 +44,42 @@ const TaskItem: React.FC<TaskItemProps> = ({
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0]
-    if (selectedFile) {
-      setFile(selectedFile)
-      // TODO:Create file object for API format
-      // const fileData = {
-      //   file_url: URL.createObjectURL(selectedFile),
-      //   file_name: selectedFile.name,
-      //   file_size_bytes: selectedFile.size,
-      //   file_type:
-      //     selectedFile.type.split('/')[1] ||
-      //     selectedFile.name.split('.').pop() ||
-      //     '',
-      // }
-      onUpdate({ ...task, file: selectedFile, data: selectedFile.name })
-    }
+    const selectedFile = event.target.files?.[0] || null
+    setFile(selectedFile)
+    onUpdate({
+      ...task,
+      file: selectedFile,
+      data: selectedFile ? selectedFile.name : '',
+      recordedBlob: null,
+      recordedUrl: null,
+      recordingType: null,
+    })
+  }
+
+  const handleRecordingComplete = (
+    blob: Blob,
+    url: string,
+    type: 'audio' | 'video'
+  ) => {
+    onUpdate({
+      ...task,
+      data: `video_record_${new Date().toISOString()}`,
+      recordedBlob: blob,
+      recordedUrl: url,
+      recordingType: type,
+      file: null,
+    })
+    setFile(null)
+  }
+
+  const handleRecordingDiscard = () => {
+    onUpdate({
+      ...task,
+      data: '',
+      recordedBlob: null,
+      recordedUrl: null,
+      recordingType: null,
+    })
   }
 
   const renderInput = () => {
@@ -66,20 +94,88 @@ const TaskItem: React.FC<TaskItemProps> = ({
           />
         )
 
-      case 'IMAGE':
+      case 'AUDIO':
       case 'VIDEO':
+        return (
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList className="my-5 grid w-full grid-cols-3">
+              <TabsTrigger value="file" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" /> Upload
+              </TabsTrigger>
+              {dataType === 'AUDIO' && (
+                <TabsTrigger value="audio" className="flex items-center gap-2">
+                  <Mic className="h-4 w-4" /> Record Audio
+                </TabsTrigger>
+              )}
+              {dataType === 'VIDEO' && (
+                <TabsTrigger value="video" className="flex items-center gap-2">
+                  <VideoIcon className="h-4 w-4" /> Record Video
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            <TabsContent value="file" className="space-y-3">
+              <input
+                type="file"
+                accept={dataType === 'AUDIO' ? 'audio/*' : 'video/*'}
+                onChange={handleFileChange}
+                className="text-muted-foreground file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 block w-full text-sm file:mr-4 file:rounded file:border-0 file:px-4 file:py-2 file:text-sm file:font-medium"
+              />
+              {file && (
+                <div className="text-muted-foreground text-sm">
+                  Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                </div>
+              )}
+            </TabsContent>
+            {dataType === 'AUDIO' && (
+              <TabsContent value="audio" className="space-y-3">
+                <AudioRecording
+                  maxDurationSec={dataType === 'AUDIO' ? 60 : 30}
+                  onRecordingComplete={(blob, url) =>
+                    handleRecordingComplete(blob, url, 'audio')
+                  }
+                  onRecordingDiscard={handleRecordingDiscard}
+                />
+                {task.recordingType === 'audio' && task.recordedBlob && (
+                  <div className="text-muted-foreground text-sm">
+                    Audio recorded: {(task.recordedBlob.size / 1024).toFixed(1)}{' '}
+                    KB
+                  </div>
+                )}
+              </TabsContent>
+            )}
+
+            {dataType === 'VIDEO' && (
+              <TabsContent value="video" className="space-y-3">
+                <VideoRecording
+                  maxDurationSec={30}
+                  onRecordingComplete={(blob, url) =>
+                    handleRecordingComplete(blob, url, 'video')
+                  }
+                  onRecordingDiscard={handleRecordingDiscard}
+                />
+                {task.recordingType === 'video' && task.recordedBlob && (
+                  <div className="text-muted-foreground text-sm">
+                    Video recorded: {(task.recordedBlob.size / 1024).toFixed(1)}{' '}
+                    KB
+                  </div>
+                )}
+              </TabsContent>
+            )}
+          </Tabs>
+        )
+
+      case 'IMAGE':
       case 'PDF':
         return (
           <div className="space-y-3">
             <input
               type="file"
-              accept={
-                dataType === 'IMAGE'
-                  ? 'image/*'
-                  : dataType === 'VIDEO'
-                    ? 'video/*'
-                    : '.pdf'
-              }
+              accept={dataType === 'IMAGE' ? 'image/*' : '.pdf'}
               onChange={handleFileChange}
               className="text-muted-foreground file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 block w-full text-sm file:mr-4 file:rounded file:border-0 file:px-4 file:py-2 file:text-sm file:font-medium"
             />
@@ -152,10 +248,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
               : dataType === 'IMAGE'
                 ? 'Image File'
                 : dataType === 'VIDEO'
-                  ? 'Video File'
-                  : dataType === 'CSV'
-                    ? 'CSV File or Data'
-                    : 'PDF File'}{' '}
+                  ? 'Video File / Recording'
+                  : dataType === 'AUDIO'
+                    ? 'Audio File / Recording'
+                    : dataType === 'CSV'
+                      ? 'CSV File or Data'
+                      : 'PDF File'}{' '}
             *
           </Label>
           {renderInput()}

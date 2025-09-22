@@ -37,7 +37,7 @@ export const ProjectStats = ({ project }: ProjectStatsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-white">
-            {project.user_data_points.used_data_points?.toLocaleString()}
+            {project.task_stats.total_used_data_points?.toLocaleString()}
           </div>
           <p className="mt-1 text-xs text-white/50">Total processed</p>
         </CardContent>

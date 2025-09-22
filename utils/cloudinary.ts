@@ -1,5 +1,5 @@
 // Cloudinary upload utility
-export async function uploadToCloudinary(file: File): Promise<string> {
+export async function uploadToCloudinary(file: File | Blob): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
   formData.append('upload_preset', '_tasks')

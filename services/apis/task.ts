@@ -1,3 +1,4 @@
+import { InputType } from '@/components/project/task/task-configurations'
 import { AxiosClient } from '@/utils/axios'
 
 const axiosClient = new AxiosClient()
@@ -196,7 +197,7 @@ export interface RawTask {
 interface TaskClusterPayload {
   tasks: TaskData[]
   labelling_choices: LabellingChoice[]
-  input_type: 'multiple_choice' | 'text'
+  input_type: InputType
   labeller_instructions: string
   deadline: string
   labeller_per_item_count: number
