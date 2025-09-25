@@ -69,31 +69,178 @@ input_type?: 'multiple_choice' | 'text_input' | 'voice' | 'video'
 
 
 interface Label {
+  id?: number | string
   label?: string
   notes?: string
+
+  // common task association keys
+  task?: number | string
+  task_id?: number | string
+  item?: number | string
+  item_id?: number | string
+  id_of_task?: number | string
+
+  // file references
+  label_file_url?: string
+  file_url?: string
+  label_file_name?: string
+  file_name?: string
+
+  // text-only labels
+  label_text?: string
 }
 
+
+// Put this where your other helpers live
 const buildHydratedResponses = (payload: ApiTaskResponse) => {
   const items = payload.tasks ?? []
-  const labels: Label[] = (payload.my_labels ?? []).map((l) => ({
-    label: l.label,
-    notes: l.notes ?? '',
-  }))
 
-  const sameLength = labels.length === items.length
+  // --- build index maps for faster/more robust matching ---
+  const byTaskId = new Map<number, Label[]>()
+  const byFileUrl = new Map<string, Label[]>()
+  const byFileName = new Map<string, Label[]>()
 
-  return items.map((task, idx) => {
-    let labelObj: Label | undefined
-    if (sameLength) {
-      labelObj = labels[idx]
-    } else if (labels.length > 0) {
-      labelObj = labels[0]
+  const pushToMap = <K extends string | number>(
+    map: Map<K, Label[]>,
+    key: K,
+    value: Label
+  ) => {
+    if (key == null) return
+    const existing = map.get(key) ?? []
+    existing.push(value)
+    map.set(key, existing)
+  }
+
+  const labels: Label[] = Array.isArray(payload.my_labels)
+    ? payload.my_labels
+    : []
+
+  for (const lbl of labels) {
+    const possibleIds = [
+      lbl.task,
+      lbl.task_id,
+      lbl.item,
+      lbl.item_id,
+      lbl.id_of_task,
+    ].filter((x) => x !== undefined && x !== null)
+
+    for (const id of possibleIds) {
+      const n =
+        typeof id === 'string' && /^\d+$/.test(id) ? Number(id) : id
+      if (typeof n === 'number') pushToMap(byTaskId, n, lbl)
     }
 
-    const val = labelObj?.label ?? ''
-    const notes = labelObj?.notes ?? ''
+    const fileUrl = (lbl.label_file_url ?? lbl.file_url ?? '').toString()
+    const fileName = (lbl.label_file_name ?? lbl.file_name ?? '').toString()
 
-    return { answer: val ? [val] : [], notes }
+    if (fileUrl) pushToMap(byFileUrl, fileUrl, lbl)
+    if (fileName) pushToMap(byFileName, fileName, lbl)
+  }
+
+  // helper to detect media types by task_type or file extension
+  const detectType = (taskTypeRaw: unknown, url?: string): string => {
+    const t = (taskTypeRaw ?? '').toString().toLowerCase()
+    if (
+      t.includes('image') ||
+      t.includes('video') ||
+      t.includes('audio') ||
+      t.includes('voice')
+    )
+      return t
+    if (!url) return t
+    const ext =
+      url.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(ext))
+      return 'image'
+    if (['mp4', 'webm', 'mov', 'mkv', 'ogv'].includes(ext)) return 'video'
+    if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) return 'audio'
+    return t
+  }
+
+  // track used file urls so we don't reuse the same URL for multiple tasks unless it's the only match
+  const usedUrls = new Set<string>()
+
+  const chooseBestCandidate = (
+    candidates: Label[],
+    preferMediaUrl: boolean
+  ): Label | null => {
+    if (!candidates || candidates.length === 0) return null
+    // prefer candidate that has label_file_url when expecting media
+    if (preferMediaUrl) {
+      const withUrl = candidates.find((c) => c.label_file_url ?? c.file_url)
+      if (withUrl) return withUrl
+    }
+    // prefer textual label if not media
+    const withText = candidates.find((c) => c.label ?? c.label_text)
+    if (withText) return withText
+    // fallback to first
+    return candidates[0]
+  }
+
+  // DEBUG: log what we received (remove or guard in prod)
+  console.debug('buildHydratedResponses: tasks', items)
+  console.debug('buildHydratedResponses: my_labels', labels)
+
+  return items.map((task) => {
+    const taskId = task.id ?? null
+    const fileUrl = task.file_url ?? ''
+    const fileName = task.file_name ?? ''
+    const taskType = detectType(
+      task.task_type ?? payload.task_type ?? payload.input_type,
+      fileUrl
+    )
+
+    // gather candidate label objects from different indexes
+    let candidates: Label[] = []
+    if (taskId != null && byTaskId.has(taskId))
+      candidates = candidates.concat(byTaskId.get(taskId) ?? [])
+    if (fileUrl && byFileUrl.has(fileUrl))
+      candidates = candidates.concat(byFileUrl.get(fileUrl) ?? [])
+    if (fileName && byFileName.has(fileName))
+      candidates = candidates.concat(byFileName.get(fileName) ?? [])
+
+    // dedupe candidate list references
+    candidates = Array.from(new Set(candidates))
+
+    // choose best candidate per heuristics
+    const preferMediaUrl = ['image', 'video', 'audio', 'voice'].includes(
+      taskType
+    )
+    let match = chooseBestCandidate(candidates, preferMediaUrl)
+
+    // if chosen match uses a url that's already used for another task and we have alternatives,
+    // try to pick a different candidate first
+    if (match) {
+      const candidateUrl = (match.label_file_url ?? match.file_url ?? '').toString()
+      if (candidateUrl && usedUrls.has(candidateUrl)) {
+        const alt = candidates.find((c) => {
+          const url = (c.label_file_url ?? c.file_url ?? '').toString()
+          return url && !usedUrls.has(url) && c !== match
+        })
+        if (alt) match = alt
+      }
+    }
+
+    // final value selection
+    let value = ''
+    if (match) {
+      const labelFileUrl = (match.label_file_url ?? match.file_url ?? '').toString()
+      const labelText = (match.label ?? match.label_text ?? '').toString()
+
+      if (preferMediaUrl) {
+        // prefer file url, else text fallback
+        value = labelFileUrl || labelText
+        if (labelFileUrl) usedUrls.add(labelFileUrl)
+      } else {
+        value = labelText || labelFileUrl
+        if (labelFileUrl && !labelText) usedUrls.add(labelFileUrl)
+      }
+    }
+
+    return {
+      answer: value ? [value] : [],
+      notes: match?.notes ?? '',
+    }
   })
 }
 
@@ -101,6 +248,7 @@ const buildHydratedResponses = (payload: ApiTaskResponse) => {
 interface ApiErrorResponse {
   detail?: string
   message?: string
+  error?: string
 }
 
 
@@ -404,32 +552,35 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
         toast("All items completed in this cluster.")
         router.push("/label/overview")
       }
-    } catch (err) {
-      const error = err as AxiosError<ApiErrorResponse>
-      const status = error.response?.status
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<ApiErrorResponse>
 
-      // ✅ Always use DB error (never generic)
-      const dbError =
-        error.response?.data?.detail ||
-        error.response?.data?.message ||
-        "Unknown server error"
+  const status = axiosErr.response?.status;
 
-      if (status === 400 && dbError.toLowerCase().includes("already")) {
-        toast("You already labeled this task", {
-          description: dbError,
-        })
-        setShowConfirmDialog(false)
-      } else {
-        toast("Task not available", {
-          description: dbError, // 👈 always DB error
-        })
-      }
+  const detail =
+    axiosErr.response?.data?.detail ||
+    axiosErr.response?.data?.message ||
+    axiosErr.response?.data?.error ||
+    axiosErr.message ||
+    "Unknown server error";
 
-      console.error("handleConfirmSubmit error:", {
-        status,
-        dbError,
-        raw: error,
-      })
+  // If your toast library always has .error, call it directly
+  if ("error" in toast && typeof toast.error === "function") {
+    toast.error(detail);
+  } else {
+    toast(detail);
+  }
+
+  if (status === 400 && detail.toLowerCase().includes("already")) {
+    setShowConfirmDialog(false);
+  }
+
+  console.error("handleConfirmSubmit error:", {
+    status,
+    detail,
+    raw: axiosErr,
+  });
+
     } finally {
       setIsSubmitting(false)
     }
@@ -906,10 +1057,50 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
                 </p>
               </CardContent>
             </Card>
+            {responses[currentItemIndex]?.answer?.[0] && (() => {
+        const url = responses[currentItemIndex].answer[0]
+        const ext = (url.split('?')[0].split('.').pop() || '').toLowerCase()
 
-            {inputType === "video" || inputType === "voice" ? (
-    <VoiceVideoSubmission type={inputType} taskId={currentItem?.id ? String(currentItem.id) : ""}  />
-  ) : (
+        const isImage = ['jpg','jpeg','png','gif','webp','bmp','tiff'].includes(ext)
+        const isVideo = ['mp4','webm','mov','mkv','ogv'].includes(ext)
+        const isAudio = ['mp3','wav','ogg','m4a','aac'].includes(ext)
+
+        return (
+          <div className="mt-2">
+            <p className="text-sm text-muted-foreground">Already uploaded:</p>
+            <div className="mt-1">
+              {isImage && (
+                <Image
+  src={url}
+  alt="Uploaded image"
+  width={600}
+  height={400}
+  unoptimized
+  className="max-w-full rounded-md border object-contain"
+/>
+              )}
+              {isVideo && (
+                <video src={url} controls className="w-full rounded-md border" style={{ maxHeight: 280 }} />
+              )}
+              {isAudio && (
+                <audio src={url} controls className="w-full" />
+              )}
+              {!isImage && !isVideo && !isAudio && inputType !== "multiple_choice" && (
+                <a href={url} target="_blank" rel="noreferrer" className="underline">
+                  View uploaded file
+                </a>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+            {inputType === "video" || inputType === "voice" || inputType === "image" ? (
+  <VoiceVideoSubmission
+    type={inputType as "video" | "voice" | "image"}
+    taskId={currentItem?.id ? String(currentItem.id) : ""}
+  />
+) : (
     <>
       <Card className="bg-card/20">
         <CardHeader>
@@ -967,39 +1158,48 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
   )}
 
 
-            <div className="space-y-3">
-      {inputType === 'video' || inputType === 'voice' ? (
-        <Button
-          onClick={() => {
-            const idToUse = currentItem?.id
-            if (!idToUse) return
-            // pass the normalized inputType so recorder knows which mode to open
-            router.push(`/label/recorder/${idToUse}?type=${inputType}`)
-          }}
-          className="w-full"
-          variant="default"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {inputType === 'voice' ? 'Go to Voice Recorder' : 'Go to Video Recorder'}
-        </Button>
-      ) : (
-        <Button
-          onClick={handleSubmitLabelLocal}
-          disabled={inputType === 'multiple_choice' && !selectedCategory}
-          className="w-full"
-          variant="default"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {inputType === 'multiple_choice'
-            ? (isLastItem ? 'Complete Task' : 'Submit Choice')
-            : (isLastItem ? 'Complete Task' : 'Submit & Continue')}
-        </Button>
-      )}
+  <div className="space-y-3">
+{inputType === 'video' || inputType === 'voice' || inputType === 'image' ? (
+<Button
+onClick={() => {
+  const idToUse = currentItem?.id
+  if (!idToUse) return
+  // pass the normalized inputType so recorder knows which mode to open
+  router.push(`/label/recorder/${idToUse}?type=${inputType}`)
+}}
+className="w-full"
+variant="default"
+>
+<Save className="mr-2 h-4 w-4" />
+{inputType === 'voice'
+  ? 'Go to Voice Recorder'
+  : inputType === 'video'
+  ? 'Go to Video Recorder'
+  : 'Go to Image Uploader'}
+</Button>
+) : (
+<Button
+onClick={handleSubmitLabelLocal}
+disabled={inputType === 'multiple_choice' && !selectedCategory}
+className="w-full"
+variant="default"
+>
+<Save className="mr-2 h-4 w-4" />
+{inputType === 'multiple_choice'
+  ? isLastItem
+    ? 'Complete Task'
+    : 'Submit Choice'
+  : isLastItem
+  ? 'Complete Task'
+  : 'Submit & Continue'}
+</Button>
+)}
 
-      <p className="text-muted-foreground text-center text-xs">
-        * All items must be labeled to complete the task
-      </p>
-    </div>
+<p className="text-muted-foreground text-center text-xs">
+* All items must be labeled to complete the task
+</p>
+</div>
+
 
 
             <div className="flex gap-2">
@@ -1023,7 +1223,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
       {/* Submission Confirmation Modal */}
       {/* Item Confirmation Modal */}
   <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-    <DialogContent className="border shadow-sm max-w-lg w-[90%] rounded-xl p-6 flex flex-col items-center justify-center">
+    <DialogContent className="border shadow-sm max-w-lg w-[90%] rounded-xl p-6 flex flex-col items-center justify-center sm:top-1/2 sm:-translate-y-1/2">
       <DialogHeader>
         <DialogTitle>Confirm Item Annotation</DialogTitle>
         <DialogDescription>

@@ -56,20 +56,25 @@ const LabelerDashboard = () => {
   else role = 'User'
 
   useEffect(() => {
-    const loadClusters = async () => {
-      try {
-        setLoading(true)
-        const data = await fetchAssignedClusters()
-        setClusters(data)
-      } catch {
-        setError('Failed to load tasks')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const loadClusters = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchAssignedClusters();
 
-    loadClusters()
-  }, [])
+      // Sort by id (newest first)
+      const sorted = [...data].sort((a, b) => b.id - a.id);
+
+      setClusters(sorted);
+    } catch {
+      setError("Failed to load tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadClusters();
+}, []);
+
 
   return (
     <div className="min-h-screen">
