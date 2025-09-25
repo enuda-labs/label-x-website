@@ -90,32 +90,44 @@ const ProjectsContent = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const [assigned, pending] = await Promise.all([
           fetchAssignedClusters(),
           fetchPendingClusters(),
-        ])
+        ]);
 
-        // Add status dynamically
-        const assignedWithStatus = assigned.map((task) => ({
-          ...task,
-          status: task.pending_tasks === 0 ? 'completed' : 'assigned',
-        }))
-        const pendingWithStatus = pending.map((task) => ({
-          ...task,
-          status: 'pending',
-        }))
+        // helper to sort newest first
+        const sortNewest = (a: AssignedCluster, b: AssignedCluster) => {
+    return b.id - a.id; 
+  }
 
-        setClusters(assignedWithStatus)
-        setPendingClusters(pendingWithStatus)
+
+        // Add status dynamically & sort
+        const assignedWithStatus = assigned
+          .map((task) => ({
+            ...task,
+            status: task.pending_tasks === 0 ? "completed" : "assigned",
+          }))
+          .sort(sortNewest);
+
+        const pendingWithStatus = pending
+          .map((task) => ({
+            ...task,
+            status: "pending",
+          }))
+          .sort(sortNewest);
+
+        setClusters(assignedWithStatus);
+        setPendingClusters(pendingWithStatus);
       } catch (err) {
-        console.error('Error fetching clusters', err)
+        console.error("Error fetching clusters", err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    load()
-  }, [])
+    };
+    load();
+  }, []);
+
 
   const filteredTasks = useMemo(() => {
     return clusters.filter((task) => {

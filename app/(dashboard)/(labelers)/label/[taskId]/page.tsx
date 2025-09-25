@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { AxiosError } from 'axios'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter} from 'next/navigation'
 import {
   ArrowLeft,
   Check,
@@ -38,7 +38,8 @@ import {
   fetchTaskProgress,
 } from '@/services/apis/clusters'
 import { ApiResponse } from '@/types/ApiResponse'
-import VoiceVideoSubmission from '@/components/VoiceVideoSubmission/VoiceVideoSubmission'
+import VoiceVideoSubmission from "@/components/VoiceVideoSubmission/VoiceVideoSubmission";
+
 
 interface TaskFile {
   file_url?: string
@@ -60,45 +61,197 @@ interface ApiTaskResponse {
   title?: string
   labelling_choices?: Array<{ option_text: string }>
   choices?: Array<{ option_text: string }>
-  input_type?: 'multiple_choice' | 'text_input' | 'voice' | 'video'
+input_type?: 'multiple_choice' | 'text_input' | 'voice' | 'video'
   labeller_instructions?: string
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV'
-  my_labels?: Array<{ id: number; label: string; notes?: string }>
+ my_labels?: Array<{ id: number; label: string; notes?: string }>
 }
+
 
 interface Label {
+  id?: number | string
   label?: string
   notes?: string
+
+  // common task association keys
+  task?: number | string
+  task_id?: number | string
+  item?: number | string
+  item_id?: number | string
+  id_of_task?: number | string
+
+  // file references
+  label_file_url?: string
+  file_url?: string
+  label_file_name?: string
+  file_name?: string
+
+  // text-only labels
+  label_text?: string
 }
 
+
+// Put this where your other helpers live
 const buildHydratedResponses = (payload: ApiTaskResponse) => {
   const items = payload.tasks ?? []
-  const labels: Label[] = (payload.my_labels ?? []).map((l) => ({
-    label: l.label,
-    notes: l.notes ?? '',
-  }))
 
-  const sameLength = labels.length === items.length
+  // --- build index maps for faster/more robust matching ---
+  const byTaskId = new Map<number, Label[]>()
+  const byFileUrl = new Map<string, Label[]>()
+  const byFileName = new Map<string, Label[]>()
 
-  return items.map((task, idx) => {
-    let labelObj: Label | undefined
-    if (sameLength) {
-      labelObj = labels[idx]
-    } else if (labels.length > 0) {
-      labelObj = labels[0]
+  const pushToMap = <K extends string | number>(
+    map: Map<K, Label[]>,
+    key: K,
+    value: Label
+  ) => {
+    if (key == null) return
+    const existing = map.get(key) ?? []
+    existing.push(value)
+    map.set(key, existing)
+  }
+
+  const labels: Label[] = Array.isArray(payload.my_labels)
+    ? payload.my_labels
+    : []
+
+  for (const lbl of labels) {
+    const possibleIds = [
+      lbl.task,
+      lbl.task_id,
+      lbl.item,
+      lbl.item_id,
+      lbl.id_of_task,
+    ].filter((x) => x !== undefined && x !== null)
+
+    for (const id of possibleIds) {
+      const n =
+        typeof id === 'string' && /^\d+$/.test(id) ? Number(id) : id
+      if (typeof n === 'number') pushToMap(byTaskId, n, lbl)
     }
 
-    const val = labelObj?.label ?? ''
-    const notes = labelObj?.notes ?? ''
+    const fileUrl = (lbl.label_file_url ?? lbl.file_url ?? '').toString()
+    const fileName = (lbl.label_file_name ?? lbl.file_name ?? '').toString()
 
-    return { answer: val ? [val] : [], notes }
+    if (fileUrl) pushToMap(byFileUrl, fileUrl, lbl)
+    if (fileName) pushToMap(byFileName, fileName, lbl)
+  }
+
+  // helper to detect media types by task_type or file extension
+  const detectType = (taskTypeRaw: unknown, url?: string): string => {
+    const t = (taskTypeRaw ?? '').toString().toLowerCase()
+    if (
+      t.includes('image') ||
+      t.includes('video') ||
+      t.includes('audio') ||
+      t.includes('voice')
+    )
+      return t
+    if (!url) return t
+    const ext =
+      url.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff'].includes(ext))
+      return 'image'
+    if (['mp4', 'webm', 'mov', 'mkv', 'ogv'].includes(ext)) return 'video'
+    if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext)) return 'audio'
+    return t
+  }
+
+  // track used file urls so we don't reuse the same URL for multiple tasks unless it's the only match
+  const usedUrls = new Set<string>()
+
+  const chooseBestCandidate = (
+    candidates: Label[],
+    preferMediaUrl: boolean
+  ): Label | null => {
+    if (!candidates || candidates.length === 0) return null
+    // prefer candidate that has label_file_url when expecting media
+    if (preferMediaUrl) {
+      const withUrl = candidates.find((c) => c.label_file_url ?? c.file_url)
+      if (withUrl) return withUrl
+    }
+    // prefer textual label if not media
+    const withText = candidates.find((c) => c.label ?? c.label_text)
+    if (withText) return withText
+    // fallback to first
+    return candidates[0]
+  }
+
+  // DEBUG: log what we received (remove or guard in prod)
+  console.debug('buildHydratedResponses: tasks', items)
+  console.debug('buildHydratedResponses: my_labels', labels)
+
+  return items.map((task) => {
+    const taskId = task.id ?? null
+    const fileUrl = task.file_url ?? ''
+    const fileName = task.file_name ?? ''
+    const taskType = detectType(
+      task.task_type ?? payload.task_type ?? payload.input_type,
+      fileUrl
+    )
+
+    // gather candidate label objects from different indexes
+    let candidates: Label[] = []
+    if (taskId != null && byTaskId.has(taskId))
+      candidates = candidates.concat(byTaskId.get(taskId) ?? [])
+    if (fileUrl && byFileUrl.has(fileUrl))
+      candidates = candidates.concat(byFileUrl.get(fileUrl) ?? [])
+    if (fileName && byFileName.has(fileName))
+      candidates = candidates.concat(byFileName.get(fileName) ?? [])
+
+    // dedupe candidate list references
+    candidates = Array.from(new Set(candidates))
+
+    // choose best candidate per heuristics
+    const preferMediaUrl = ['image', 'video', 'audio', 'voice'].includes(
+      taskType
+    )
+    let match = chooseBestCandidate(candidates, preferMediaUrl)
+
+    // if chosen match uses a url that's already used for another task and we have alternatives,
+    // try to pick a different candidate first
+    if (match) {
+      const candidateUrl = (match.label_file_url ?? match.file_url ?? '').toString()
+      if (candidateUrl && usedUrls.has(candidateUrl)) {
+        const alt = candidates.find((c) => {
+          const url = (c.label_file_url ?? c.file_url ?? '').toString()
+          return url && !usedUrls.has(url) && c !== match
+        })
+        if (alt) match = alt
+      }
+    }
+
+    // final value selection
+    let value = ''
+    if (match) {
+      const labelFileUrl = (match.label_file_url ?? match.file_url ?? '').toString()
+      const labelText = (match.label ?? match.label_text ?? '').toString()
+
+      if (preferMediaUrl) {
+        // prefer file url, else text fallback
+        value = labelFileUrl || labelText
+        if (labelFileUrl) usedUrls.add(labelFileUrl)
+      } else {
+        value = labelText || labelFileUrl
+        if (labelFileUrl && !labelText) usedUrls.add(labelFileUrl)
+      }
+    }
+
+    return {
+      answer: value ? [value] : [],
+      notes: match?.notes ?? '',
+    }
   })
 }
+
 
 interface ApiErrorResponse {
   detail?: string
   message?: string
+  error?: string
 }
+
+
 
 const getTaskTypeIcon = (type?: string) => {
   switch (type) {
@@ -144,26 +297,22 @@ const LabelTask = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+
   const refreshTaskData = async () => {
     if (!taskId) return
 
     try {
-      const idToFetch = Array.isArray(taskId)
-        ? Number(taskId[0])
-        : Number(taskId)
+      const idToFetch = Array.isArray(taskId) ? Number(taskId[0]) : Number(taskId)
 
-      const resp = (await fetchTaskById(idToFetch)) as
-        | ApiResponse
-        | { data: ApiTaskResponse }
-      const payload: ApiTaskResponse =
-        'data' in resp && resp.data ? resp.data : (resp as ApiTaskResponse)
+      const resp = (await fetchTaskById(idToFetch)) as ApiResponse | { data: ApiTaskResponse }
+      const payload: ApiTaskResponse = 'data' in resp && resp.data ? resp.data : (resp as ApiTaskResponse)
 
       setTaskData(payload || null)
 
       // hydrate existing labels instead of wiping
       const hydrated = buildHydratedResponses(payload)
       setResponses(hydrated)
-      setCompletedItems(hydrated.filter((r) => r.answer.length > 0).length)
+      setCompletedItems(hydrated.filter(r => r.answer.length > 0).length)
 
       setCurrentItemIndex(0)
       setSelectedCategory(hydrated[0]?.answer?.[0] ?? '')
@@ -175,6 +324,9 @@ const LabelTask = () => {
       console.error('Failed to refresh task data', err)
     }
   }
+
+
+
 
   useEffect(() => {
     if (!taskId) return
@@ -205,19 +357,20 @@ const LabelTask = () => {
 
         // ✅ Hydrate answers from API
         const hydrated = buildHydratedResponses(payload)
-        console.log('Hydrated responses:', hydrated)
+        console.log("Hydrated responses:", hydrated)
 
         setResponses(hydrated)
 
-        // Prefill the current input (works for both multiple_choice & text_input)
-        const firstAnswer = hydrated[0]?.answer?.[0] ?? ''
-        setSelectedCategory(firstAnswer)
+  // Prefill the current input (works for both multiple_choice & text_input)
+  const firstAnswer = hydrated[0]?.answer?.[0] ?? ''
+  setSelectedCategory(firstAnswer)
 
-        // Completed count = how many items already have an answer
-        setCompletedItems(hydrated.filter((r) => r.answer.length > 0).length)
+  // Completed count = how many items already have an answer
+  setCompletedItems(hydrated.filter(r => r.answer.length > 0).length)
 
-        setCurrentItemIndex(0)
-        setNotes('') // you can later hydrate notes if your API returns them
+  setCurrentItemIndex(0)
+  setNotes('') // you can later hydrate notes if your API returns them
+
       } catch (err: unknown) {
         let message = 'Failed to load task. Please try again.'
         if (err instanceof Error) {
@@ -235,6 +388,13 @@ const LabelTask = () => {
     }
   }, [taskId])
 
+
+
+
+
+
+
+
   useEffect(() => {
     if (!taskId) return
     ;(async () => {
@@ -244,15 +404,19 @@ const LabelTask = () => {
           : Number(taskId)
         const progress = await fetchTaskProgress(idToFetch)
         setProgressData(progress)
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          console.error('Failed to fetch task progress', err.message)
-        } else {
-          console.error('Failed to fetch task progress', err)
-        }
-      }
+      }  catch (err: unknown) {
+  if (err instanceof Error) {
+    console.error('Failed to fetch task progress', err.message)
+  } else {
+    console.error('Failed to fetch task progress', err)
+  }
+}
     })()
   }, [taskId])
+
+
+
+
 
   if (loading)
     return (
@@ -267,6 +431,7 @@ const LabelTask = () => {
       </div>
     )
 
+
   if (!taskData)
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -274,21 +439,18 @@ const LabelTask = () => {
       </div>
     )
 
+
   const items = taskData.tasks ?? []
   const totalItems = items.length
   const currentItem = items[currentItemIndex] ?? { data: '' }
-  const inputType = (taskData?.input_type ?? 'multiple_choice')
-    .toString()
-    .toLowerCase()
+const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLowerCase()
   const labellingChoices = taskData.choices ?? taskData.labelling_choices ?? []
   const progress =
-    progressData && progressData.total_tasks > 0
-      ? Math.round(
-          (progressData.completed_tasks / progressData.total_tasks) * 100
-        )
-      : totalItems > 0
-        ? Math.round((completedItems / totalItems) * 100)
-        : 0
+  progressData && progressData.total_tasks > 0
+    ? Math.round((progressData.completed_tasks / progressData.total_tasks) * 100)
+    : totalItems > 0
+    ? Math.round((completedItems / totalItems) * 100)
+    : 0
 
   const isLastItem = currentItemIndex === totalItems - 1
 
@@ -310,10 +472,12 @@ const LabelTask = () => {
     }
   }
 
+
   // --- Handlers ---
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category)
   }
+
 
   // --- Handlers ---
   const handleSubmitLabelLocal = () => {
@@ -332,6 +496,7 @@ const LabelTask = () => {
     setShowConfirmDialog(true)
   }
 
+
   const handleConfirmSubmit = async () => {
     const currentTaskIdToSend = currentItem?.id
     if (!currentTaskIdToSend) return
@@ -341,8 +506,8 @@ const LabelTask = () => {
 
       // Build labels depending on input type
       let labelsToSend: string[] = []
-      if (inputType === 'text_input') {
-        if (selectedCategory && selectedCategory.trim() !== '') {
+      if (inputType === "text_input") {
+        if (selectedCategory && selectedCategory.trim() !== "") {
           labelsToSend = [selectedCategory.trim()]
         }
       } else {
@@ -372,10 +537,10 @@ const LabelTask = () => {
         newResponses[currentItemIndex]?.answer?.length > 0 ? prev : prev + 1
       )
 
-      toast('Item labeled', {
+      toast("Item labeled", {
         description:
           resp?.message ??
-          `Item labeled as "${labelsToSend.length > 0 ? labelsToSend[0] : '—'}"`,
+          `Item labeled as "${labelsToSend.length > 0 ? labelsToSend[0] : "—"}"`,
       })
 
       await refreshTaskData()
@@ -384,35 +549,38 @@ const LabelTask = () => {
       if (currentItemIndex < totalItems - 1) {
         goToItemIndex(currentItemIndex + 1)
       } else {
-        toast('All items completed in this cluster.')
-        router.push('/label/overview')
+        toast("All items completed in this cluster.")
+        router.push("/label/overview")
       }
-    } catch (err) {
-      const error = err as AxiosError<ApiErrorResponse>
-      const status = error.response?.status
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<ApiErrorResponse>
 
-      // ✅ Always use DB error (never generic)
-      const dbError =
-        error.response?.data?.detail ||
-        error.response?.data?.message ||
-        'Unknown server error'
+  const status = axiosErr.response?.status;
 
-      if (status === 400 && dbError.toLowerCase().includes('already')) {
-        toast('You already labeled this task', {
-          description: dbError,
-        })
-        setShowConfirmDialog(false)
-      } else {
-        toast('Task not available', {
-          description: dbError, // 👈 always DB error
-        })
-      }
+  const detail =
+    axiosErr.response?.data?.detail ||
+    axiosErr.response?.data?.message ||
+    axiosErr.response?.data?.error ||
+    axiosErr.message ||
+    "Unknown server error";
 
-      console.error('handleConfirmSubmit error:', {
-        status,
-        dbError,
-        raw: error,
-      })
+  // If your toast library always has .error, call it directly
+  if ("error" in toast && typeof toast.error === "function") {
+    toast.error(detail);
+  } else {
+    toast(detail);
+  }
+
+  if (status === 400 && detail.toLowerCase().includes("already")) {
+    setShowConfirmDialog(false);
+  }
+
+  console.error("handleConfirmSubmit error:", {
+    status,
+    detail,
+    raw: axiosErr,
+  });
+
     } finally {
       setIsSubmitting(false)
     }
@@ -436,7 +604,7 @@ const LabelTask = () => {
       setIsSubmitting(true)
 
       const resp = await annotateMissingAsset(taskIdToSend, {
-        labels: ['MISSING_ASSET'],
+        labels: ["MISSING_ASSET"],
         notes: noteForServer,
       })
 
@@ -452,7 +620,7 @@ const LabelTask = () => {
         notes: noteForServer,
       }
       setResponses(newResponses)
-      setCompletedItems((prev) => prev + 1)
+      setCompletedItems(prev => prev + 1)
 
       // ✅ advance or redirect if last item
       if (currentItemIndex < totalItems - 1) {
@@ -461,6 +629,7 @@ const LabelTask = () => {
         toast('All items completed in this cluster.')
         router.push('/label/tasks') // 👈 redirect after last item
       }
+
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string; message?: string }>
       const detail = error.response?.data?.detail || error.message || ''
@@ -473,6 +642,7 @@ const LabelTask = () => {
       setIsSubmitting(false)
     }
   }
+
 
   // Build payload (labels + notes)
   // const buildLabelsForSubmission = () => {
@@ -569,6 +739,7 @@ const LabelTask = () => {
   // }
   //
 
+
   // Next/Previous should move between items within the cluster
   const handleNextTask = () => {
     if (currentItemIndex < totalItems - 1) {
@@ -589,24 +760,25 @@ const LabelTask = () => {
   // --- Render ---
   return (
     <div className="bg-card/20 min-h-screen">
-      <header className="bg-card/30 sticky top-0 z-50 border-b backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/label/overview">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4" /> Back to Dashboard
-                </Button>
-              </Link>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline">
-                {progressData?.completed_tasks ?? completedItems} completed
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </header>
+    <header className="bg-card/30 sticky top-0 z-50 border-b backdrop-blur-sm">
+<div className="container mx-auto px-4 py-4">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-4">
+      <Link href="/label/overview">
+        <Button variant="ghost" size="sm">
+          <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+        </Button>
+      </Link>
+    </div>
+    <div className="flex items-center gap-3">
+      <Badge variant="outline">
+        {progressData?.completed_tasks ?? completedItems} completed
+      </Badge>
+    </div>
+  </div>
+</div>
+</header>
+
 
       <div className="border-b">
         <div className="container mx-auto px-4 py-4">
@@ -635,9 +807,9 @@ const LabelTask = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-8 lg:flex-row">
+      <div className="flex flex-col lg:flex-row gap-8">
           {/* MAIN CONTENT (left) */}
-          <div className="flex-1">
+        <div className="flex-1">
             <Card className="shadow-soft bg-card/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -871,7 +1043,7 @@ const LabelTask = () => {
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div className="w-full space-y-6 lg:w-[360px]">
+         <div className="w-full lg:w-[360px] space-y-6">
             <Card className="bg-card/20 border-primary border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -885,116 +1057,150 @@ const LabelTask = () => {
                 </p>
               </CardContent>
             </Card>
+            {responses[currentItemIndex]?.answer?.[0] && (() => {
+        const url = responses[currentItemIndex].answer[0]
+        const ext = (url.split('?')[0].split('.').pop() || '').toLowerCase()
 
-            {inputType === 'video' || inputType === 'voice' ? (
-              <VoiceVideoSubmission
-                type={inputType}
-                taskId={currentItem?.id ? String(currentItem.id) : ''}
-              />
-            ) : (
-              <>
-                <Card className="bg-card/20">
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      {inputType === 'multiple_choice' &&
-                      choicesToShow.length > 0
-                        ? 'Select Label Option *'
-                        : 'Provide Answer *'}
-                    </CardTitle>
-                  </CardHeader>
+        const isImage = ['jpg','jpeg','png','gif','webp','bmp','tiff'].includes(ext)
+        const isVideo = ['mp4','webm','mov','mkv','ogv'].includes(ext)
+        const isAudio = ['mp3','wav','ogg','m4a','aac'].includes(ext)
 
-                  <CardContent className="space-y-3">
-                    {inputType === 'multiple_choice' &&
-                    choicesToShow.length > 0 ? (
-                      choicesToShow.map((choice, index) => (
-                        <Button
-                          key={index}
-                          variant={
-                            selectedCategory === choice.option_text
-                              ? 'default'
-                              : 'outline'
-                          }
-                          className="w-full cursor-pointer justify-start"
-                          onClick={() =>
-                            handleCategorySelect(choice.option_text)
-                          }
-                        >
-                          {selectedCategory === choice.option_text && (
-                            <Check className="mr-2 h-4 w-4" />
-                          )}
-                          {choice.option_text}
-                        </Button>
-                      ))
-                    ) : (
-                      <Textarea
-                        placeholder="Enter your response here..."
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="min-h-[100px] resize-none"
-                      />
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-card/20">
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      Additional Notes (Optional)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Textarea
-                      placeholder="Add any additional notes or observations..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="min-h-[80px]"
-                    />
-                  </CardContent>
-                </Card>
-              </>
-            )}
-
-            <div className="space-y-3">
-              {inputType === 'video' || inputType === 'voice' ? (
-                <Button
-                  onClick={() => {
-                    const idToUse = currentItem?.id
-                    if (!idToUse) return
-                    // pass the normalized inputType so recorder knows which mode to open
-                    router.push(`/label/recorder/${idToUse}?type=${inputType}`)
-                  }}
-                  className="w-full"
-                  variant="default"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {inputType === 'voice'
-                    ? 'Go to Voice Recorder'
-                    : 'Go to Video Recorder'}
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSubmitLabelLocal}
-                  disabled={
-                    inputType === 'multiple_choice' && !selectedCategory
-                  }
-                  className="w-full"
-                  variant="default"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {inputType === 'multiple_choice'
-                    ? isLastItem
-                      ? 'Complete Task'
-                      : 'Submit Choice'
-                    : isLastItem
-                      ? 'Complete Task'
-                      : 'Submit & Continue'}
-                </Button>
+        return (
+          <div className="mt-2">
+            <p className="text-sm text-muted-foreground">Already uploaded:</p>
+            <div className="mt-1">
+              {isImage && (
+                <Image
+  src={url}
+  alt="Uploaded image"
+  width={600}
+  height={400}
+  unoptimized
+  className="max-w-full rounded-md border object-contain"
+/>
               )}
-
-              <p className="text-muted-foreground text-center text-xs">
-                * All items must be labeled to complete the task
-              </p>
+              {isVideo && (
+                <video src={url} controls className="w-full rounded-md border" style={{ maxHeight: 280 }} />
+              )}
+              {isAudio && (
+                <audio src={url} controls className="w-full" />
+              )}
+              {!isImage && !isVideo && !isAudio && inputType !== "multiple_choice" && (
+                <a href={url} target="_blank" rel="noreferrer" className="underline">
+                  View uploaded file
+                </a>
+              )}
             </div>
+          </div>
+        )
+      })()}
+
+            {inputType === "video" || inputType === "voice" || inputType === "image" ? (
+  <VoiceVideoSubmission
+    type={inputType as "video" | "voice" | "image"}
+    taskId={currentItem?.id ? String(currentItem.id) : ""}
+  />
+) : (
+    <>
+      <Card className="bg-card/20">
+        <CardHeader>
+          <CardTitle className="text-base">
+            {inputType === "multiple_choice" && choicesToShow.length > 0
+              ? "Select Label Option *"
+              : "Provide Answer *"}
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          {inputType === "multiple_choice" && choicesToShow.length > 0 ? (
+            choicesToShow.map((choice, index) => (
+              <Button
+                key={index}
+                variant={
+                  selectedCategory === choice.option_text
+                    ? "default"
+                    : "outline"
+                }
+                className="w-full justify-start cursor-pointer"
+                onClick={() => handleCategorySelect(choice.option_text)}
+              >
+                {selectedCategory === choice.option_text && (
+                  <Check className="mr-2 h-4 w-4" />
+                )}
+                {choice.option_text}
+              </Button>
+            ))
+          ) : (
+            <Textarea
+              placeholder="Enter your response here..."
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card/20">
+        <CardHeader>
+          <CardTitle className="text-base">Additional Notes (Optional)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Add any additional notes or observations..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="min-h-[80px]"
+          />
+        </CardContent>
+      </Card>
+    </>
+  )}
+
+
+  <div className="space-y-3">
+{inputType === 'video' || inputType === 'voice' || inputType === 'image' ? (
+<Button
+onClick={() => {
+  const idToUse = currentItem?.id
+  if (!idToUse) return
+  // pass the normalized inputType so recorder knows which mode to open
+  router.push(`/label/recorder/${idToUse}?type=${inputType}`)
+}}
+className="w-full"
+variant="default"
+>
+<Save className="mr-2 h-4 w-4" />
+{inputType === 'voice'
+  ? 'Go to Voice Recorder'
+  : inputType === 'video'
+  ? 'Go to Video Recorder'
+  : 'Go to Image Uploader'}
+</Button>
+) : (
+<Button
+onClick={handleSubmitLabelLocal}
+disabled={inputType === 'multiple_choice' && !selectedCategory}
+className="w-full"
+variant="default"
+>
+<Save className="mr-2 h-4 w-4" />
+{inputType === 'multiple_choice'
+  ? isLastItem
+    ? 'Complete Task'
+    : 'Submit Choice'
+  : isLastItem
+  ? 'Complete Task'
+  : 'Submit & Continue'}
+</Button>
+)}
+
+<p className="text-muted-foreground text-center text-xs">
+* All items must be labeled to complete the task
+</p>
+</div>
+
+
 
             <div className="flex gap-2">
               <Button
@@ -1016,40 +1222,42 @@ const LabelTask = () => {
 
       {/* Submission Confirmation Modal */}
       {/* Item Confirmation Modal */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="flex w-[90%] max-w-lg flex-col items-center justify-center rounded-xl border p-6 shadow-sm">
-          <DialogHeader>
-            <DialogTitle>Confirm Item Annotation</DialogTitle>
-            <DialogDescription>
-              Please review your response for this item before continuing.
-            </DialogDescription>
-          </DialogHeader>
+  <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+    <DialogContent className="border shadow-sm max-w-lg w-[90%] rounded-xl p-6 flex flex-col items-center justify-center sm:top-1/2 sm:-translate-y-1/2">
+      <DialogHeader>
+        <DialogTitle>Confirm Item Annotation</DialogTitle>
+        <DialogDescription>
+          Please review your response for this item before continuing.
+        </DialogDescription>
+      </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="bg-muted/50 rounded-lg p-3 text-sm">
-              <div className="font-medium">Item {currentItemIndex + 1}:</div>
-              <div className="text-muted-foreground">
-                Answer: {selectedCategory || '—'}
-              </div>
-              {notes && (
-                <div className="text-muted-foreground">Notes: {notes}</div>
-              )}
-            </div>
-          </div>
+      <div className="space-y-4">
+      <div className="bg-muted/50 rounded-lg p-3 text-sm">
+  <div className="font-medium">Item {currentItemIndex + 1}:</div>
+  <div className="text-muted-foreground">
+    Answer: {selectedCategory || '—'}
+  </div>
+  {notes && (
+    <div className="text-muted-foreground">
+      Notes: {notes}
+    </div>
+  )}
+</div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowConfirmDialog(false)}
-            >
-              Edit Response
-            </Button>
-            <Button onClick={handleConfirmSubmit} disabled={isSubmitting}>
-              Confirm & Continue
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </div>
+
+      <DialogFooter>
+        <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+          Edit Response
+        </Button>
+        <Button onClick={handleConfirmSubmit} disabled={isSubmitting}>
+          Confirm & Continue
+        </Button>
+      </DialogFooter>
+
+    </DialogContent>
+  </Dialog>
+
     </div>
   )
 }
