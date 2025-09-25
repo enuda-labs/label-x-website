@@ -11,6 +11,7 @@ import {
   Image as ImageIcon,
   Video,
   Music,
+  Mic,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,7 +23,7 @@ import { DataType } from '../data-type-selection'
 import TaskItem, { TaskItem as TaskItemType } from './task-item'
 import { Button } from '@/components/ui/button'
 
-export type InputType = 'multiple_choice' | 'text'
+export type InputType = 'multiple_choice' | 'video' | 'voice' | 'image' | 'text'
 
 interface TaskConfigurationProps {
   dataType: DataType
@@ -57,7 +58,7 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
     labellingChoices: initialConfig.labellingChoices || [],
     instructions: initialConfig.instructions || '',
     deadline: initialConfig.deadline || new Date(),
-    labellersRequired: initialConfig.labellersRequired || 1,
+    labellersRequired: initialConfig.labellersRequired || 15,
     tasks: initialConfig.tasks || [{ id: '1', data: '', file: null }],
   })
 
@@ -97,6 +98,9 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
       id: (config.tasks.length + 1).toString(),
       data: '',
       file: null,
+      recordedBlob: null,
+      recordedUrl: null,
+      recordingType: null,
     }
     updateConfig({ tasks: [...config.tasks, newTask] })
   }
@@ -145,7 +149,12 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
   }
 
   const hasSelectedFiles = config.tasks.some((task) => task.file)
+  const hasRecordings = config.tasks.some((task) => task.recordedBlob)
   const selectedFilesCount = config.tasks.filter((task) => task.file).length
+  const recordingsCount = config.tasks.filter(
+    (task) => task.recordedBlob
+  ).length
+  const totalContentCount = selectedFilesCount + recordingsCount
 
   return (
     <div className="space-y-6">
@@ -194,7 +203,7 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
               onValueChange={(value: InputType) =>
                 updateConfig({ inputType: value })
               }
-              className="flex gap-6"
+              className="flex flex-wrap gap-6"
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="multiple_choice" id="multiple_choice" />
@@ -209,6 +218,24 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
                 <RadioGroupItem value="text" id="text_input" />
                 <Label htmlFor="text_input" className="cursor-pointer text-sm">
                   Text Input (Free text response)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="video" id="video" />
+                <Label htmlFor="video" className="cursor-pointer text-sm">
+                  Video
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="voice" id="voice" />
+                <Label htmlFor="voice" className="cursor-pointer text-sm">
+                  Audio
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="image" id="image" />
+                <Label htmlFor="image" className="cursor-pointer text-sm">
+                  Image{' '}
                 </Label>
               </div>
             </RadioGroup>
@@ -342,12 +369,11 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
               <Input
                 id="labellers"
                 type="number"
-                min="1"
-                max="10"
+                min="15"
                 value={config.labellersRequired}
                 onChange={(e) =>
                   updateConfig({
-                    labellersRequired: parseInt(e.target.value) || 1,
+                    labellersRequired: parseInt(e.target.value) || 15,
                   })
                 }
                 className="border-border focus:border-primary"
@@ -357,39 +383,71 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
         </CardContent>
       </Card>
 
-      {/* File Status Indicator - Shows when files are selected */}
-      {dataType !== 'TEXT' && hasSelectedFiles && (
-        <Card className="shadow-soft b border-green-200 dark:border-green-800 dark:bg-green-950/20">
+      {/* Content Status Indicator - Shows when files are selected or recordings made */}
+      {dataType !== 'TEXT' && (hasSelectedFiles || hasRecordings) && (
+        <Card className="shadow-soft border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Files Selected</span>
+              <span className="font-medium">Content Ready</span>
               {getDataTypeIcon()}
             </div>
-            <div className="mt-2 text-sm text-green-600 dark:text-green-300">
-              {selectedFilesCount} {dataType.toLowerCase()} file(s) uploaded and
-              ready
+
+            <div className="mt-2 space-y-1 text-sm text-green-600 dark:text-green-300">
+              {hasSelectedFiles && (
+                <div>{selectedFilesCount} file(s) uploaded</div>
+              )}
+              {hasRecordings && (
+                <div className="flex items-center gap-2">
+                  <Mic className="h-3 w-3" />
+                  {recordingsCount} recording(s) made
+                </div>
+              )}
+              <div className="font-medium">
+                Total: {totalContentCount} {dataType.toLowerCase()} item(s)
+                ready
+              </div>
             </div>
+
             <div className="mt-3 max-h-32 space-y-1 overflow-y-auto">
               {config.tasks
-                .filter((task) => task.file)
+                .filter((task) => task.file || task.recordedBlob)
                 .map((task, index) => (
                   <div
                     key={index}
                     className="flex items-center gap-2 text-xs text-green-600 dark:text-green-300"
                   >
                     <div className="h-1 w-1 flex-shrink-0 rounded-full bg-green-500"></div>
-                    <span className="flex-1 truncate">{task.file?.name}</span>
-                    <span className="flex-shrink-0 text-green-500 dark:text-green-400">
-                      ({((task.file?.size || 0) / 1024).toFixed(1)}KB)
-                    </span>
+                    {task.file ? (
+                      <>
+                        <span className="flex-1 truncate">
+                          {task.file.name}
+                        </span>
+                        <span className="flex-shrink-0 text-green-500 dark:text-green-400">
+                          ({((task.file.size || 0) / 1024).toFixed(1)}KB)
+                        </span>
+                      </>
+                    ) : task.recordedBlob ? (
+                      <>
+                        <span className="flex-1 truncate">
+                          {task.recordingType} recording
+                        </span>
+                        <span className="flex-shrink-0 text-green-500 dark:text-green-400">
+                          ({((task.recordedBlob.size || 0) / 1024).toFixed(1)}
+                          KB)
+                        </span>
+                      </>
+                    ) : null}
                   </div>
                 ))}
             </div>
-            <div className="mt-3 text-xs text-green-600 dark:text-green-300">
-              Note: Files are still selected even if the input field appears
-              empty
-            </div>
+
+            {(dataType === 'AUDIO' || dataType === 'VIDEO') && (
+              <div className="mt-3 text-xs text-green-600 dark:text-green-300">
+                Note: Both file uploads and recordings are supported. Content is
+                preserved even if input fields appear empty.
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
