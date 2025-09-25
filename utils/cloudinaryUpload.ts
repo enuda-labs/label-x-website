@@ -1,11 +1,9 @@
-// utils/cloudinaryUpload.ts
-
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export const uploadToCloudinary = async (
   file: Blob,
-  resourceType: "video" | "raw" | "auto" = "auto"
+  resourceType: "image" | "video" | "raw" | "auto" = "auto"
 ): Promise<string | null> => {
   if (!CLOUD_NAME || !UPLOAD_PRESET) {
     throw new Error(
@@ -16,9 +14,10 @@ export const uploadToCloudinary = async (
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
-  fd.append("resource_type", resourceType);
 
-  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
+  // 👇 resourceType goes into the URL, not formData
+  const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${resourceType}/upload`;
+
   const res = await fetch(url, { method: "POST", body: fd });
 
   if (!res.ok) {
