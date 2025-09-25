@@ -3,6 +3,8 @@
 import { use } from "react";
 import { useSearchParams } from "next/navigation";
 import VoiceVideoSubmission from "@/components/VoiceVideoSubmission/VoiceVideoSubmission";
+import DashboardLayout from '@/components/shared/dashboard-layout'
+
 
 export default function RecorderPage({ params }: { params: Promise<{ taskId: string }> }) {
   const { taskId } = use(params); // ✅ unwrap the promise
@@ -15,12 +17,12 @@ export default function RecorderPage({ params }: { params: Promise<{ taskId: str
   }
 
   return (
-     <div className="p-6">
+      <DashboardLayout title="Media Labeling">
        <h1 className="text-xl font-bold mb-4 text-white">
          Recorder for Task {taskId} ({type})
        </h1>
 
        <VoiceVideoSubmission type={type} taskId={taskId} />
-     </div>
+    </DashboardLayout>
    );
 }
