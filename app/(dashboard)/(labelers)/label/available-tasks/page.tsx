@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import DashboardLayout from '@/components/shared/dashboard-layout'
 import {
   ChevronRight,
   FileText,
@@ -129,16 +130,15 @@ const AvailableClustersPage = () => {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-8">
-      <header className="bg-card/20 border-b backdrop-blur-sm">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <h1 className="text-2xl font-bold">Available Clusters</h1>
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <User className="h-4 w-4" />
-            {userLoading ? 'Loading...' : `${username} (${role})`}
-          </div>
-        </div>
-      </header>
+    <DashboardLayout title="Available Projects">
+    <div className="flex items-center justify-end mb-4 gap-3">
+       <div className="text-muted-foreground flex items-center gap-2 text-sm">
+         <User className="h-4 w-4" />
+         <span suppressHydrationWarning>
+           {userLoading ? 'Loading...' : `${username} (${role})`}
+         </span>
+       </div>
+     </div>
 
       {loading && <p className="text-muted-foreground">Loading clusters...</p>}
       {!loading && clusters.length === 0 && (
@@ -227,7 +227,7 @@ const AvailableClustersPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+  </DashboardLayout>
   )
 }
 
