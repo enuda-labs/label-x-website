@@ -294,8 +294,9 @@ const LabelTask = () => {
     Array<{ answer: string[]; notes: string }>
   >([])
   const [progressData, setProgressData] = useState<TaskProgress | null>(null)
-
+const [showMissingDialog, setShowMissingDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [missingTaskId, setMissingTaskId] = useState<string | null>(null);
 
 
   const refreshTaskData = async () => {
@@ -592,152 +593,55 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
     }
   }
 
-  // Mark missing — now persists immediately via annotateMissingAsset
-  const handleMarkMissing = async () => {
-    const taskIdToSend = currentItem?.id
-    if (!taskIdToSend) return
 
-    const serial = currentItem?.serial_no ?? currentItem?.id
-    const noteForServer = `Marked missing${serial ? ` (serial: ${serial})` : ''}`
+  // Open modal
+  const handleMarkMissing = () => {
+    console.log("🟡 handleMarkMissing clicked", currentItem?.id);
+    setMissingTaskId(currentItem?.id ?? null);
+    setShowMissingDialog(true);
+  };
+
+  // when confirm in modal
+  const confirmMarkMissing = async () => {
+    const taskIdToSend = missingTaskId ?? currentItem?.id ?? null;
+    console.log("➡️ confirmMarkMissing fired, taskIdToSend:", taskIdToSend);
+
+    if (!taskIdToSend) {
+      console.warn("⚠️ No taskId, aborting");
+      return;
+    }
 
     try {
-      setIsSubmitting(true)
-
-      const resp = await annotateMissingAsset(taskIdToSend, {
+      setIsSubmitting(true);
+      const resp = await annotateTask({
+        task_id: taskIdToSend,
         labels: ["MISSING_ASSET"],
-        notes: noteForServer,
-      })
+        notes: `Marked missing (serial: ${currentItem?.serial_no ?? currentItem?.id})`,
+      });
 
-      toast('Marked as missing', {
-        description: resp.message ?? 'Missing asset recorded',
-      })
+      toast("Marked as missing", {
+        description: resp.message ?? "Missing asset recorded",
+      });
 
-      await refreshTaskData()
-
-      const newResponses = [...responses]
-      newResponses[currentItemIndex] = {
-        answer: ['MISSING_ASSET'],
-        notes: noteForServer,
-      }
-      setResponses(newResponses)
-      setCompletedItems(prev => prev + 1)
-
-      // ✅ advance or redirect if last item
-      if (currentItemIndex < totalItems - 1) {
-        goToItemIndex(currentItemIndex + 1)
-      } else {
-        toast('All items completed in this cluster.')
-        router.push('/label/tasks') // 👈 redirect after last item
-      }
-
-    } catch (err: unknown) {
-      const error = err as AxiosError<{ detail?: string; message?: string }>
-      const detail = error.response?.data?.detail || error.message || ''
-
-      toast('Failed to mark missing', {
-        description: detail || 'An error occurred',
-      })
-      console.error('Mark missing failed', err)
+      await refreshTaskData();
+      goToItemIndex(currentItemIndex + 1);
+    } catch (err) {
+      toast.error("Failed to mark missing");
+      console.error("❌ confirmMarkMissing error:", err);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
+      setShowMissingDialog(false);
+      setMissingTaskId(null); // reset after done
+    }
+  };
+
+  const handleSkip = () => {
+    if (currentItemIndex < totalItems - 1) {
+      goToItemIndex(currentItemIndex + 1)
+    } else {
+      toast("No more items to skip — end of cluster.")
     }
   }
-
-
-  // Build payload (labels + notes)
-  // const buildLabelsForSubmission = () => {
-  //   const labels: string[] = []
-  //   const notesArr: string[] = []
-  //
-  //   for (const r of responses) {
-  //     if (r.answer && r.answer.length > 0) {
-  //       labels.push(...r.answer) // merge all answers
-  //     }
-  //     if (r.notes && r.notes.trim() !== '') {
-  //       notesArr.push(r.notes.trim())
-  //     }
-  //   }
-  //
-  //   return {
-  //     task_id: taskData?.id ?? Number(taskId),
-  //     labels,
-  //     notes: notesArr.join(' | ') || '',
-  //   }
-  // }
-
-  // Submit labels using annotateTask helper (final / batch submit)
-  // const currentTaskId = Array.isArray(taskId)
-  //   ? Number(taskId[0])
-  //   : Number(taskId) || 0
-
-  // const submitLabels = async () => {
-  //   const payload = buildLabelsForSubmission()
-  //
-  //   if (payload.labels.length === 0 && !payload.notes) {
-  //     toast('Nothing to submit', {
-  //       description: 'Please provide at least one label or note.',
-  //     })
-  //     return
-  //   }
-  //
-  //   try {
-  //     setIsSubmitting(true)
-  //     const resp = await annotateTask(payload)
-  //
-  //     toast('Task labels submitted successfully', {
-  //       description: resp?.message ?? 'Submission succeeded',
-  //     })
-  //     setShowConfirmDialog(false)
-  //
-  //     // After final/batch submission: advance to next item in cluster if present,
-  //     // otherwise keep on last item (you can change this to navigate to next cluster if desired)
-  //     if (currentItemIndex < totalItems - 1) {
-  //       goToItemIndex(currentItemIndex + 1)
-  //     } else {
-  //       toast('All items in this cluster submitted.')
-  //     }
-  //   } catch (err: unknown) {
-  //     const error = err as AxiosError<{ detail?: string; message?: string }>
-  //     const status = error.response?.status
-  //     const detail =
-  //       error.response?.data?.detail ||
-  //       error.response?.data?.message ||
-  //       error.message ||
-  //       ''
-  //
-  //     if (
-  //       status === 400 &&
-  //       typeof detail === 'string' &&
-  //       detail.toLowerCase().includes('already label')
-  //     ) {
-  //       toast('You already labeled this task', {
-  //         description: detail || 'This task has already been labeled.',
-  //       })
-  //       setShowConfirmDialog(false)
-  //
-  //       if (currentItemIndex < totalItems - 1) {
-  //         goToItemIndex(currentItemIndex + 1)
-  //       }
-  //       return
-  //     }
-  //
-  //     if (status === 401 || status === 403) {
-  //       toast('Not authorized', {
-  //         description: detail || 'Please sign in and try again.',
-  //       })
-  //       setShowConfirmDialog(false)
-  //       return
-  //     }
-  //
-  //     console.error('Annotate failed', status, error)
-  //     toast('Failed to submit labels', {
-  //       description: detail || 'An error occurred while submitting labels.',
-  //     })
-  //   } finally {
-  //     setIsSubmitting(false)
-  //   }
-  // }
-  //
 
 
   // Next/Previous should move between items within the cluster
@@ -888,14 +792,22 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
                                 : `Item ID: ${currentItem?.id ?? '—'}`}
                             </p>
                             <div className="mt-4 flex gap-2">
-                              <Button
-                                variant="outline"
-                                onClick={handleMarkMissing}
-                                disabled={isSubmitting}
-                              >
-                                Mark Missing
-                              </Button>
-                              <Button onClick={handleNext}>Skip</Button>
+
+                            <Button
+    variant="outline"
+    onClick={() => {
+      console.log("🔵 Mark Missing button clicked for", currentItem?.id);
+      setMissingTaskId(currentItem?.id ?? null); // store current item ID
+      setShowMissingDialog(true);
+    }}
+  >
+    Mark Missing
+  </Button>
+
+
+
+
+                              <Button onClick={handleSkip}>Skip</Button>
                             </div>
                           </div>
                         </div>
@@ -1257,6 +1169,26 @@ variant="default"
 
     </DialogContent>
   </Dialog>
+
+  <Dialog open={showMissingDialog} onOpenChange={setShowMissingDialog}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Mark item as missing?</DialogTitle>
+      <DialogDescription>
+        This will record the item as <b>missing</b>. Are you sure?
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <Button onClick={() => setShowMissingDialog(false)} variant="outline">
+        Cancel
+      </Button>
+      <Button onClick={confirmMarkMissing} disabled={isSubmitting}>
+        Confirm
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
 
     </div>
   )
