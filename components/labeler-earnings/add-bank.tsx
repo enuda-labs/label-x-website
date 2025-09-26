@@ -192,33 +192,41 @@ export const BanksContent = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {bank.is_primary && <span className="rounded bg-green-500/20 px-2 py-1 text-xs text-green-400">Primary</span>}
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+    {bank.is_primary && (
+      <span className="rounded bg-green-500/20 px-2 py-1 text-xs text-green-400">
+        Primary
+      </span>
+    )}
 
-                <Button
-                  size="sm"
-                  onClick={() => openViewBankModal(bank)}
-                  variant="outline"
-                >
-                  <Eye size={16} />
-                </Button>
+    <Button
+      size="sm"
+      onClick={() => openViewBankModal(bank)}
+      variant="outline"
+      className="flex-shrink-0"
+    >
+      <Eye size={16} />
+    </Button>
 
-                <div className="flex items-center  gap-2">
-                  <Switch
-                    checked={bank.is_primary}
-                    onCheckedChange={() => handleTogglePrimary(bank)}
-                    className="cursor-pointer"
-                  />
-                </div>
+    <Switch
+      checked={bank.is_primary}
+      onCheckedChange={() => handleTogglePrimary(bank)}
+      className="cursor-pointer flex-shrink-0"
+    />
 
-                <Button
-                  size="sm"
-                  onClick={() => { setSelectedBank(bank); setShowDeleteModal(true) }}
-                  variant="destructive"
-                >
-                  <Trash size={16} />
-                </Button>
-              </div>
+    <Button
+      size="sm"
+      onClick={() => {
+        setSelectedBank(bank);
+        setShowDeleteModal(true);
+      }}
+      variant="destructive"
+      className="flex-shrink-0"
+    >
+      <Trash size={16} />
+    </Button>
+  </div>
+
             </div>
           </div>
         ))}

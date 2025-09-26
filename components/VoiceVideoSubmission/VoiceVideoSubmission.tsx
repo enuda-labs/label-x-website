@@ -459,68 +459,156 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       {error && <div className="rounded-md border border-red-600/40 bg-red-600/10 p-3 text-red-200">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-1">
-        {type === "voice" && (
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm text-white/60">Voice Note</div>
-                <div className="mt-2 text-sm text-white/80">Record a short voice note for labelers.</div>
-              </div>
-              <div className="text-xs text-white/60">Max {maxAudioSec}s</div>
-            </div>
+      {type === "voice" && (
+  <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+    <div className="flex items-start justify-between">
+      <div>
+        <div className="text-sm text-white/60">Voice Note</div>
+        <div className="mt-2 text-sm text-white/80">
+          Record a short voice note for labelers.
+        </div>
+      </div>
+      <div className="text-xs text-white/60">Max {maxAudioSec}s</div>
+    </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-2">
-                {!isRecordingAudio ? (
-                  <button type="button" className="rounded-md bg-red-600 px-3 py-2 text-sm cursor-pointer font-medium text-white" onClick={startAudioRecording}>
-                    Record
-                  </button>
-                ) : (
-                  <button type="button" className="rounded-md bg-zinc-700 px-3 py-2 text-sm cursor-pointer font-medium text-white" onClick={stopAudioRecording}>
-                    Stop
-                  </button>
-                )}
+    <div className="mt-4 space-y-3">
+      {/* Recording controls */}
+      <div className="flex items-center gap-2">
+        {!isRecordingAudio ? (
+          <button
+            type="button"
+            className="rounded-md bg-red-600 px-3 py-2 text-sm cursor-pointer font-medium text-white"
+            onClick={startAudioRecording}
+          >
+            Record
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="rounded-md bg-zinc-700 px-3 py-2 text-sm cursor-pointer font-medium text-white"
+            onClick={stopAudioRecording}
+          >
+            Stop
+          </button>
+        )}
 
-                <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80" onClick={() => audioRef.current?.play()} disabled={!audioBlob}>
-                  Play
-                </button>
+        <button
+          type="button"
+          className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80"
+          onClick={() => audioRef.current?.play()}
+          disabled={!audioBlob}
+        >
+          Play
+        </button>
 
-                <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80" onClick={discardAudio} disabled={!audioBlob}>
-                  Discard
-                </button>
+        <button
+          type="button"
+          className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80"
+          onClick={discardAudio}
+          disabled={!audioBlob}
+        >
+          Discard
+        </button>
 
-                <button type="button" onClick={handleUploadAudio} disabled={!audioBlob || uploadingAudio} className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80">
-                  {uploadingAudio ? "Uploading…" : "Upload"}
-                </button>
-
-                {audioBlob && <div className="ml-auto text-xs text-white/60">{readableSize(audioBlob.size)} • {audioDuration ? `${formatTime(audioDuration)}` : "Recorded"}</div>}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className={`h-3 w-3 rounded-full ${isRecordingAudio ? "bg-red-500 animate-pulse" : "bg-white/20"}`} aria-hidden />
-                <div className="text-xs text-white/60">{isRecordingAudio ? `Recording — ${formatTime(audioElapsed)}` : audioBlob ? `Recorded • ${audioDuration ? formatTime(audioDuration) : "—"}` : "Not recorded"}</div>
-              </div>
-
-              <div className="w-full bg-white/10 h-2 rounded overflow-hidden mt-2">
-                <div className="h-2 bg-red-500" style={{ width: `${Math.min(100, (isRecordingAudio ? (audioElapsed / maxAudioSec) * 100 : (audioDuration ? (audioDuration / maxAudioSec) * 100 : 0)))}%` }} />
-              </div>
-
-              <audio ref={audioRef} controls src={audioUrl ?? undefined} className="w-full" />
-              {audioUrl && (
-                <div className="mt-2 text-xs">
-                  <a href={audioUrl} download="recording_audio.webm" className="underline">Download audio</a>
-                </div>
-              )}
-
-              {audioCloudUrl && (
-                <div className="mt-2 text-xs flex items-center gap-2">
-                  <a href={audioCloudUrl} target="_blank" rel="noreferrer" className="underline">Open uploaded audio</a>
-                  <button onClick={() => copyToClipboard(audioCloudUrl)} className="text-xs underline">Copy URL</button>
-                </div>
-              )}
-            </div>
+        {audioBlob && (
+          <div className="ml-auto text-xs text-white/60">
+            {readableSize(audioBlob.size)} •{" "}
+            {audioDuration ? `${formatTime(audioDuration)}` : "Recorded"}
           </div>
         )}
+      </div>
+
+      {/* Recording status */}
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-3 w-3 rounded-full ${
+            isRecordingAudio ? "bg-red-500 animate-pulse" : "bg-white/20"
+          }`}
+          aria-hidden
+        />
+        <div className="text-xs text-white/60">
+          {isRecordingAudio
+            ? `Recording — ${formatTime(audioElapsed)}`
+            : audioBlob
+            ? `Recorded • ${
+                audioDuration ? formatTime(audioDuration) : "—"
+              }`
+            : "Not recorded"}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-white/10 h-2 rounded overflow-hidden mt-2">
+        <div
+          className="h-2 bg-red-500"
+          style={{
+            width: `${Math.min(
+              100,
+              isRecordingAudio
+                ? (audioElapsed / maxAudioSec) * 100
+                : audioDuration
+                ? (audioDuration / maxAudioSec) * 100
+                : 0
+            )}%`,
+          }}
+        />
+      </div>
+
+      {/* Audio player */}
+      <audio
+        ref={audioRef}
+        controls
+        src={audioUrl ?? undefined}
+        className="w-full"
+      />
+
+      {/* Upload button moved below */}
+      {audioBlob && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={handleUploadAudio}
+            disabled={!audioBlob || uploadingAudio}
+            className="w-full rounded-md cursor-pointer bg-primary hover:bg-primary/90 px-4 py-2 text-sm font-medium text-white"
+          >
+            {uploadingAudio ? "Uploading…" : "Upload"}
+          </button>
+        </div>
+      )}
+
+      {audioUrl && (
+        <div className="mt-2 text-xs">
+          <a
+            href={audioUrl}
+            download="recording_audio.webm"
+            className="underline"
+          >
+            Download audio
+          </a>
+        </div>
+      )}
+
+      {audioCloudUrl && (
+        <div className="mt-2 text-xs flex items-center gap-2">
+          <a
+            href={audioCloudUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            Open uploaded audio
+          </a>
+          <button
+            onClick={() => copyToClipboard(audioCloudUrl)}
+            className="text-xs underline"
+          >
+            Copy URL
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
         {type === "image" && (
     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -534,7 +622,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       </div>
 
       <div className="mt-4 space-y-3">
-        {/* Styled Upload Button */}
+        {/* File picker */}
         <div>
           <input
             id="image-upload"
@@ -561,14 +649,14 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
 
         {imagePreview && (
           <div className="mt-3">
-          <Image
-     src={imagePreview}
-     alt="Selected preview"
-     width={400}
-     height={400}
-     unoptimized
-     className="max-h-64 rounded-md border border-white/10 object-contain"
-   />
+            <Image
+              src={imagePreview}
+              alt="Selected preview"
+              width={400}
+              height={400}
+              unoptimized
+              className="max-h-64 rounded-md border border-white/10 object-contain"
+            />
             <div className="mt-2 flex gap-2">
               <Button
                 variant="outline"
@@ -578,11 +666,15 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
               >
                 Discard
               </Button>
+            </div>
+
+            {/* Upload button moved below */}
+            <div className="mt-4">
               <Button
                 onClick={handleUploadImage}
                 disabled={!imageFile || uploadingImage}
                 size="sm"
-                className="text-xs"
+                className="w-full cursor-pointer bg-primary hover:bg-primary/90 text-white font-medium rounded-md"
               >
                 {uploadingImage ? "Uploading…" : "Upload"}
               </Button>
@@ -613,69 +705,164 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   )}
 
 
-        {type === "video" && (
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="text-sm text-white/60">Video Recording</div>
-                <div className="mt-2 text-sm text-white/80">Record a short video to show context to labelers.</div>
-              </div>
-              <div className="text-xs text-white/60">Max {maxVideoSec}s</div>
-            </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-2">
-                {!isRecordingVideo ? (
-                  <button type="button" className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white" onClick={startVideoRecording}>
-                    Record
-                  </button>
-                ) : (
-                  <button type="button" className="rounded-md bg-zinc-700 px-3 py-2 text-sm font-medium text-white" onClick={stopVideoRecording}>
-                    Stop
-                  </button>
-                )}
+  {type === "video" && (
+<div className="rounded-xl border border-white/10 bg-white/5 p-4">
+<div className="flex items-start justify-between">
+<div>
+  <div className="text-sm text-white/60">Video Recording</div>
+  <div className="mt-2 text-sm text-white/80">
+    Record a short video to show context to labelers.
+  </div>
+</div>
+<div className="text-xs text-white/60">Max {maxVideoSec}s</div>
+</div>
 
-                <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80" onClick={() => recordedVideoRef.current?.play()} disabled={!videoBlob}>Play</button>
+<div className="mt-4 space-y-3">
+{/* Recording controls */}
+<div className="flex items-center gap-2">
+  {!isRecordingVideo ? (
+    <button
+      type="button"
+      className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white"
+      onClick={startVideoRecording}
+    >
+      Record
+    </button>
+  ) : (
+    <button
+      type="button"
+      className="rounded-md bg-zinc-700 px-3 py-2 text-sm font-medium text-white"
+      onClick={stopVideoRecording}
+    >
+      Stop
+    </button>
+  )}
 
-                <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80" onClick={discardVideo} disabled={!videoBlob}>Discard</button>
+  <button
+    type="button"
+    className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
+    onClick={() => recordedVideoRef.current?.play()}
+    disabled={!videoBlob}
+  >
+    Play
+  </button>
 
-                <button type="button" onClick={handleUploadVideo} disabled={!videoBlob || uploadingVideo} className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80">
-                  {uploadingVideo ? "Uploading…" : "Upload"}
-                </button>
+  <button
+    type="button"
+    className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
+    onClick={discardVideo}
+    disabled={!videoBlob}
+  >
+    Discard
+  </button>
 
-                {videoBlob && <div className="ml-auto text-xs text-white/60">{readableSize(videoBlob.size)} • {videoDuration ? `${formatTime(videoDuration)}` : "Recorded"}</div>}
-              </div>
+  {videoBlob && (
+    <div className="ml-auto text-xs text-white/60">
+      {readableSize(videoBlob.size)} •{" "}
+      {videoDuration ? `${formatTime(videoDuration)}` : "Recorded"}
+    </div>
+  )}
+</div>
 
-              <div className="flex items-center gap-3">
-                <div className={`h-3 w-3 rounded-full ${isRecordingVideo ? "bg-red-500 animate-pulse" : "bg-white/20"}`} aria-hidden />
-                <div className="text-xs text-white/60">{isRecordingVideo ? `Recording — ${formatTime(videoElapsed)}` : videoBlob ? `Recorded • ${videoDuration ? formatTime(videoDuration) : "—"}` : "Not recorded"}</div>
-              </div>
+{/* Recording status */}
+<div className="flex items-center gap-3">
+  <div
+    className={`h-3 w-3 rounded-full ${
+      isRecordingVideo ? "bg-red-500 animate-pulse" : "bg-white/20"
+    }`}
+    aria-hidden
+  />
+  <div className="text-xs text-white/60">
+    {isRecordingVideo
+      ? `Recording — ${formatTime(videoElapsed)}`
+      : videoBlob
+      ? `Recorded • ${videoDuration ? formatTime(videoDuration) : "—"}`
+      : "Not recorded"}
+  </div>
+</div>
 
-              <div className="w-full bg-white/10 h-2 rounded overflow-hidden mt-2">
-                <div className="h-2 bg-red-500" style={{ width: `${Math.min(100, (isRecordingVideo ? (videoElapsed / maxVideoSec) * 100 : (videoDuration ? (videoDuration / maxVideoSec) * 100 : 0)))}%` }} />
-              </div>
+{/* Progress bar */}
+<div className="w-full bg-white/10 h-2 rounded overflow-hidden mt-2">
+  <div
+    className="h-2 bg-red-500"
+    style={{
+      width: `${Math.min(
+        100,
+        isRecordingVideo
+          ? (videoElapsed / maxVideoSec) * 100
+          : videoDuration
+          ? (videoDuration / maxVideoSec) * 100
+          : 0
+      )}%`,
+    }}
+  />
+</div>
 
-              <div className="w-full overflow-hidden rounded-md bg-black/30">
-                <video ref={cameraPreviewRef} className="h-[180px] w-full object-cover" playsInline muted autoPlay />
-              </div>
+{/* Camera preview */}
+<div className="w-full overflow-hidden rounded-md bg-black/30">
+  <video
+    ref={cameraPreviewRef}
+    className="h-[180px] w-full object-cover"
+    playsInline
+    muted
+    autoPlay
+  />
+</div>
 
-              <video ref={recordedVideoRef} controls src={videoUrl ?? undefined} className="w-full rounded-md" playsInline />
+{/* Recorded video */}
+<video
+  ref={recordedVideoRef}
+  controls
+  src={videoUrl ?? undefined}
+  className="w-full rounded-md"
+  playsInline
+/>
 
-              {videoUrl && (
-                <div className="mt-2 text-xs">
-                  <a href={videoUrl} download="recording_video.webm" className="underline">Download video</a>
-                </div>
-              )}
+{/* Upload button moved below */}
+{videoBlob && (
+  <div className="mt-4">
+    <button
+      type="button"
+      onClick={handleUploadVideo}
+      disabled={!videoBlob || uploadingVideo}
+      className="w-full cursor-pointer rounded-md bg-primary hover:bg-primary/90 px-4 py-2 text-sm font-medium text-white"
+    >
+      {uploadingVideo ? "Uploading…" : "Upload"}
+    </button>
+  </div>
+)}
 
-              {videoCloudUrl && (
-                <div className="mt-2 text-xs flex items-center gap-2">
-                  <a href={videoCloudUrl} target="_blank" rel="noreferrer" className="underline">Open uploaded video</a>
-                  <button onClick={() => copyToClipboard(videoCloudUrl)} className="text-xs underline">Copy URL</button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+{videoUrl && (
+  <div className="mt-2 text-xs">
+    <a href={videoUrl} download="recording_video.webm" className="underline">
+      Download video
+    </a>
+  </div>
+)}
+
+{videoCloudUrl && (
+  <div className="mt-2 text-xs flex items-center gap-2">
+    <a
+      href={videoCloudUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="underline"
+    >
+      Open uploaded video
+    </a>
+    <button
+      onClick={() => copyToClipboard(videoCloudUrl)}
+      className="text-xs underline"
+    >
+      Copy URL
+    </button>
+  </div>
+)}
+</div>
+</div>
+)}
+
       </div>
 
       <div className="text-sm text-white/60">Tips: Keep clips short (under {maxAudioSec}s / {maxVideoSec}s). The component records in webm if supported; server should accept webm or transcode. If permissions are blocked, open Chrome → lock icon → Site settings → Allow Camera & Microphone for localhost.</div>
