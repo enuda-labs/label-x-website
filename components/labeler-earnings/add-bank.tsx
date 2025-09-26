@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 'use client'
 
 import { CreditCard, Eye, Plus, Trash } from 'lucide-react'

@@ -13,6 +13,20 @@ import { BankAccount } from '@/types/banks'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 
+
+interface WithdrawData {
+  transaction_id?: string
+}
+
+interface WithdrawResponse {
+  status: 'success' | 'error'
+  message: string
+  data: WithdrawData | null
+  success?: boolean
+  error?: string
+}
+
+
 const maskAccount = (acc?: string) => {
   if (!acc) return ''
   const s = String(acc)
@@ -116,25 +130,23 @@ const EarningOverview = () => {
   }
 
   // Withdraw mutation
-  const withdrawMutation = useMutation({
-    mutationFn: (payload: { account_number: string; amount: string; bank_code: string }) =>
-      withdraw(payload),
-    onSuccess: (res: any) => {
-      // prefer server message if provided (res.message or res.data?.message)
-      const serverMessage =
-        res?.message ?? res?.data?.message ?? 'Withdrawal request submitted'
-      toast(serverMessage)
-      queryClient.invalidateQueries({ queryKey: ['earning'] })
-      setWithdrawAmount('')
-      setAccountNo('')
-      setSelectedBankId(null)
-      setShowWithdrawModal(false)
-    },
-    onError: (err: unknown) => {
-      const msg = extractErrorMessage(err)
-      toast(msg, { variant: 'destructive' })
-    },
-  })
+  const withdrawMutation = useMutation<WithdrawResponse, unknown, { account_number: string; amount: string; bank_code: string }>({
+   mutationFn: (payload) => withdraw(payload),
+   onSuccess: (res) => {
+     toast(res.message)
+     queryClient.invalidateQueries({ queryKey: ['earning'] })
+     setWithdrawAmount('')
+     setAccountNo('')
+     setSelectedBankId(null)
+     setShowWithdrawModal(false)
+     setWithdrawing(false)
+   },
+   onError: (err) => {
+     const msg = extractErrorMessage(err)
+     toast.success(msg)
+     setWithdrawing(false)
+   },
+ })
 
   const openWithdrawModal = () => {
     // prefer primary
@@ -185,7 +197,7 @@ const EarningOverview = () => {
             isAxiosError(err) && err.response?.data?.error
               ? err.response.data.error
               : 'Withdrawal failed'
-          toast(msg, { variant: 'destructive' })
+              toast.success(msg)
           setWithdrawing(false)
         },
       }

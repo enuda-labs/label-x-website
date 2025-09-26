@@ -187,7 +187,7 @@ const AvailableClustersPage = () => {
 
               <div className="flex gap-3">
     {/* Show "Assign to Me" if user not assigned */}
-    {!cluster.assigned_reviewers?.includes(userId) && (
+      {userId && cluster.assigned_reviewers?.includes(userId) && (
       <Button
         onClick={() => setSelectedCluster(cluster)}
         disabled={assigning === cluster.id}
@@ -198,14 +198,15 @@ const AvailableClustersPage = () => {
     )}
 
     {/* Show "Review Task" if user assigned */}
-    {!cluster.assigned_reviewers?.includes(userId) && (
-      <Button
-        variant="outline"
-        onClick={() => router.push(`/label/reviewTasks/${cluster.id}`)}
-      >
-        Review Task
-      </Button>
-    )}
+    {userId && cluster.assigned_reviewers?.includes(userId) && (
+    <Button
+      variant="outline"
+      onClick={() => router.push(`/label/reviewTasks/${cluster.id}`)}
+    >
+      Review Task
+    </Button>
+  )}
+
   </div>
 
             </CardContent>

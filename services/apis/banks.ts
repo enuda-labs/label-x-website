@@ -1,18 +1,33 @@
+// services/apis/banks.ts
 import { AxiosClient } from '@/utils/axios'
-import { BankAccount, BankAccountPayload } from '@/types/bank'
+import { BankAccount, BankAccountPayload } from '@/types/banks'
 
 const axiosClient = new AxiosClient()
+
+// Helper to unwrap responses that may come as either:
+// 1) { data: ... }  (common pattern) OR
+// 2) the raw payload directly (e.g. array/object)
+const unwrap = <T>(resp: any): T | null => {
+  if (!resp) return null
+  // resp could be an AxiosResponse-like { data: ... }
+  const top = resp.data ?? resp
+  // If the API itself wraps again as { data: ... } (double-wrap), handle that:
+  if (top && typeof top === 'object' && 'data' in top) {
+    return top.data as T
+  }
+  return top as T
+}
 
 // --- Create a Paystack bank account ---
 export const createBankAccount = async (
   payload: BankAccountPayload
 ): Promise<BankAccount | null> => {
   try {
-    const response = await axiosClient.post<BankAccount>(
-      '/account/banks/paystack/',
-      payload
-    )
-    return response.data?.data ?? null
+    // DON'T pass a generic that confuses your Axios wrapper.
+    const response = await axiosClient.post('/account/banks/paystack/', payload)
+    // response may be AxiosResponse. Use unwrap helper to get BankAccount
+    const result = unwrap<BankAccount>(response)
+    return result
   } catch (error) {
     console.error('Error creating bank account:', error)
     return null
@@ -22,8 +37,10 @@ export const createBankAccount = async (
 // --- Fetch all user bank accounts ---
 export const fetchUserBanks = async (): Promise<BankAccount[]> => {
   try {
-    const response = await axiosClient.get<BankAccount[]>('/account/banks/')
-    return response.data
+    const response = await axiosClient.get('/account/banks/')
+    const result = unwrap<BankAccount[] | BankAccount[]>(response)
+    // ensure we always return an array
+    return (result ?? []) as BankAccount[]
   } catch (error) {
     console.error('Error fetching user banks:', error)
     return []
@@ -33,8 +50,9 @@ export const fetchUserBanks = async (): Promise<BankAccount[]> => {
 // --- Fetch a single bank account by ID ---
 export const fetchBankById = async (id: string): Promise<BankAccount | null> => {
   try {
-    const response = await axiosClient.get<BankAccount>(`/account/banks/${id}/`)
-    return response.data
+    const response = await axiosClient.get(`/account/banks/${id}/`)
+    const result = unwrap<BankAccount>(response)
+    return result
   } catch (error) {
     console.error(`Error fetching bank account ${id}:`, error)
     return null
@@ -47,11 +65,9 @@ export const updateBankAccount = async (
   payload: BankAccountPayload
 ): Promise<BankAccount | null> => {
   try {
-    const response = await axiosClient.put<BankAccount>(
-      `/account/banks/paystack/${id}/edit/`,
-      payload
-    )
-    return response.data
+    const response = await axiosClient.put(`/account/banks/paystack/${id}/edit/`, payload)
+    const result = unwrap<BankAccount>(response)
+    return result
   } catch (error) {
     console.error(`Error updating bank account ${id}:`, error)
     return null
@@ -62,16 +78,13 @@ export const updateBankAccount = async (
 export const setPrimaryBank = async (id: string): Promise<BankAccount | null> => {
   try {
     const response = await axiosClient.post(`/account/banks/${id}/primary/`)
-    // Unwrap the BankAccount from the response
-    return response.data?.data ?? null
+    const result = unwrap<BankAccount>(response)
+    return result
   } catch (error) {
     console.error(`Error setting bank account ${id} as primary:`, error)
     return null
   }
 }
-
-
-
 
 // --- Delete a specific bank account ---
 export const deleteBankAccount = async (id: string): Promise<void> => {
@@ -79,6 +92,6 @@ export const deleteBankAccount = async (id: string): Promise<void> => {
     await axiosClient.delete(`/account/banks/${id}/`)
   } catch (error) {
     console.error(`Error deleting bank account ${id}:`, error)
-    throw error // so the component can catch it
+    throw error
   }
 }
