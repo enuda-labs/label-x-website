@@ -192,7 +192,7 @@ export const BanksContent = () => {
                 </div>
               </div>
 
-         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
     {bank.is_primary && (
       <span className="rounded bg-green-500/20 px-2 py-1 text-xs text-green-400">
         Primary

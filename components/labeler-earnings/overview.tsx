@@ -334,7 +334,7 @@ const EarningOverview = () => {
       accountNo.length < 1 ||
       withdrawing
     }
-    className="flex-1 rounded-lg bg-orange-500 text-white disabled:opacity-50"
+    className="flex-1 cursor-pointer rounded-lg bg-orange-500 text-white disabled:opacity-50"
   >
     {withdrawing ? 'Initiating...' : 'Withdraw'}
   </button>
