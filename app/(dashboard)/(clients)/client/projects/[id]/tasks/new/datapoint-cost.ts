@@ -4,7 +4,7 @@ import {
   TaskConfig,
 } from '@/components/project/task/task-configurations'
 
-interface SystemCosts {
+export interface SystemCosts {
   base_cost: number
   dp_cost_per_labeller: number
   video_cost: number
@@ -72,22 +72,11 @@ const getMediaCostKey = (dataType: DataType): keyof SystemCosts | null => {
   }
 }
 
-const costBreakdown = (config: TaskConfig, dataType: DataType) => {
-  const systemCosts = {
-    base_cost: 10,
-    dp_cost_per_labeller: 10,
-    video_cost: 10,
-    audio_cost: 10,
-    image_cost: 5,
-    text_cost: 1,
-    multiple_choice_cost: 1,
-    task_voice_cost: 10,
-    task_text_cost: 5,
-    task_image_cost: 10,
-    task_video_cost: 20,
-    task_audio_cost: 15,
-    task_csv_cost: 8,
-  }
+const costBreakdown = (
+  systemCosts: SystemCosts,
+  config: TaskConfig,
+  dataType: DataType
+) => {
   const taskCount = config.tasks.length
   const labellersPerItem = config.labellersRequired
   const totalLabellers = taskCount * labellersPerItem
@@ -110,14 +99,9 @@ const costBreakdown = (config: TaskConfig, dataType: DataType) => {
 
   // Calculate total cost
   const totalTaskTypeCost = taskTypeCost * taskCount
-  const totalInputTypeCost = inputTypeCost * totalLabellers
+  const totalInputTypeCost = inputTypeCost
   const totalLabellerCost = dpCostPerLabeller * totalLabellers
-  console.log(
-    baseCost,
-    totalTaskTypeCost,
-    totalInputTypeCost,
-    totalLabellerCost
-  )
+
   const totalCost =
     baseCost + totalTaskTypeCost + totalInputTypeCost + totalLabellerCost
 

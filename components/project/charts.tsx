@@ -97,17 +97,17 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
   const statusDistribution = [
     {
       name: 'Completed',
-      value: chartData?.data.pie_chart_data.completed || 0,
+      value: chartData?.data.pie_chart_data.completed || 0.2,
       color: '#00C49F',
     },
     {
       name: 'In Progress',
-      value: chartData?.data.pie_chart_data.in_progress || 0,
+      value: chartData?.data.pie_chart_data.in_progress || 0.2,
       color: '#0088FE',
     },
     {
       name: 'Pending',
-      value: chartData?.data.pie_chart_data.pending || 0,
+      value: chartData?.data.pie_chart_data.pending || 0.2,
       color: '#FFBB28',
     },
   ]

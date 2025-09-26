@@ -1,5 +1,7 @@
 import { InputType } from '@/components/project/task/task-configurations'
 import { AxiosClient } from '@/utils/axios'
+import { ApiResponse } from './user'
+import { SystemCosts } from '@/app/(dashboard)/(clients)/client/projects/[id]/tasks/new/datapoint-cost'
 
 const axiosClient = new AxiosClient()
 
@@ -103,6 +105,12 @@ export const listTasksClusterInProject = async (projectId: string) => {
 export const exportToCSV = async (id: string) => {
   const response = await axiosClient.get<string>(
     `/tasks/cluster/${id}/export-to-csv/`
+  )
+  return response.data
+}
+export const getCostBreakdown = async () => {
+  const response = await axiosClient.get<ApiResponse<SystemCosts>>(
+    `/system/cost-settings/`
   )
   return response.data
 }
