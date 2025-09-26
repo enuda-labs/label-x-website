@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
 import { AxiosError } from "axios"
 import { toast } from "sonner"
@@ -27,8 +26,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import Image from "next/image"
-import { fetchTaskById, fetchTaskProgress, assignTaskToMe } from "@/services/apis/clusters"
-import { TaskProgress } from "@/types/taskProgress"
+import { fetchTaskById, assignTaskToMe } from "@/services/apis/clusters"
 import { ApiResponse } from "@/types/ApiResponse"
 
 // ---------------- Types ----------------
@@ -97,11 +95,10 @@ const LabelTask = () => {
   const [taskData, setTaskData] = useState<ApiTaskResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [progressData, setProgressData] = useState<TaskProgress | null>(null)
+
 
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
   const [notes, setNotes] = useState("")
-  const [completedItems, setCompletedItems] = useState(0)
 
   // assign flow
   const [assigning, setAssigning] = useState(false)
@@ -116,8 +113,7 @@ const LabelTask = () => {
       const payload: ApiTaskResponse = "data" in resp && resp.data ? resp.data : (resp as ApiTaskResponse)
       setTaskData(payload || null)
 
-      const progress = await fetchTaskProgress(idToFetch)
-      setProgressData(progress)
+
     } catch (err) {
       // show friendly error
       const error = err as AxiosError<ApiError>
@@ -147,7 +143,6 @@ const LabelTask = () => {
     }
 
     const idToFetch = Number(reviewTaskId)
-    setCompletedItems(0)
     setCurrentItemIndex(0)
     setNotes("")
     loadTask(idToFetch)
@@ -163,7 +158,7 @@ const LabelTask = () => {
         description: "You can now work on this cluster.",
       })
       setConfirmAssignOpen(false)
-      // refresh task & progress after assigning
+
       router.push(`/label/tasks`)
     } catch (err) {
       // Robust, user-friendly error handling
@@ -246,12 +241,7 @@ const LabelTask = () => {
   const totalItems = items.length
   const currentItem = items[currentItemIndex] ?? { data: "" }
   const labellingChoices = taskData.choices ?? taskData.labelling_choices ?? []
-  const progress =
-    progressData && progressData.total_tasks > 0
-      ? Math.round((progressData.completed_tasks / progressData.total_tasks) * 100)
-      : totalItems > 0
-      ? Math.round((completedItems / totalItems) * 100)
-      : 0
+
 
   const choicesToShow = labellingChoices.length > 0 ? labellingChoices : FALLBACK_LABELS
   const itemType = currentItem?.task_type ?? taskData.task_type ?? "TEXT"
@@ -278,7 +268,6 @@ const LabelTask = () => {
           </Button>
 
           <div className="flex items-center gap-3">
-            <Badge variant="outline">{progressData?.completed_tasks ?? completedItems} completed</Badge>
             <Button variant="default" size="sm" onClick={() => setConfirmAssignOpen(true)} disabled={assigning}>
               {assigning ? "Assigning..." : "Assign to Me"}
             </Button>
@@ -286,18 +275,7 @@ const LabelTask = () => {
         </div>
       </header>
 
-      {/* PROGRESS */}
-      <div className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium">Progress</span>
-            <span className="text-muted-foreground text-sm">
-              {progressData ? `Progress: ${progressData.completed_tasks}/${progressData.total_tasks}` : `${progress}% complete`}
-            </span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-      </div>
+
 
       {/* MAIN CONTENT */}
       <div className="container mx-auto px-4 py-8">
