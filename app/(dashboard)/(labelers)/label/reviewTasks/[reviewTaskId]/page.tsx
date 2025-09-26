@@ -325,11 +325,21 @@ const LabelTask = () => {
                   )}
 
                   {itemType === "IMAGE" &&
-                    (currentItem?.file_url ? (
-                      <Image src={currentItem.file_url} alt={currentItem.file_name || "Task Image"} className="w-full max-h-[400px] rounded-lg shadow object-contain" />
-                    ) : (
-                      <p className="text-sm text-gray-500"><AlertCircle className="inline-block mr-1" />No image available</p>
-                    ))}
+    (currentItem?.file_url ? (
+      <div className="relative w-full h-[400px] flex items-center justify-center">
+        <Image
+          src={currentItem.file_url}
+          alt={currentItem.file_name || "Task Image"}
+          fill
+          className="rounded-lg shadow object-contain"
+        />
+      </div>
+    ) : (
+      <p className="text-sm text-gray-500">
+        <AlertCircle className="inline-block mr-1" />No image available
+      </p>
+    ))}
+
 
                   {itemType === "VIDEO" &&
                     (currentItem?.file_url ? (
@@ -398,7 +408,7 @@ const LabelTask = () => {
 
       {/* Confirmation Modal for Assign */}
       <Dialog open={confirmAssignOpen} onOpenChange={setConfirmAssignOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg sm:top-1/2 sm:-translate-y-1/2 flex flex-col items-center justify-center">
           <DialogHeader>
             <DialogTitle>Confirm Assignment</DialogTitle>
             <DialogDescription>

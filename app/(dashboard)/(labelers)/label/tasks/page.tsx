@@ -37,7 +37,7 @@ import {
 } from '@/services/apis/clusters'
 import { AssignedCluster } from '@/types/clusters'
 import { getUserDetails } from '@/services/apis/user'
-
+import DashboardLayout from '@/components/shared/dashboard-layout'
 
 
 const getTypeIcon = (type: string) => {
@@ -90,32 +90,44 @@ const ProjectsContent = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const [assigned, pending] = await Promise.all([
           fetchAssignedClusters(),
           fetchPendingClusters(),
-        ])
+        ]);
 
-        // Add status dynamically
-        const assignedWithStatus = assigned.map((task) => ({
-          ...task,
-          status: task.pending_tasks === 0 ? 'completed' : 'assigned',
-        }))
-        const pendingWithStatus = pending.map((task) => ({
-          ...task,
-          status: 'pending',
-        }))
+        // helper to sort newest first
+        const sortNewest = (a: AssignedCluster, b: AssignedCluster) => {
+    return b.id - a.id;
+  }
 
-        setClusters(assignedWithStatus)
-        setPendingClusters(pendingWithStatus)
+
+        // Add status dynamically & sort
+        const assignedWithStatus = assigned
+          .map((task) => ({
+            ...task,
+            status: task.pending_tasks === 0 ? "completed" : "assigned",
+          }))
+          .sort(sortNewest);
+
+        const pendingWithStatus = pending
+          .map((task) => ({
+            ...task,
+            status: "pending",
+          }))
+          .sort(sortNewest);
+
+        setClusters(assignedWithStatus);
+        setPendingClusters(pendingWithStatus);
       } catch (err) {
-        console.error('Error fetching clusters', err)
+        console.error("Error fetching clusters", err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    load()
-  }, [])
+    };
+    load();
+  }, []);
+
 
   const filteredTasks = useMemo(() => {
     return clusters.filter((task) => {
@@ -272,16 +284,15 @@ const ProjectsContent = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="bg-card/20 border-b backdrop-blur-sm">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <span className="text-muted-foreground">All Projects</span>
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <User className="h-4 w-4" />
-            {userLoading ? 'Loading...' : `${username} (${role})`}
-          </div>
-        </div>
-      </header>
+    <DashboardLayout title="All Projects">
+    <div className="flex items-center justify-end mb-4 gap-3">
+       <div className="text-muted-foreground flex items-center gap-2 text-sm">
+         <User className="h-4 w-4" />
+         <span suppressHydrationWarning>
+           {userLoading ? 'Loading...' : `${username} (${role})`}
+         </span>
+       </div>
+     </div>
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -357,7 +368,7 @@ const ProjectsContent = () => {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+   </DashboardLayout>
   )
 }
 

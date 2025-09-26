@@ -13,6 +13,7 @@ import {
   ImageIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import DashboardLayout from '@/components/shared/dashboard-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -56,40 +57,36 @@ const LabelerDashboard = () => {
   else role = 'User'
 
   useEffect(() => {
-    const loadClusters = async () => {
-      try {
-        setLoading(true)
-        const data = await fetchAssignedClusters()
-        setClusters(data)
-      } catch {
-        setError('Failed to load tasks')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const loadClusters = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchAssignedClusters();
 
-    loadClusters()
-  }, [])
+      // Sort by id (newest first)
+      const sorted = [...data].sort((a, b) => b.id - a.id);
+
+      setClusters(sorted);
+    } catch {
+      setError("Failed to load tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadClusters();
+}, []);
+
 
   return (
-    <div className="min-h-screen">
-      <header className="bg-card/20 border-b backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground">Labeler Dashboard</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                <User className="h-4 w-4" />
-                <span suppressHydrationWarning>
-                  {userLoading ? 'Loading...' : `${username} (${role})`}
-                </span>
-              </div>
-            </div>
-          </div>
+     <DashboardLayout title="Labeler Dashboard">
+     <div className="flex items-center justify-end mb-4 gap-3">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <User className="h-4 w-4" />
+          <span suppressHydrationWarning>
+            {userLoading ? 'Loading...' : `${username} (${role})`}
+          </span>
         </div>
-      </header>
+      </div>
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -282,7 +279,7 @@ const LabelerDashboard = () => {
           </Link>
         </div>
       </main>
-    </div>
+     </DashboardLayout>
   )
 }
 
