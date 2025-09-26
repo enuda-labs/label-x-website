@@ -22,10 +22,11 @@ import DataTypeSelection, {
 import TaskConfiguration, {
   TaskConfig,
 } from '@/components/project/task/task-configurations'
-import { createTaskCluster } from '@/services/apis/task'
+import { createTaskCluster, getCostBreakdown } from '@/services/apis/task'
 import { TaskItem } from '@/components/project/task/task-item'
 import { isAxiosError } from 'axios'
 import Image from 'next/image'
+import { useQuery } from '@tanstack/react-query'
 import costBreakdown from './datapoint-cost'
 
 enum AnnotationStep {
@@ -55,6 +56,11 @@ const Annotate = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const router = useRouter()
+
+  const { data: system_costs } = useQuery({
+    queryKey: ['system_costs'],
+    queryFn: getCostBreakdown,
+  })
 
   const stepLabels = {
     [AnnotationStep.DATA_TYPE]: 'Select Data Type',
@@ -99,6 +105,12 @@ const Annotate = () => {
   }
 
   const handleNext = () => {
+    if (
+      currentStep === AnnotationStep.CONFIGURE &&
+      taskConfig.labellersRequired < 15
+    ) {
+      return toast('Minimum required labellers is 15')
+    }
     const steps = Object.values(AnnotationStep)
     const currentIndex = steps.indexOf(currentStep)
     if (currentIndex < steps.length - 1) {
@@ -583,7 +595,12 @@ const Annotate = () => {
                         </h4>
                         <p className="text-sm">
                           {dataType &&
-                            costBreakdown(taskConfig, dataType).totalCost}
+                            system_costs &&
+                            costBreakdown(
+                              system_costs?.data,
+                              taskConfig,
+                              dataType
+                            ).totalCost}
                         </p>
                       </div>
                     </div>

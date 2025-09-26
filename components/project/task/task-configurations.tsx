@@ -368,12 +368,10 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
               </Label>
               <Input
                 id="labellers"
-                type="number"
-                min="15"
                 value={config.labellersRequired}
                 onChange={(e) =>
                   updateConfig({
-                    labellersRequired: parseInt(e.target.value) || 15,
+                    labellersRequired: parseInt(e.target.value || '0'),
                   })
                 }
                 className="border-border focus:border-primary"
