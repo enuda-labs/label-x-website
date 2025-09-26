@@ -74,9 +74,6 @@ const AvailableClustersPage = () => {
   else if (userData?.user?.is_reviewer) role = 'Reviewer'
   else role = 'User'
 
-  const userId = userData?.user?.id;
-
-
   // Load clusters on mount
   useEffect(() => {
     const loadClusters = async () => {
@@ -184,31 +181,23 @@ const AvailableClustersPage = () => {
                 Labellers allowed: {cluster.labeller_per_item_count}
               </div>
 
-
               <div className="flex gap-3">
-    {/* Show "Assign to Me" if user not assigned */}
-      {userId && cluster.assigned_reviewers?.includes(userId) && (
-      <Button
-        onClick={() => setSelectedCluster(cluster)}
-        disabled={assigning === cluster.id}
-      >
-        Assign to Me
-        <ChevronRight className="ml-2 h-4 w-4" />
-      </Button>
-    )}
+                <Button
+                  onClick={() => setSelectedCluster(cluster)}
+                  disabled={assigning === cluster.id}
+                >
+                  Assign to Me
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
 
-    {/* Show "Review Task" if user assigned */}
-    {userId && cluster.assigned_reviewers?.includes(userId) && (
-    <Button
-      variant="outline"
-      onClick={() => router.push(`/label/reviewTasks/${cluster.id}`)}
-    >
-      Review Task
-    </Button>
-  )}
 
-  </div>
-
+                <Button
+                  variant="outline"
+                   onClick={() => router.push(`/label/reviewTasks/${cluster.id}`)}
+                >
+                  Review Task
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
