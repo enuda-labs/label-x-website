@@ -100,6 +100,13 @@ export const listTasksClusterInProject = async (projectId: string) => {
   return response.data
 }
 
+export const exportToCSV = async (id: string) => {
+  const response = await axiosClient.get<string>(
+    `/tasks/cluster/${id}/export-to-csv/`
+  )
+  return response.data
+}
+
 export type ReviewTask = {
   task_type: string
   id: string

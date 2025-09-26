@@ -5,11 +5,12 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getProject } from '@/services/apis/project'
-import { listTasksClusterInProject } from '@/services/apis/task'
-import { useQuery } from '@tanstack/react-query'
+import { exportToCSV, listTasksClusterInProject } from '@/services/apis/task'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Plus, Search } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import React, { useState } from 'react'
+import { toast } from 'sonner'
 
 const ProjectTasks = () => {
   const { id }: { id: string } = useParams()
@@ -24,6 +25,25 @@ const ProjectTasks = () => {
   const { data: clusters = [], isPending: loading } = useQuery({
     queryKey: ['projectClusters', id],
     queryFn: () => listTasksClusterInProject(id),
+  })
+
+  const exportMutation = useMutation({
+    mutationFn: exportToCSV,
+    onSuccess: (response) => {
+      console.log('response', response)
+      toast('Export Successful')
+      const url = window.URL.createObjectURL(new Blob([response]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'tasks-export.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    },
+    onError: () => {
+      toast('Failed to export data')
+    },
   })
 
   const formatDate = (dateString: string) => {
@@ -143,7 +163,7 @@ const ProjectTasks = () => {
                     </div> */}
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                     <div>
                       <p className="mb-1 grid text-xs text-white/40">
                         Assigned Reviewers
@@ -163,6 +183,16 @@ const ProjectTasks = () => {
                       <p className="text-sm text-white">
                         {formatDate(cluster.deadline)}
                       </p>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={() => exportMutation.mutate(cluster.id)}
+                        disabled={exportMutation.isPending}
+                      >
+                        {exportMutation.isPending
+                          ? 'Exporting...'
+                          : 'Export Labels'}
+                      </Button>
                     </div>
                   </div>
                 </div>
