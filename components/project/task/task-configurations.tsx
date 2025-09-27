@@ -22,6 +22,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { DataType } from '../data-type-selection'
 import TaskItem, { TaskItem as TaskItemType } from './task-item'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useQuery } from '@tanstack/react-query'
+import { listReviewersDomains } from '@/services/apis/reviewers'
 
 export type InputType = 'multiple_choice' | 'video' | 'voice' | 'image' | 'text'
 
@@ -38,6 +47,7 @@ export interface LabellingChoice {
 export interface TaskConfig {
   taskName: string
   description: string
+  labeler_domain: number
   inputType: InputType
   labellingChoices: LabellingChoice[]
   instructions: string
@@ -54,6 +64,7 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
   const [config, setConfig] = useState<TaskConfig>({
     taskName: initialConfig.taskName || '',
     description: initialConfig.description || '',
+    labeler_domain: initialConfig.labeler_domain || 0,
     inputType: initialConfig.inputType || 'multiple_choice',
     labellingChoices: initialConfig.labellingChoices || [],
     instructions: initialConfig.instructions || '',
@@ -63,6 +74,11 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
   })
 
   const [newChoice, setNewChoice] = useState('')
+
+  const { data: domains } = useQuery({
+    queryKey: ['labeler_domains'],
+    queryFn: listReviewersDomains,
+  })
 
   const updateConfig = (updates: Partial<TaskConfig>) => {
     const newConfig = { ...config, ...updates }
@@ -191,6 +207,34 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
               onChange={(e) => updateConfig({ description: e.target.value })}
               className="border-border focus:border-primary min-h-[100px] resize-none"
             />
+          </div>
+
+          {/* Field */}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium">
+              Labeler Field *
+            </Label>
+            <Select
+              onValueChange={(value) =>
+                updateConfig({ labeler_domain: Number(value) })
+              }
+              value={
+                config.labeler_domain
+                  ? config.labeler_domain.toString()
+                  : undefined
+              }
+            >
+              <SelectTrigger className="w-full" style={{ height: 44 }}>
+                <SelectValue placeholder="Select Field" />
+              </SelectTrigger>
+              <SelectContent>
+                {domains?.map((domain) => (
+                  <SelectItem key={domain.id} value={domain.id.toString()}>
+                    {domain.domain}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Input Type Selection */}

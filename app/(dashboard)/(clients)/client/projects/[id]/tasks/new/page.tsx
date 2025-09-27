@@ -28,6 +28,7 @@ import { isAxiosError } from 'axios'
 import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
 import costBreakdown from './datapoint-cost'
+import { getMyPlan } from '@/services/apis/subscription'
 
 enum AnnotationStep {
   DATA_TYPE = 'data_type',
@@ -48,6 +49,7 @@ const Annotate = () => {
     description: '',
     inputType: 'multiple_choice',
     labellingChoices: [],
+    labeler_domain: 0,
     instructions: '',
     labellersRequired: 15,
     tasks: [{ id: '1', data: '', file: null }],
@@ -60,6 +62,11 @@ const Annotate = () => {
   const { data: system_costs } = useQuery({
     queryKey: ['system_costs'],
     queryFn: getCostBreakdown,
+  })
+
+  const { data: myPlan } = useQuery({
+    queryKey: ['myPlan'],
+    queryFn: getMyPlan,
   })
 
   const stepLabels = {
@@ -183,8 +190,6 @@ const Annotate = () => {
               },
             }
 
-      console.log(taskBody)
-
       await createTaskCluster({
         tasks: taskConfig.tasks.map((task) => taskBody(task)),
         labelling_choices: taskConfig.labellingChoices,
@@ -208,7 +213,8 @@ const Annotate = () => {
       if (isAxiosError(error))
         toast('Submission Failed', {
           description:
-            error.response?.data ||
+            error.response?.data.error ||
+            error.response?.data.message ||
             'There was an error submitting your task. Please try again.',
         })
       else
@@ -593,14 +599,28 @@ const Annotate = () => {
                         <h4 className="text-muted-foreground text-sm font-medium">
                           Data points to be used
                         </h4>
-                        <p className="text-sm">
+                        <p
+                          className={`text-sm ${
+                            system_costs &&
+                            dataType &&
+                            myPlan &&
+                            myPlan.user_data_points.data_points_balance <
+                              costBreakdown(
+                                system_costs?.data,
+                                taskConfig,
+                                dataType
+                              ).totalCost
+                              ? 'text-red-500'
+                              : 'text-green-500'
+                          }`}
+                        >
                           {dataType &&
                             system_costs &&
                             costBreakdown(
                               system_costs?.data,
                               taskConfig,
                               dataType
-                            ).totalCost}
+                            ).totalCost?.toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -640,6 +660,7 @@ const Annotate = () => {
                     setTaskConfig({
                       taskName: '',
                       description: '',
+                      labeler_domain: 0,
                       inputType: 'multiple_choice',
                       labellingChoices: [],
                       instructions: '',

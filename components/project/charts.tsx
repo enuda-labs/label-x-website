@@ -97,17 +97,17 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
   const statusDistribution = [
     {
       name: 'Completed',
-      value: chartData?.data.pie_chart_data.completed || 0.2,
+      value: chartData?.data.pie_chart_data.completed || 0,
       color: '#00C49F',
     },
     {
       name: 'In Progress',
-      value: chartData?.data.pie_chart_data.in_progress || 0.2,
+      value: chartData?.data.pie_chart_data.in_progress || 0,
       color: '#0088FE',
     },
     {
       name: 'Pending',
-      value: chartData?.data.pie_chart_data.pending || 0.2,
+      value: chartData?.data.pie_chart_data.pending || 0,
       color: '#FFBB28',
     },
   ]
@@ -248,7 +248,9 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={statusDistribution}
+                    data={statusDistribution.filter((entry) =>
+                      Number(entry.value)
+                    )}
                     cx="50%"
                     cy="50%"
                     outerRadius={100}
@@ -258,9 +260,11 @@ export const ProjectCharts = ({ projectId }: { projectId: number }) => {
                       `${name} ${(percent * 100).toFixed(0)}%`
                     }
                   >
-                    {statusDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    {statusDistribution
+                      .filter((entry) => Number(entry.value))
+                      .map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
