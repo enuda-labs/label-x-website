@@ -40,7 +40,6 @@ const getTypeIcon = (type: string) => {
 const LabelerDashboard = () => {
   const [clusters, setClusters] = useState<AssignedCluster[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   // fetch user details
   const { data: userData, isLoading: userLoading } = useQuery({
@@ -57,29 +56,38 @@ const LabelerDashboard = () => {
   else role = 'User'
 
   useEffect(() => {
-  const loadClusters = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchAssignedClusters();
+    const load = async () => {
+      try {
+        setLoading(true)
+        const assigned = await fetchAssignedClusters()
 
-      // Sort by id (newest first)
-      const sorted = [...data].sort((a, b) => b.id - a.id);
+        const sortNewest = (a: AssignedCluster, b: AssignedCluster) => b.id - a.id
 
-      setClusters(sorted);
-    } catch {
-      setError("Failed to load tasks");
-    } finally {
-      setLoading(false);
+        // 🔹 Active tasks (not yet completed)
+        const activeAssigned = assigned
+          .filter((task) => task.pending_tasks > 0)
+          .map((task) => ({ ...task, status: 'assigned' }))
+          .sort(sortNewest)
+
+        // 🔹 Completed tasks
+        const completedAssigned = assigned
+          .filter((task) => task.pending_tasks === 0)
+          .map((task) => ({ ...task, status: 'completed' }))
+          .sort(sortNewest)
+
+        setClusters([...activeAssigned, ...completedAssigned])
+      } catch (err) {
+        console.error('Error fetching clusters', err)
+      } finally {
+        setLoading(false)
+      }
     }
-  };
-
-  loadClusters();
-}, []);
-
+    load()
+  }, [])
 
   return (
-     <DashboardLayout title="Labeler Dashboard">
-     <div className="flex items-center justify-end mb-4 gap-3">
+    <DashboardLayout title="Labeler Dashboard">
+      <div className="flex items-center justify-end mb-4 gap-3">
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <User className="h-4 w-4" />
           <span suppressHydrationWarning>
@@ -193,7 +201,6 @@ const LabelerDashboard = () => {
           <h2 className="text-xl font-semibold">Current Tasks</h2>
 
           {loading && <p>Loading tasks...</p>}
-          {error && <p className="text-red-500">{error}</p>}
 
           <div className="grid gap-6">
             {clusters.slice(0, 3).map((task) => (
@@ -239,7 +246,11 @@ const LabelerDashboard = () => {
                     <div className="flex flex-wrap gap-2">
                       {task.choices?.length ? (
                         task.choices.map((choice, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {choice.option_text}
                           </Badge>
                         ))
@@ -279,7 +290,7 @@ const LabelerDashboard = () => {
           </Link>
         </div>
       </main>
-     </DashboardLayout>
+    </DashboardLayout>
   )
 }
 

@@ -1159,46 +1159,29 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
 
 
   <div className="space-y-3">
-{inputType === 'video' || inputType === 'voice' || inputType === 'image' ? (
-<Button
-onClick={() => {
-  const idToUse = currentItem?.id
-  if (!idToUse) return
-  // pass the normalized inputType so recorder knows which mode to open
-  router.push(`/label/recorder/${idToUse}?type=${inputType}`)
-}}
-className="w-full"
-variant="default"
->
-<Save className="mr-2 h-4 w-4" />
-{inputType === 'voice'
-  ? 'Go to Voice Recorder'
-  : inputType === 'video'
-  ? 'Go to Video Recorder'
-  : 'Go to Image Uploader'}
-</Button>
-) : (
-<Button
-onClick={handleSubmitLabelLocal}
-disabled={inputType === 'multiple_choice' && !selectedCategory}
-className="w-full"
-variant="default"
->
-<Save className="mr-2 h-4 w-4" />
-{inputType === 'multiple_choice'
-  ? isLastItem
-    ? 'Complete Task'
-    : 'Submit Choice'
-  : isLastItem
-  ? 'Complete Task'
-  : 'Submit & Continue'}
-</Button>
-)}
+    {(inputType === 'multiple_choice' || inputType === 'text') && (
+      <Button
+        onClick={handleSubmitLabelLocal}
+        disabled={inputType === 'multiple_choice' && !selectedCategory}
+        className="w-full"
+        variant="default"
+      >
+        <Save className="mr-2 h-4 w-4" />
+        {inputType === 'multiple_choice'
+          ? isLastItem
+            ? 'Complete Task'
+            : 'Submit Choice'
+          : isLastItem
+          ? 'Complete Task'
+          : 'Submit & Continue'}
+      </Button>
+    )}
 
-<p className="text-muted-foreground text-center text-xs">
-* All items must be labeled to complete the task
-</p>
-</div>
+    <p className="text-muted-foreground text-center text-xs">
+      * All items must be labeled to complete the task
+    </p>
+  </div>
+
 
 
 
