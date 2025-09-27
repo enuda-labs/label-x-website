@@ -2,6 +2,10 @@ import { AxiosClient } from '@/utils/axios'
 
 const axiosClient = new AxiosClient()
 
+export const listReviewersDomains = async () => {
+  const response = await axiosClient.get<Domains[]>('/reviewer/domains/')
+  return response.data
+}
 export const listReviewers = async () => {
   const response = await axiosClient.get<Reviewer[]>('/account/reviewers/')
   return response.data
@@ -57,4 +61,11 @@ export interface Reviewer {
 interface AddReviewerPayload {
   user_id: number
   group_id: number
+}
+
+export interface Domains {
+  id: number
+  domain: string
+  created_at: string
+  updated_at: string
 }

@@ -15,6 +15,14 @@ interface MyPlanResponse {
   subscribed_at: string
   expires_at: string
   request_balance: number
+  user_data_points: {
+    id: number
+    used_data_points: number
+    data_points_balance: number
+    created_at: string
+    updated_at: string
+    user: number
+  }
 }
 
 interface initializeResponse {

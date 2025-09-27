@@ -37,7 +37,8 @@ export interface RegisterBody {
   username: string
   email: string
   password: string
-  role: string
+  role?: string
+  domains?: number[]
 }
 
 export interface RegisterResponse {

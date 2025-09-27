@@ -6,6 +6,7 @@ import WelcomeHeader from '@/components/auth/welcome-header'
 
 import { Users, Tags } from 'lucide-react'
 import FloatingElements from '@/components/auth/auth-floating-elements'
+import Link from 'next/link'
 
 const RoleSelection = () => {
   const router = useRouter()
@@ -69,7 +70,7 @@ const RoleSelection = () => {
               {/* Company Card */}
               <Card
                 className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
-                onClick={() => handleRoleSelect('organization')}
+                onClick={() => handleRoleSelect('individual')}
               >
                 <div className="space-y-4 text-center">
                   <div className="from-primary to-primary-glow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r transition-transform duration-300 group-hover:scale-110">
@@ -97,7 +98,7 @@ const RoleSelection = () => {
 
               <Card
                 className="group cursor-pointer border-white/20 bg-white/10 p-8 shadow-2xl shadow-black/20 backdrop-blur-lg transition-all duration-300 hover:bg-white/15"
-                onClick={() => router.push('/auth/login-only')}
+                onClick={() => handleRoleSelect('labeler')}
               >
                 <div className="space-y-4 text-center">
                   <div className="from-primary to-primary-glow mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r transition-transform duration-300 group-hover:scale-110">
@@ -109,7 +110,13 @@ const RoleSelection = () => {
                     specialists who provide high-quality annotation services to
                     clients across various industries and project scales.
                   </p>
-                  <Button className="mt-6 h-11 w-full transition-all duration-300">
+                  <Button
+                    className="mt-6 h-11 w-full transition-all duration-300"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRoleSelect('labeler')
+                    }}
+                  >
                     Continue as a Labeler
                   </Button>
                 </div>
@@ -119,12 +126,12 @@ const RoleSelection = () => {
             <div className="mt-8 text-center">
               <p className="text-sm text-white/60">
                 Already have an account?{' '}
-                <button
-                  onClick={() => router.push('/auth/login')}
+                <Link
+                  href="/auth/login"
                   className="text-primary hover:text-primary-glow underline transition-colors"
                 >
                   Sign in here
-                </button>
+                </Link>
               </p>
             </div>
           </div>

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Eye, EyeOff, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,14 @@ import { register } from '@/services/apis/auth'
 import { AxiosError } from 'axios'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
 import Link from 'next/link'
+import { listReviewersDomains } from '@/services/apis/reviewers'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export const Signup = () => {
   const [email, setEmail] = useState('')
@@ -20,6 +28,7 @@ export const Signup = () => {
   const [company, setCompany] = useState('')
   const [error, setError] = useState('')
   const [passwordTouched, setPasswordTouched] = useState(false)
+  const [selectedDomains, setSelectedDomains] = useState<number[]>([])
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -36,9 +45,17 @@ export const Signup = () => {
   }
 
   const isPasswordValid = Object.values(passwordValidation).every(Boolean)
+  const isClient = role === 'individual'
+  const isLabeler = role === 'labeler'
+
+  const { data: domains } = useQuery({
+    queryKey: ['labeler_domains'],
+    queryFn: listReviewersDomains,
+    enabled: isLabeler,
+  })
 
   useEffect(() => {
-    if (!role || (role !== 'individual' && role !== 'organization')) {
+    if (!role || (role !== 'individual' && role !== 'labeler')) {
       router.push('/auth/role')
     }
   }, [router, role])
@@ -54,7 +71,8 @@ export const Signup = () => {
         username: userData.name,
         email: userData.email,
         password: userData.password,
-        role: 'organization',
+        role: isLabeler ? 'reviewer' : undefined,
+        domains: selectedDomains,
       })
       return response
     },
@@ -86,7 +104,7 @@ export const Signup = () => {
     e.preventDefault()
     setError('')
 
-    if (!role) return router.push('/auth/role')
+    if (!isClient && !isLabeler) return router.push('/auth/role')
 
     if (!isPasswordValid) {
       setError('Please ensure your password meets all requirements')
@@ -135,19 +153,41 @@ export const Signup = () => {
             />
           </div>
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="company">Company Name (Optional)</Label>
-          <Input
-            id="company"
-            type="text"
-            placeholder="Acme Inc."
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            className="border-white/10 bg-white/5 text-white"
-          />
-        </div>
-
+        {isClient && (
+          <div className="space-y-2">
+            <Label htmlFor="company">Company Name (Optional)</Label>
+            <Input
+              id="company"
+              type="text"
+              placeholder="Acme Inc."
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              className="border-white/10 bg-white/5 text-white"
+            />
+          </div>
+        )}
+        {isLabeler && (
+          <div className="space-y-2">
+            <Select
+              onValueChange={(value) => setSelectedDomains([Number(value)])}
+              value={selectedDomains?.toString()}
+            >
+              <SelectTrigger
+                className="w-full border-white/10 bg-white/5"
+                style={{ height: 44 }}
+              >
+                <SelectValue placeholder="Select Field" />
+              </SelectTrigger>
+              <SelectContent>
+                {domains?.map((domain) => (
+                  <SelectItem key={domain.id} value={domain.id.toString()}>
+                    {domain.domain}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="signupPassword">Password *</Label>
           <div className="relative">
@@ -258,7 +298,11 @@ export const Signup = () => {
         <Button
           type="submit"
           className="bg-primary hover:bg-primary/90 h-12 w-full"
-          disabled={signupMutation.isPending || !isPasswordValid}
+          disabled={
+            signupMutation.isPending ||
+            !isPasswordValid ||
+            (isLabeler && !selectedDomains.length)
+          }
         >
           {signupMutation.isPending ? 'Creating account...' : 'Create Account'}
         </Button>
