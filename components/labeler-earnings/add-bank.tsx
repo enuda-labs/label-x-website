@@ -83,15 +83,24 @@ export const BanksContent = () => {
     }
   }
 
-  const openViewBankModal = (bank: BankAccount) => {
-    setSelectedBank(bank)
-    setNewBank({
-      account_number: bank.account_number,
-      bank_code: bank.bank_code,
-      platform: bank.platform,
-    })
-    setShowBankModal(true)
+  const openViewBankModal = async (bank: BankAccount) => {
+  setSelectedBank(bank)
+  setNewBank({
+    account_number: bank.account_number,
+    bank_code: bank.bank_code,
+    platform: bank.platform,
+  })
+  setShowBankModal(true)
+
+  try {
+    const banks = await fetchPaystackBanks()
+    setPaystackBanks(banks)
+  } catch (error: unknown) {
+    console.error('Error fetching Paystack banks:', error)
+    toast('Warning', { description: 'Unable to load bank list right now.' })
   }
+}
+
 
   const handleSaveBank = async () => {
     if (!newBank.account_number || !newBank.bank_code) {
