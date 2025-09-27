@@ -49,6 +49,7 @@ const Annotate = () => {
     description: '',
     inputType: 'multiple_choice',
     labellingChoices: [],
+    labeler_domain: 0,
     instructions: '',
     labellersRequired: 15,
     tasks: [{ id: '1', data: '', file: null }],
@@ -659,6 +660,7 @@ const Annotate = () => {
                     setTaskConfig({
                       taskName: '',
                       description: '',
+                      labeler_domain: 0,
                       inputType: 'multiple_choice',
                       labellingChoices: [],
                       instructions: '',
