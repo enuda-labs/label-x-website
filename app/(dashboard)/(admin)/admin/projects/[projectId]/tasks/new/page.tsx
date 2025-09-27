@@ -44,6 +44,7 @@ const Annotate = () => {
   const [taskConfig, setTaskConfig] = useState<TaskConfig>({
     taskName: '',
     description: '',
+    labeler_domain: 0,
     inputType: 'multiple_choice',
     labellingChoices: [],
     instructions: '',
@@ -572,6 +573,7 @@ const Annotate = () => {
                     setTaskConfig({
                       taskName: '',
                       description: '',
+                      labeler_domain: 0,
                       inputType: 'multiple_choice',
                       labellingChoices: [],
                       instructions: '',
