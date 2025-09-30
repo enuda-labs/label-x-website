@@ -220,4 +220,6 @@ interface TaskClusterPayload {
   annotation_method: 'manual'
   project: number
   labeler_domain: number
+  name: string
+  description: string
 }
