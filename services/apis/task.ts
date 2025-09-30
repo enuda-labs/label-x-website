@@ -219,4 +219,5 @@ interface TaskClusterPayload {
   task_type: 'TEXT' | 'AUDIO' | 'IMAGE' | 'VIDEO' | 'CSV' | 'PDF'
   annotation_method: 'manual'
   project: number
+  labeler_domain: number
 }
