@@ -71,7 +71,7 @@ export const Signup = () => {
         username: userData.name,
         email: userData.email,
         password: userData.password,
-        role: isLabeler ? 'reviewer' : undefined,
+        role: isLabeler ? 'reviewer' : 'organization',
         domains: selectedDomains,
       })
       return response
