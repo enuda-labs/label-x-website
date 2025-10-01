@@ -201,6 +201,8 @@ const Annotate = () => {
         annotation_method: 'manual',
         project: Number(projectId),
         labeler_domain: taskConfig.labeler_domain,
+        name: taskConfig.taskName,
+        description: taskConfig.description,
         ...(uploadedFileUrl ? { file_url: uploadedFileUrl } : {}),
       })
 
