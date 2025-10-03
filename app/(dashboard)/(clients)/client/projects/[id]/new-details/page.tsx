@@ -4,18 +4,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
-import { Input } from '@/components/ui/input'
 import {
   CheckCircle2,
   Clock,
@@ -29,18 +19,12 @@ import {
   Calendar,
   Users,
   ArrowLeft,
-  Search,
 } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import Image from 'next/image'
 import { Label, mockProjectData } from '@/constants'
 import AllLabelersReviewsTab from '@/components/project/client/labelers-reviews-tab'
+import AllTasksTab from '@/components/project/client/all-tasks-tabs'
+import AllLabelers from '@/components/project/client/all-labelers'
 
 const getStatusIcon = (status: string) => {
   switch (status) {
@@ -399,173 +383,16 @@ const ProjectReviews = () => {
             renderLabelResponse={renderLabelResponse}
           />
           {/* All Tasks Tab */}
-          <TabsContent value="tasks">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>All Tasks</CardTitle>
-                  <Select
-                    value={selectedStatus}
-                    onValueChange={setSelectedStatus}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="COMPLETED">Completed</SelectItem>
-                      <SelectItem value="REVIEW_NEEDED">
-                        Review Needed
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="relative mb-4">
-                  <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
-                  <Input
-                    placeholder="Search tasks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <div className="max-h-[600px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Serial No.</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Reviewed</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTasks.slice(0, 50).map((task) => (
-                        <TableRow key={task.id}>
-                          <TableCell className="font-medium">
-                            {task.serial_no}
-                          </TableCell>
-                          <TableCell>{task.task_type}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={getStatusColor(task.processing_status)}
-                              className="flex w-fit items-center gap-1"
-                            >
-                              {getStatusIcon(task.processing_status)}
-                              <span className="text-xs">
-                                {task.processing_status}
-                              </span>
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {task.human_reviewed ? (
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            ) : (
-                              <Clock className="h-4 w-4 text-yellow-500" />
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {new Date(task.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {filteredTasks.length > 50 && (
-                    <p className="text-muted-foreground py-4 text-center text-sm">
-                      Showing 50 of {filteredTasks.length} tasks
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+          <AllTasksTab
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedStatus={selectedLabeler}
+            setSelectedStatus={setSelectedStatus}
+            filteredTasks={filteredTasks}
+          />
 
           {/* Labelers Tab */}
-          <TabsContent value="labelers">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {project.assigned_reviewers.map((labeler) => {
-                const submissions = project.my_labels.filter(
-                  (l) => l.labeller === labeler.id
-                ).length
-                return (
-                  <Card
-                    key={labeler.id}
-                    className="transition-shadow hover:shadow-md"
-                  >
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback>
-                              {labeler.username.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <CardTitle className="text-base">
-                              {labeler.username}
-                            </CardTitle>
-                            <p className="text-muted-foreground text-sm">
-                              {labeler.email}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge
-                          variant={labeler.is_active ? 'default' : 'outline'}
-                        >
-                          {labeler.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {labeler.domains && labeler.domains.length > 0 && (
-                        <div>
-                          <p className="mb-2 text-sm font-medium">Expertise:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {labeler.domains.map((d, i) => (
-                              <Badge
-                                key={i}
-                                variant="secondary"
-                                className="text-xs"
-                              >
-                                {d.domain}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <div className="border-t pt-3">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">Submissions:</p>
-                          <p className="text-2xl font-bold">{submissions}</p>
-                        </div>
-                        <Progress
-                          value={(submissions / project.my_labels.length) * 100}
-                          className="mt-2 h-2"
-                        />
-                        <p className="text-muted-foreground mt-1 text-xs">
-                          {(
-                            (submissions / project.my_labels.length) *
-                            100
-                          ).toFixed(1)}
-                          % of total reviews
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </TabsContent>
+          <AllLabelers project={project} />
         </Tabs>
       </div>
     </div>
