@@ -25,6 +25,7 @@ export const TransactionsContent = ({
   const [searchQuery, setSearchQuery] = useState('')
 
   // --- Load transactions ---
+
   useEffect(() => {
     if (activeTab !== 'transactions') return
 
