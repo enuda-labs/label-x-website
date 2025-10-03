@@ -1,8 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, FileText, Users } from 'lucide-react'
+import { mockProjects } from '@/constants'
+import { CheckCircle2, Clock, FileText, Users } from 'lucide-react'
 import React from 'react'
 
 function StatsOverview() {
+  const stats = {
+    totalProjects: mockProjects.length,
+    activeProjects: mockProjects.filter(
+      (p) => p.status === 'in_progress' || p.status === 'in_review'
+    ).length,
+    completedProjects: mockProjects.filter((p) => p.status === 'completed')
+      .length,
+    totalLabelers: mockProjects.reduce(
+      (sum, p) => sum + p.assigned_labelers,
+      0
+    ),
+  }
+
   return (
     <div className="mb-8 grid gap-6 md:grid-cols-4">
       <Card>
