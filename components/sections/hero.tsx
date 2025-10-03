@@ -85,21 +85,21 @@ const Hero = () => {
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 backdrop-blur-sm">
               <span className="h-2 w-2 animate-pulse rounded-full bg-orange-500" />
               <span className="text-sm text-white/80">
-                Now processing 1M+ data points daily
+                Trusted by 500+ companies worldwide
               </span>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={0.4}>
             <h1 className="bg-gradient-to-r from-white to-orange-300 bg-clip-text text-4xl leading-tight font-bold text-transparent sm:text-5xl md:text-6xl">
-              AI-Powered Content Moderation with Human Precision
+              Expert Labeling for Every Data Need
             </h1>
           </AnimatedSection>
 
           <AnimatedSection delay={0.6}>
             <p className="mt-6 text-lg text-gray-300 md:text-xl">
-              Leverage advanced AI to classify content, with expert human
-              reviewers ensuring accuracy. Get faster, more reliable content
-              moderation for your platform.
+              Professional human labelers ready to handle any task - from
+              machine learning training data to content moderation, computer
+              vision, NLP, academic research, and business intelligence.
             </p>
           </AnimatedSection>
 
@@ -132,7 +132,7 @@ const Hero = () => {
                 />
                 <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 to-transparent p-4">
                   <p className="text-sm text-white">
-                    Advanced AI Classification
+                    Machine Learning & AI Training
                   </p>
                 </div>
               </motion.div>
@@ -150,7 +150,9 @@ const Hero = () => {
                   className="h-60 w-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <p className="text-sm text-white">Expert Human Review</p>
+                  <p className="text-sm text-white">
+                    Computer Vision & NLP Projects
+                  </p>
                 </div>
               </motion.div>
 
@@ -167,7 +169,9 @@ const Hero = () => {
                   className="h-60 w-full object-cover"
                 />
                 <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <p className="text-sm text-white">Real-time Analytics</p>
+                  <p className="text-sm text-white">
+                    Content Moderation & Research
+                  </p>
                 </div>
               </motion.div>
             </div>
@@ -176,10 +180,10 @@ const Hero = () => {
           <AnimatedSection delay={1}>
             <div className="mt-16 grid grid-cols-2 gap-8 text-center md:grid-cols-4">
               {[
-                { value: '99.8%', label: 'Classification Accuracy' },
-                { value: '500+', label: 'Content Categories' },
-                { value: '30s', label: 'Average Review Time' },
-                { value: '24/7', label: 'Support Available' },
+                { value: '10K+', label: 'Expert Labelers' },
+                { value: '100+', label: 'Task Types Supported' },
+                { value: '99.5%', label: 'Quality Accuracy' },
+                { value: '24/7', label: 'Global Coverage' },
               ].map((stat, index) => (
                 <motion.div
                   key={index}
