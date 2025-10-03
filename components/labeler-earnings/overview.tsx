@@ -13,7 +13,6 @@ import { BankAccount } from '@/types/banks'
 import { toast } from 'sonner'
 import { isAxiosError } from 'axios'
 
-
 interface WithdrawData {
   transaction_id?: string
 }
@@ -25,7 +24,6 @@ interface WithdrawResponse {
   success?: boolean
   error?: string
 }
-
 
 const maskAccount = (acc?: string) => {
   if (!acc) return ''
@@ -52,10 +50,11 @@ const EarningOverview = () => {
   })
 
   // Current month earnings query
-  const { data: currentMonthEarnings } = useQuery<CurrentMonthEarningsData | null>({
-    queryFn: fetchCurrentMonthEarnings,
-    queryKey: ['currentMonthEarnings'],
-  })
+  const { data: currentMonthEarnings } =
+    useQuery<CurrentMonthEarningsData | null>({
+      queryFn: fetchCurrentMonthEarnings,
+      queryKey: ['currentMonthEarnings'],
+    })
 
   // Derived earnings values (safe defaults)
   const earnings = {
@@ -130,23 +129,27 @@ const EarningOverview = () => {
   }
 
   // Withdraw mutation
-  const withdrawMutation = useMutation<WithdrawResponse, unknown, { account_number: string; amount: string; bank_code: string }>({
-   mutationFn: (payload) => withdraw(payload),
-   onSuccess: (res) => {
-     toast(res.message)
-     queryClient.invalidateQueries({ queryKey: ['earning'] })
-     setWithdrawAmount('')
-     setAccountNo('')
-     setSelectedBankId(null)
-     setShowWithdrawModal(false)
-     setWithdrawing(false)
-   },
-   onError: (err) => {
-     const msg = extractErrorMessage(err)
-     toast.success(msg)
-     setWithdrawing(false)
-   },
- })
+  const withdrawMutation = useMutation<
+    WithdrawResponse,
+    unknown,
+    { account_number: string; amount: string; bank_code: string }
+  >({
+    mutationFn: (payload) => withdraw(payload),
+    onSuccess: (res) => {
+      toast(res.message)
+      queryClient.invalidateQueries({ queryKey: ['earning'] })
+      setWithdrawAmount('')
+      setAccountNo('')
+      setSelectedBankId(null)
+      setShowWithdrawModal(false)
+      setWithdrawing(false)
+    },
+    onError: (err) => {
+      const msg = extractErrorMessage(err)
+      toast.success(msg)
+      setWithdrawing(false)
+    },
+  })
 
   const openWithdrawModal = () => {
     // prefer primary
@@ -197,21 +200,21 @@ const EarningOverview = () => {
             isAxiosError(err) && err.response?.data?.error
               ? err.response.data.error
               : 'Withdrawal failed'
-              toast.success(msg)
+          toast.success(msg)
           setWithdrawing(false)
         },
       }
     )
   }
 
-
-
   // Earnings content (mini dashboard)
   const EarningsContent = () => (
     <div className="space-y-6 px-2 py-6">
       <div className="rounded-lg py-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">Earnings Overview</h2>
+          <h2 className="text-xl font-semibold text-white">
+            Earnings Overview
+          </h2>
 
           <button
             onClick={openWithdrawModal}
@@ -235,12 +238,16 @@ const EarningOverview = () => {
           <div className="bg-card rounded-lg p-4">
             <div className="mb-2 flex items-center gap-2">
               <TrendingUp className="text-green-400" size={20} />
-              <span className="text-sm text-gray-300">Current Month ({earnings.currentMonthName})</span>
+              <span className="text-sm text-gray-300">
+                Current Month ({earnings.currentMonthName})
+              </span>
             </div>
             <p className="text-2xl font-bold text-white">
               ${Number(earnings.currentMonthAmount ?? 0).toFixed(2)}
             </p>
-            <p className="text-xs text-gray-400">{earnings.daysLeftInMonth} days left in month</p>
+            <p className="text-xs text-gray-400">
+              {earnings.daysLeftInMonth} days left in month
+            </p>
           </div>
         </div>
       </div>
@@ -260,7 +267,9 @@ const EarningOverview = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="bg-background mx-4 w-full max-w-md rounded-lg border p-6">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-white">Withdraw Funds</h3>
+              <h3 className="text-xl font-semibold text-white">
+                Withdraw Funds
+              </h3>
               <button
                 onClick={() => setShowWithdrawModal(false)}
                 className="cursor-pointer text-gray-400 transition-colors hover:text-white"
@@ -271,35 +280,43 @@ const EarningOverview = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Amount to Withdraw</label>
+                <label className="mb-1 block text-sm text-gray-300">
+                  Amount to Withdraw
+                </label>
                 <input
                   type="number"
                   value={withdrawAmount}
                   onChange={(e) => setWithdrawAmount(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-card px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   placeholder="Enter amount"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Select Bank Account</label>
+                <label className="mb-1 block text-sm text-gray-300">
+                  Select Bank Account
+                </label>
 
                 {loadingBanks ? (
-                  <div className="text-sm text-gray-400">Loading accounts...</div>
+                  <div className="text-sm text-gray-400">
+                    Loading accounts...
+                  </div>
                 ) : userBanks.length === 0 ? (
                   <div className="text-sm text-gray-400">
-                    No saved bank accounts. Please add a bank in the Bank Accounts page.
+                    No saved bank accounts. Please add a bank in the Bank
+                    Accounts page.
                   </div>
                 ) : (
                   <select
                     value={selectedBankId ?? ''}
                     onChange={(e) => setSelectedBankId(e.target.value || null)}
-                    className="w-full rounded-lg border border-gray-600 bg-card px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   >
                     <option value="">Choose a bank</option>
                     {userBanks.map((b) => (
                       <option key={b.id} value={String(b.id)}>
-                        {b.bank_name ?? b.bank_name} — {maskAccount(b.account_number)}
+                        {b.bank_name ?? b.bank_name} —{' '}
+                        {maskAccount(b.account_number)}
                         {b.is_primary ? ' (Primary)' : ''}
                       </option>
                     ))}
@@ -308,13 +325,15 @@ const EarningOverview = () => {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Account Number</label>
+                <label className="mb-1 block text-sm text-gray-300">
+                  Account Number
+                </label>
                 <input
                   type="text"
                   maxLength={20}
                   value={accountNo}
                   onChange={(e) => setAccountNo(e.target.value)}
-                  className="w-full rounded-lg border border-gray-600 bg-card px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="bg-card w-full rounded-lg border border-gray-600 px-3 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   placeholder="Enter account number"
                 />
               </div>
@@ -322,23 +341,22 @@ const EarningOverview = () => {
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setShowWithdrawModal(false)}
-                  className="flex-1 bg-card text-white rounded-lg hover:bg-gray-600"
+                  className="bg-card flex-1 rounded-lg text-white hover:bg-gray-600"
                 >
                   Cancel
                 </Button>
                 <button
-    onClick={handleWithdraw}
-    disabled={
-      !withdrawAmount ||
-      !selectedBankId ||
-      accountNo.length < 1 ||
-      withdrawing
-    }
-    className="flex-1 cursor-pointer rounded-lg bg-orange-500 text-white disabled:opacity-50"
-  >
-    {withdrawing ? 'Initiating...' : 'Withdraw'}
-  </button>
-
+                  onClick={handleWithdraw}
+                  disabled={
+                    !withdrawAmount ||
+                    !selectedBankId ||
+                    accountNo.length < 1 ||
+                    withdrawing
+                  }
+                  className="flex-1 cursor-pointer rounded-lg bg-orange-500 text-white disabled:opacity-50"
+                >
+                  {withdrawing ? 'Initiating...' : 'Withdraw'}
+                </button>
               </div>
             </div>
           </div>

@@ -73,7 +73,7 @@ export default function Partnership() {
 
         <div className="flex flex-col items-center gap-12 lg:flex-row">
           <div className="flex-1">
-            <div className="rounded-2xl border border-gray-700 bg-gray-800/50 p-8 backdrop-blur-sm">
+            <div className="rounded-2xl border border-gray-700 bg-gray-800/20 p-8 backdrop-blur-sm">
               <h3 className="mb-6 text-2xl font-semibold">
                 Partnership Opportunities
               </h3>
@@ -125,7 +125,7 @@ export default function Partnership() {
                 </div>
               </div>
 
-              <div className="mt-8 rounded-lg bg-gray-900 p-4">
+              <div className="mt-8 rounded-lg border-gray-700 bg-gray-900/70 p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-xl font-bold text-white">
                     Lx
@@ -143,7 +143,7 @@ export default function Partnership() {
           </div>
 
           <div className="w-full lg:flex-1">
-            <div className="rounded-2xl border border-gray-700 bg-gray-800/50 p-8 backdrop-blur-sm">
+            <div className="rounded-2xl border border-gray-700 bg-gray-800/20 p-8 backdrop-blur-sm">
               <h3 className="mb-6 text-2xl font-semibold">Get in Touch</h3>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -161,7 +161,7 @@ export default function Partnership() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="John Doe"
                   />
                 </div>
@@ -180,7 +180,7 @@ export default function Partnership() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="john@company.com"
                   />
                 </div>
@@ -199,7 +199,7 @@ export default function Partnership() {
                     value={formData.company}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="Company, Inc."
                   />
                 </div>
@@ -216,7 +216,7 @@ export default function Partnership() {
                     name="type"
                     value={formData.type}
                     onChange={handleChange}
-                    className="h-12 w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="h-12 w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   >
                     <option value="integration">Integration Partner</option>
                     <option value="technology">Technology Partner</option>
@@ -238,7 +238,7 @@ export default function Partnership() {
                     value={formData.message}
                     onChange={handleChange}
                     rows={4}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="I'm interested in integrating your solution into our platform..."
                   ></textarea>
                 </div>

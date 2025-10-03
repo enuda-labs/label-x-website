@@ -1,10 +1,14 @@
-
 'use client'
 
 import { CreditCard, Eye, Plus, Trash } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AxiosError } from 'axios'
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '../ui/dialog'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { Switch } from '../ui/switch'
@@ -33,7 +37,10 @@ export const BanksContent = () => {
   })
 
   // Helper to extract a robust string message from various error shapes
-  const getErrorMessage = (err: unknown, fallback = 'An unexpected error occurred'): string => {
+  const getErrorMessage = (
+    err: unknown,
+    fallback = 'An unexpected error occurred'
+  ): string => {
     if (!err) return fallback
     if (err instanceof AxiosError) {
       const data = err.response?.data
@@ -84,27 +91,28 @@ export const BanksContent = () => {
   }
 
   const openViewBankModal = async (bank: BankAccount) => {
-  setSelectedBank(bank)
-  setNewBank({
-    account_number: bank.account_number,
-    bank_code: bank.bank_code,
-    platform: bank.platform,
-  })
-  setShowBankModal(true)
+    setSelectedBank(bank)
+    setNewBank({
+      account_number: bank.account_number,
+      bank_code: bank.bank_code,
+      platform: bank.platform,
+    })
+    setShowBankModal(true)
 
-  try {
-    const banks = await fetchPaystackBanks()
-    setPaystackBanks(banks)
-  } catch (error: unknown) {
-    console.error('Error fetching Paystack banks:', error)
-    toast('Warning', { description: 'Unable to load bank list right now.' })
+    try {
+      const banks = await fetchPaystackBanks()
+      setPaystackBanks(banks)
+    } catch (error: unknown) {
+      console.error('Error fetching Paystack banks:', error)
+      toast('Warning', { description: 'Unable to load bank list right now.' })
+    }
   }
-}
-
 
   const handleSaveBank = async () => {
     if (!newBank.account_number || !newBank.bank_code) {
-      toast('Validation Error', { description: 'Please fill in all required fields.' })
+      toast('Validation Error', {
+        description: 'Please fill in all required fields.',
+      })
       return
     }
 
@@ -159,8 +167,8 @@ export const BanksContent = () => {
       const updated = await setPrimaryBank(bank.id)
       if (!updated) throw new Error('Failed to update primary bank on server')
 
-      setBanks(prev =>
-        prev.map(b => ({ ...b, is_primary: b.id === updated.id }))
+      setBanks((prev) =>
+        prev.map((b) => ({ ...b, is_primary: b.id === updated.id }))
       )
       toast('Success', { description: `${updated.bank_name} is now primary` })
     } catch (err: unknown) {
@@ -202,40 +210,39 @@ export const BanksContent = () => {
               </div>
 
               <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-    {bank.is_primary && (
-      <span className="rounded bg-green-500/20 px-2 py-1 text-xs text-green-400">
-        Primary
-      </span>
-    )}
+                {bank.is_primary && (
+                  <span className="rounded bg-green-500/20 px-2 py-1 text-xs text-green-400">
+                    Primary
+                  </span>
+                )}
 
-    <Button
-      size="sm"
-      onClick={() => openViewBankModal(bank)}
-      variant="outline"
-      className="flex-shrink-0"
-    >
-      <Eye size={16} />
-    </Button>
+                <Button
+                  size="sm"
+                  onClick={() => openViewBankModal(bank)}
+                  variant="outline"
+                  className="flex-shrink-0"
+                >
+                  <Eye size={16} />
+                </Button>
 
-    <Switch
-      checked={bank.is_primary}
-      onCheckedChange={() => handleTogglePrimary(bank)}
-      className="cursor-pointer flex-shrink-0"
-    />
+                <Switch
+                  checked={bank.is_primary}
+                  onCheckedChange={() => handleTogglePrimary(bank)}
+                  className="flex-shrink-0 cursor-pointer"
+                />
 
-    <Button
-      size="sm"
-      onClick={() => {
-        setSelectedBank(bank);
-        setShowDeleteModal(true);
-      }}
-      variant="destructive"
-      className="flex-shrink-0"
-    >
-      <Trash size={16} />
-    </Button>
-  </div>
-
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setSelectedBank(bank)
+                    setShowDeleteModal(true)
+                  }}
+                  variant="destructive"
+                  className="flex-shrink-0"
+                >
+                  <Trash size={16} />
+                </Button>
+              </div>
             </div>
           </div>
         ))}
@@ -254,7 +261,7 @@ export const BanksContent = () => {
                 : 'Add a new bank account for withdrawals.'}
             </DialogDescription>
 
-            <div className="space-y-4 mt-4">
+            <div className="mt-4 space-y-4">
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-300">
                   Select Bank
@@ -262,7 +269,9 @@ export const BanksContent = () => {
                 <select
                   value={newBank.bank_code}
                   onChange={(e) => {
-                    const selected = paystackBanks.find((b) => b.code === e.target.value)
+                    const selected = paystackBanks.find(
+                      (b) => b.code === e.target.value
+                    )
                     setNewBank({
                       ...newBank,
                       bank_code: selected?.code || '',
@@ -274,7 +283,9 @@ export const BanksContent = () => {
                 >
                   <option value="">Select a bank</option>
                   {paystackBanks.map((bank, idx) => (
-                    <option key={`${bank.code}-${idx}`} value={bank.code}>{bank.name}</option>
+                    <option key={`${bank.code}-${idx}`} value={bank.code}>
+                      {bank.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -303,10 +314,16 @@ export const BanksContent = () => {
                 </Button>
                 <Button
                   onClick={handleSaveBank}
-                  disabled={!newBank.account_number || !newBank.bank_code || loading}
+                  disabled={
+                    !newBank.account_number || !newBank.bank_code || loading
+                  }
                   className="flex-1 rounded-lg disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Saving...' : selectedBank ? 'Save Changes' : 'Add Bank'}
+                  {loading
+                    ? 'Saving...'
+                    : selectedBank
+                      ? 'Save Changes'
+                      : 'Add Bank'}
                 </Button>
               </div>
             </div>
@@ -318,9 +335,12 @@ export const BanksContent = () => {
       {showDeleteModal && selectedBank && (
         <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
           <DialogContent>
-            <DialogTitle className="text-xl font-semibold text-white">Confirm Delete</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-white">
+              Confirm Delete
+            </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {selectedBank.bank_name} ({selectedBank.account_number})?
+              Are you sure you want to delete {selectedBank.bank_name} (
+              {selectedBank.account_number})?
             </DialogDescription>
 
             <div className="flex gap-3 pt-4">
