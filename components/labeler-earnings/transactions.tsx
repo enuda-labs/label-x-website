@@ -217,7 +217,7 @@ export const TransactionsContent = ({
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              transaction.status === 'completed'
+                              transaction.status === 'success'
                                 ? 'bg-green-500/20 text-green-400'
                                 : transaction.status === 'pending'
                                   ? 'bg-yellow-500/20 text-yellow-400'
