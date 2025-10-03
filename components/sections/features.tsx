@@ -1,5 +1,5 @@
 import React from 'react'
-import { Shield, Cpu, Users, Eye, BarChart, Clock } from 'lucide-react'
+import { Shield, Users, Database, Target, Zap, CheckCircle } from 'lucide-react'
 import {
   AnimatedCard,
   AnimatedSection,
@@ -9,42 +9,81 @@ import { motion } from 'framer-motion'
 
 const featureItems = [
   {
-    icon: <Cpu size={24} className="text-orange-500" />,
-    title: 'Advanced AI Classification',
+    icon: <Database className="h-6 w-6" />,
+    title: 'Any Data Type',
     description:
-      'Our AI model accurately classifies content across multiple categories with high confidence scores.',
+      'Support for text, images, videos, audio, and any file format you need labeled.',
   },
   {
-    icon: <Users size={24} className="text-orange-500" />,
-    title: 'Human Review System',
+    icon: <Users className="h-6 w-6" />,
+    title: 'Expert Labellers',
     description:
-      'Expert human reviewers validate AI classifications, ensuring accuracy in borderline cases.',
+      'Access to qualified annotators who understand your specific requirements.',
   },
   {
-    icon: <Shield size={24} className="text-orange-500" />,
-    title: 'Content Moderation',
+    icon: <Target className="h-6 w-6" />,
+    title: 'Precise Results',
     description:
-      'Protect your platform from harmful, offensive, or inappropriate content with robust filtering.',
+      'High-quality annotations with multiple reviewers per item for accuracy.',
   },
   {
-    icon: <Clock size={24} className="text-orange-500" />,
-    title: 'Real-time Processing',
+    icon: <Zap className="h-6 w-6" />,
+    title: 'Fast Turnaround',
     description:
-      'Process and classify content in real-time with minimal latency for seamless user experience.',
+      'Quick processing times without compromising on quality standards.',
   },
   {
-    icon: <BarChart size={24} className="text-orange-500" />,
-    title: 'Detailed Analytics',
+    icon: <Shield className="h-6 w-6" />,
+    title: 'Secure & Private',
     description:
-      'Gain insights into content trends, classification accuracy, and reviewer performance.',
+      'Your data is protected with enterprise-grade security and privacy measures.',
   },
   {
-    icon: <Eye size={24} className="text-orange-500" />,
-    title: 'Content Oversight',
+    icon: <CheckCircle className="h-6 w-6" />,
+    title: 'Quality Assured',
     description:
-      'Monitor content classification across your platform with comprehensive dashboards.',
+      'Built-in quality control processes ensure consistent, reliable results.',
   },
 ]
+
+// const featureItems = [
+//   {
+//     icon: <Cpu size={24} className="text-orange-500" />,
+//     title: 'Advanced AI Classification',
+//     description:
+//       'Our AI model accurately classifies content across multiple categories with high confidence scores.',
+//   },
+//   {
+//     icon: <Users size={24} className="text-orange-500" />,
+//     title: 'Human Review System',
+//     description:
+//       'Expert human reviewers validate AI classifications, ensuring accuracy in borderline cases.',
+//   },
+//   {
+//     icon: <Shield size={24} className="text-orange-500" />,
+//     title: 'Content Moderation',
+//     description:
+//       'Protect your platform from harmful, offensive, or inappropriate content with robust filtering.',
+//   },
+//   {
+//     icon: <Clock size={24} className="text-orange-500" />,
+//     title: 'Real-time Processing',
+//     description:
+//       'Process and classify content in real-time with minimal latency for seamless user experience.',
+//   },
+//   {
+//     icon: <BarChart size={24} className="text-orange-500" />,
+//     title: 'Detailed Analytics',
+//     description:
+//       'Gain insights into content trends, classification accuracy, and reviewer performance.',
+//   },
+//   {
+//     icon: <Eye size={24} className="text-orange-500" />,
+//     title: 'Content Oversight',
+//     description:
+//       'Monitor content classification across your platform with comprehensive dashboards.',
+//   },
+// ]
 
 export default function Features() {
   return (
@@ -95,7 +134,7 @@ export default function Features() {
               className="rounded-xl border border-gray-700 bg-gray-800/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-orange-500/50"
             >
               <motion.div
-                className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-700/50"
+                className="text-primary mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-700/50"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ duration: 0.2 }}
               >
