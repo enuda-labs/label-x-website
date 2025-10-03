@@ -83,7 +83,7 @@ const getResponseTypeIcon = (type: string) => {
 
 const ProjectReviews = () => {
   const { id: projectId } = useParams()
-  console.log(projectId)
+  //console.log(projectId)
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedLabeler, setSelectedLabeler] = useState<string>('all')
