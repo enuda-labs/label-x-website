@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/select'
 import { TabsContent } from '@/components/ui/tabs'
 import { Label } from '@/constants'
+import { getStatusColor, getStatusIcon } from '@/constants/status'
 import { Filter, Search } from 'lucide-react'
 import Image from 'next/image'
 import React from 'react'
@@ -43,10 +44,6 @@ interface AllLabelersTabProps {
   project: Project
   groupLabelsByLabeler: () => Record<string, Label[]>
   getLabelerById: (id: number) => Labeler | undefined
-  getStatusColor: (
-    status: string
-  ) => 'default' | 'secondary' | 'destructive' | 'outline'
-  getStatusIcon: (status: string) => React.ReactNode
   renderLabelResponse: (label: Label, inputType: string) => React.ReactNode
 }
 
@@ -58,8 +55,6 @@ function AllLabelersReviewsTab({
   project,
   groupLabelsByLabeler,
   getLabelerById,
-  getStatusColor,
-  getStatusIcon,
   renderLabelResponse,
 }: AllLabelersTabProps) {
   return (

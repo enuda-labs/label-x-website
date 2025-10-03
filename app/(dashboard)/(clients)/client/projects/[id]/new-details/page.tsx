@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,12 +9,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import {
   CheckCircle2,
-  Clock,
   AlertCircle,
-  Video,
   FileText,
-  Image as ImageIcon,
-  Mic,
   Download,
   Eye,
   Calendar,
@@ -25,45 +22,7 @@ import { Label, mockProjectData } from '@/constants'
 import AllLabelersReviewsTab from '@/components/project/client/labelers-reviews-tab'
 import AllTasksTab from '@/components/project/client/all-tasks-tabs'
 import AllLabelers from '@/components/project/client/all-labelers'
-
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'COMPLETED':
-      return <CheckCircle2 className="h-4 w-4" />
-    case 'REVIEW_NEEDED':
-      return <Clock className="h-4 w-4" />
-    default:
-      return <AlertCircle className="h-4 w-4" />
-  }
-}
-
-const getStatusColor = (
-  status: string
-): 'default' | 'secondary' | 'outline' | 'destructive' => {
-  switch (status) {
-    case 'COMPLETED':
-      return 'default'
-    case 'REVIEW_NEEDED':
-      return 'secondary'
-    default:
-      return 'destructive'
-  }
-}
-
-const getResponseTypeIcon = (type: string) => {
-  switch (type.toLowerCase()) {
-    case 'video':
-      return <Video className="h-5 w-5" />
-    case 'text':
-      return <FileText className="h-5 w-5" />
-    case 'image':
-      return <ImageIcon className="h-5 w-5" />
-    case 'audio':
-      return <Mic className="h-5 w-5" />
-    default:
-      return <FileText className="h-5 w-5" />
-  }
-}
+import { getResponseTypeIcon } from '@/constants/status'
 
 const ProjectReviews = () => {
   const { id: projectId } = useParams()
@@ -86,8 +45,8 @@ const ProjectReviews = () => {
               The project you&#39;re looking for doesn&#39;t exist or has been
               removed.
             </p>
-            <Button onClick={() => router.push('/client-dashboard')}>
-              Back to Dashboard
+            <Button onClick={() => router.push('/client/projects')}>
+              Back to Projects
             </Button>
           </CardContent>
         </Card>
@@ -215,15 +174,15 @@ const ProjectReviews = () => {
   })
 
   return (
-    <div className="bg-background min-h-screen">
-      <div className="bg-card/50 sticky top-0 z-10 border-b backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen">
+      <div className="sticky top-0 z-10 border-b backdrop-blur-sm">
+        <div className="container mx-auto px-2 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => router.push('/client-dashboard')}
+                onClick={() => router.push('/client/projects')}
               >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
@@ -239,7 +198,6 @@ const ProjectReviews = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Project Overview */}
         <div className="mb-8 grid gap-6 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -378,8 +336,6 @@ const ProjectReviews = () => {
             project={project}
             groupLabelsByLabeler={groupLabelsByLabeler}
             getLabelerById={getLabelerById}
-            getStatusColor={getStatusColor}
-            getStatusIcon={getStatusIcon}
             renderLabelResponse={renderLabelResponse}
           />
           {/* All Tasks Tab */}
