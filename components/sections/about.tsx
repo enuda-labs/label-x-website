@@ -117,7 +117,7 @@ export default function About() {
           </div>
         </div>
 
-        <div className="mt-20 rounded-2xl border border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900 p-8 shadow-xl md:p-12">
+        <div className="mt-20 rounded-2xl border border-gray-700 bg-gray-900/70 p-8 shadow-xl md:p-12">
           <div className="mb-10 text-center">
             <h3 className="mb-4 text-2xl font-semibold md:text-3xl">
               Meet Our Leadership
@@ -136,7 +136,7 @@ export default function About() {
               'Head of Operations',
             ].map((role, index) => (
               <div key={index} className="text-center">
-                <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full bg-gray-800/50 backdrop-blur-sm">
+                <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full bg-gray-800/20 backdrop-blur-sm">
                   <Image
                     src={`https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1`}
                     alt={`Team member ${index + 1}`}

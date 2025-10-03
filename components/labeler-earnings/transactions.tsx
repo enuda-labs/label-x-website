@@ -9,11 +9,18 @@ import { fetchUserTransactions } from '@/services/apis/transactions'
 import { fetchEarningsHistory } from '@/services/apis/earning-history'
 import { EarningsHistoryData } from '@/types/earning-history'
 
-export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) => {
-  const [activeTab, setActiveTab] = useState<'transactions' | 'earnings'>('transactions')
+export const TransactionsContent = ({
+  showTen = false,
+}: {
+  showTen?: boolean
+}) => {
+  const [activeTab, setActiveTab] = useState<'transactions' | 'earnings'>(
+    'transactions'
+  )
 
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [earningsHistory, setEarningsHistory] = useState<EarningsHistoryData | null>(null)
+  const [earningsHistory, setEarningsHistory] =
+    useState<EarningsHistoryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -27,7 +34,8 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
         const data = await fetchUserTransactions()
         // Sort by created_at descending (latest first)
         const sortedData = data.sort(
-          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         )
         setTransactions(sortedData)
       } catch (error) {
@@ -39,7 +47,6 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
 
     loadTransactions()
   }, [activeTab])
-
 
   // --- Load earnings history ---
   useEffect(() => {
@@ -73,41 +80,48 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
         normalize(t.description).includes(query) ||
         normalize(t.transaction_type).includes(query) ||
         normalize(t.status).includes(query) ||
-        normalize(new Date(t.created_at).toLocaleDateString()).includes(query) ||
+        normalize(new Date(t.created_at).toLocaleDateString()).includes(
+          query
+        ) ||
         normalize(t.usd_amount).includes(query) ||
         normalize(t.ngn_amount).includes(query)
       )
     })
   }, [transactions, searchQuery])
 
-  const transactionsToShow = showTen ? filteredTransactions.slice(0, 10) : filteredTransactions
+  const transactionsToShow = showTen
+    ? filteredTransactions.slice(0, 10)
+    : filteredTransactions
 
   return (
     <div className="space-y-6 p-6">
       {/* Tab Buttons */}
       <div className="flex gap-4">
-      <button
-        className={`px-4 py-2 rounded-lg cursor-pointer ${
-          activeTab === 'transactions' ? 'bg-orange-500 text-white' : 'bg-card text-gray-300'
-        }`}
-        onClick={() => setActiveTab('transactions')}
-      >
-        Transactions
-      </button>
-      <button
-        className={`px-4 py-2 rounded-lg cursor-pointer ${
-          activeTab === 'earnings' ? 'bg-orange-500 text-white' : 'bg-card text-gray-300'
-        }`}
-        onClick={() => setActiveTab('earnings')}
-      >
-        Earnings History
-      </button>
-    </div>
-
+        <button
+          className={`cursor-pointer rounded-lg px-4 py-2 ${
+            activeTab === 'transactions'
+              ? 'bg-orange-500 text-white'
+              : 'bg-card text-gray-300'
+          }`}
+          onClick={() => setActiveTab('transactions')}
+        >
+          Transactions
+        </button>
+        <button
+          className={`cursor-pointer rounded-lg px-4 py-2 ${
+            activeTab === 'earnings'
+              ? 'bg-orange-500 text-white'
+              : 'bg-card text-gray-300'
+          }`}
+          onClick={() => setActiveTab('earnings')}
+        >
+          Earnings History
+        </button>
+      </div>
 
       {/* Search bar only for transactions */}
       {activeTab === 'transactions' && (
-        <div className="flex items-center gap-2 mt-4">
+        <div className="mt-4 flex items-center gap-2">
           <button className="bg-card flex items-center gap-2 rounded-lg px-3 py-2 text-white transition-colors hover:bg-gray-600">
             <Filter size={16} />
             Filter
@@ -129,13 +143,15 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
       )}
 
       {/* Content */}
-      <div className="bg-card/70 overflow-hidden rounded-lg border border-gray-700 mt-4">
+      <div className="bg-card/70 mt-4 overflow-hidden rounded-lg border border-gray-700">
         {loading ? (
           <div className="p-6 text-center text-gray-400">Loading...</div>
         ) : activeTab === 'transactions' ? (
           <>
             {transactionsToShow.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">No transactions found</div>
+              <div className="p-6 text-center text-gray-400">
+                No transactions found
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -163,9 +179,14 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
                   </thead>
                   <tbody className="divide-y divide-gray-700">
                     {transactionsToShow.map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-card/50 transition-colors">
+                      <tr
+                        key={transaction.id}
+                        className="hover:bg-card/50 transition-colors"
+                      >
                         <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-300">
-                          {new Date(transaction.created_at).toLocaleDateString()}
+                          {new Date(
+                            transaction.created_at
+                          ).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -195,17 +216,16 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-    transaction.status === 'success'
-      ? 'bg-green-500/20 text-green-400'
-      : transaction.status === 'pending'
-      ? 'bg-yellow-500/20 text-yellow-400'
-      : 'bg-red-500/20 text-red-400'
-  }`}
->
-  {transaction.status}
-</span>
-
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              transaction.status === 'success'
+                                ? 'bg-green-500/20 text-green-400'
+                                : transaction.status === 'pending'
+                                  ? 'bg-yellow-500/20 text-yellow-400'
+                                  : 'bg-red-500/20 text-red-400'
+                            }`}
+                          >
+                            {transaction.status}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -217,24 +237,31 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
         ) : (
           // Earnings history tab
           <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-6">
-    {earningsHistory?.history.map((e, idx) => (
-      <div key={idx} className="bg-card rounded-lg p-4 shadow-md flex flex-col justify-between">
-        <span className="text-gray-300 text-sm">{e.month_year}</span>
-        <span className="text-xl font-bold text-white">${e.amount.toFixed(2)}</span>
-      </div>
-    ))}
-  </div>
+            <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {earningsHistory?.history.map((e, idx) => (
+                <div
+                  key={idx}
+                  className="bg-card flex flex-col justify-between rounded-lg p-4 shadow-md"
+                >
+                  <span className="text-sm text-gray-300">{e.month_year}</span>
+                  <span className="text-xl font-bold text-white">
+                    ${e.amount.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </>
         )}
       </div>
 
       {/* View all button for transactions */}
-      {activeTab === 'transactions' && showTen && filteredTransactions.length > 10 && (
-        <Link href="/label/earnings/history" className="flex justify-end p-4">
-          <Button className="px-8">View All</Button>
-        </Link>
-      )}
+      {activeTab === 'transactions' &&
+        showTen &&
+        filteredTransactions.length > 10 && (
+          <Link href="/label/earnings/history" className="flex justify-end p-4">
+            <Button className="px-8">View All</Button>
+          </Link>
+        )}
     </div>
   )
 }

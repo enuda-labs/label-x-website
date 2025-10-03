@@ -39,7 +39,6 @@ import { AssignedCluster } from '@/types/clusters'
 import { getUserDetails } from '@/services/apis/user'
 import DashboardLayout from '@/components/shared/dashboard-layout'
 
-
 const getTypeIcon = (type: string) => {
   switch (type) {
     case 'TEXT':
@@ -90,44 +89,42 @@ const ProjectsContent = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        setLoading(true);
+        setLoading(true)
         const [assigned, pending] = await Promise.all([
           fetchAssignedClusters(),
           fetchPendingClusters(),
-        ]);
+        ])
 
         // helper to sort newest first
         const sortNewest = (a: AssignedCluster, b: AssignedCluster) => {
-    return b.id - a.id;
-  }
-
+          return b.id - a.id
+        }
 
         // Add status dynamically & sort
         const assignedWithStatus = assigned
           .map((task) => ({
             ...task,
-            status: task.pending_tasks === 0 ? "completed" : "assigned",
+            status: task.pending_tasks === 0 ? 'completed' : 'assigned',
           }))
-          .sort(sortNewest);
+          .sort(sortNewest)
 
         const pendingWithStatus = pending
           .map((task) => ({
             ...task,
-            status: "pending",
+            status: 'pending',
           }))
-          .sort(sortNewest);
+          .sort(sortNewest)
 
-        setClusters(assignedWithStatus);
-        setPendingClusters(pendingWithStatus);
+        setClusters(assignedWithStatus)
+        setPendingClusters(pendingWithStatus)
       } catch (err) {
-        console.error("Error fetching clusters", err);
+        console.error('Error fetching clusters', err)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    load();
-  }, []);
-
+    }
+    load()
+  }, [])
 
   const filteredTasks = useMemo(() => {
     return clusters.filter((task) => {
@@ -233,21 +230,20 @@ const ProjectsContent = () => {
             <Progress value={progress} className="h-2" />
           </div>
 
-
           <div>
             <p className="mb-2 text-sm font-medium">Label Options:</p>
             <div className="flex flex-wrap gap-2">
-            {task.choices?.length
-  ? task.choices.map((choice, index) => (
-      <Badge key={index} variant="outline" className="text-xs">
-        {choice.option_text}
-      </Badge>
-    ))
-  : task.input_type === 'text_input' && (
-      <Badge variant="outline" className="text-xs">
-        Text Input
-      </Badge>
-    )}
+              {task.choices?.length
+                ? task.choices.map((choice, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {choice.option_text}
+                    </Badge>
+                  ))
+                : task.input_type === 'text_input' && (
+                    <Badge variant="outline" className="text-xs">
+                      Text Input
+                    </Badge>
+                  )}
 
               {task.input_type === 'text_input' && (
                 <Badge variant="outline" className="text-xs">
@@ -266,17 +262,15 @@ const ProjectsContent = () => {
               </div>
             </div>
             <Link href={`/label/${task.id}`}>
-      <Button variant="default">
-        {task.pending_tasks === 0
-          ? "Review"
-          : task.pending_tasks < task.tasks_count
-          ? "Continue Labeling"
-          : "Start Labeling"}
-        <ChevronRight className="ml-2 h-4 w-4" />
-      </Button>
-    </Link>
-
-
+              <Button variant="default">
+                {task.pending_tasks === 0
+                  ? 'Review'
+                  : task.pending_tasks < task.tasks_count
+                    ? 'Continue Labeling'
+                    : 'Start Labeling'}
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -285,14 +279,14 @@ const ProjectsContent = () => {
 
   return (
     <DashboardLayout title="All Projects">
-    <div className="flex items-center justify-end mb-4 gap-3">
-       <div className="text-muted-foreground flex items-center gap-2 text-sm">
-         <User className="h-4 w-4" />
-         <span suppressHydrationWarning>
-           {userLoading ? 'Loading...' : `${username} (${role})`}
-         </span>
-       </div>
-     </div>
+      <div className="mb-4 flex items-center justify-end gap-3">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <User className="h-4 w-4" />
+          <span suppressHydrationWarning>
+            {userLoading ? 'Loading...' : `${username} (${role})`}
+          </span>
+        </div>
+      </div>
 
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -368,7 +362,7 @@ const ProjectsContent = () => {
           </TabsContent>
         </Tabs>
       </main>
-   </DashboardLayout>
+    </DashboardLayout>
   )
 }
 

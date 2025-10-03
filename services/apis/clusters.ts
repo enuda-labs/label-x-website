@@ -36,8 +36,6 @@ export const fetchAvailableTasks = async (): Promise<AvailableCluster[]> => {
   return response.data
 }
 
-
-
 export const assignTaskToMe = async (clusterId: number) => {
   const response = await axiosClient.post('/tasks/cluster/assign-to-self/', {
     cluster: clusterId,
@@ -78,7 +76,6 @@ export const annotateMissingAsset = async (
   const response = await axiosClient.post('/tasks/annotate/', requestPayload)
   return response.data as ApiResponse
 }
-
 
 export const fetchTaskProgress = async (
   clusterId: number

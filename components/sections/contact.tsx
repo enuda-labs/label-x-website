@@ -41,7 +41,7 @@ export default function Contact() {
 
         <div className="flex flex-col gap-12 lg:flex-row">
           <div className="flex-1">
-            <div className="h-full rounded-2xl border border-gray-700 bg-gray-800/50 p-8 backdrop-blur-sm">
+            <div className="h-full rounded-2xl border border-gray-700 bg-gray-800/20 p-8 backdrop-blur-sm">
               <h3 className="mb-6 text-2xl font-semibold">
                 Contact Information
               </h3>
@@ -123,7 +123,7 @@ export default function Contact() {
           </div>
 
           <div className="flex-1">
-            <div className="rounded-2xl border border-gray-700 bg-gray-800/50 p-8 backdrop-blur-sm">
+            <div className="rounded-2xl border border-gray-700 bg-gray-800/20 p-8 backdrop-blur-sm">
               <h3 className="mb-6 text-2xl font-semibold">Send a Message</h3>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -141,7 +141,7 @@ export default function Contact() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="John Doe"
                   />
                 </div>
@@ -160,7 +160,7 @@ export default function Contact() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="john@company.com"
                   />
                 </div>
@@ -179,7 +179,7 @@ export default function Contact() {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="How can we help?"
                   />
                 </div>
@@ -198,7 +198,7 @@ export default function Contact() {
                     onChange={handleChange}
                     rows={4}
                     required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-700 bg-gray-900/20 px-4 py-3 text-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
                     placeholder="I'd like to learn more about..."
                   ></textarea>
                 </div>
