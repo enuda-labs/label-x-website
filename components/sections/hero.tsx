@@ -187,7 +187,7 @@ const Hero = () => {
               ].map((stat, index) => (
                 <motion.div
                   key={index}
-                  className="transform rounded-lg bg-gray-800/50 p-4 backdrop-blur-sm transition-transform duration-300 hover:scale-105"
+                  className="transform rounded-lg bg-gray-800/20 p-4 backdrop-blur-sm transition-transform duration-300 hover:scale-105"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.2 * index }}

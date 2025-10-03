@@ -18,7 +18,7 @@ export default function Pricing() {
 
         <div className="flex flex-col justify-center gap-8 lg:flex-row">
           {/* Free Plan */}
-          <div className="mx-auto w-full max-w-md overflow-hidden rounded-2xl border border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+          <div className="mx-auto w-full max-w-md overflow-hidden rounded-2xl border border-gray-700 bg-gray-800/20 backdrop-blur-sm">
             <div className="p-8">
               <h3 className="mb-2 text-xl font-semibold">Free Trial</h3>
               <div className="mb-6 flex items-end gap-1">
@@ -101,7 +101,7 @@ export default function Pricing() {
           </div>
 
           {/* Enterprise Plan */}
-          <div className="mx-auto w-full max-w-md overflow-hidden rounded-2xl border border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+          <div className="mx-auto w-full max-w-md overflow-hidden rounded-2xl border border-gray-700 bg-gray-800/20 backdrop-blur-sm">
             <div className="p-8">
               <h3 className="mb-2 text-xl font-semibold">Enterprise</h3>
               <div className="mb-6 flex items-end gap-1">

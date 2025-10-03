@@ -131,7 +131,7 @@ export default function Features() {
             <AnimatedCard
               key={index}
               delay={0.1 * index}
-              className="rounded-xl border border-gray-700 bg-gray-800/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-orange-500/50"
+              className="rounded-xl border border-gray-700 bg-gray-800/20 p-6 backdrop-blur-sm transition-all duration-300 hover:border-orange-500/50"
             >
               <motion.div
                 className="text-primary mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gray-700/50"
