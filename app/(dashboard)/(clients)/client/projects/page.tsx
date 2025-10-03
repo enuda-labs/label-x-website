@@ -21,6 +21,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createProject, getProjects } from '@/services/apis/project'
 import { isAxiosError } from 'axios'
 import { useRouter } from 'next/navigation'
+import StatsOverview from '@/components/project/client/stats-overview'
 
 interface Project {
   id: number
@@ -198,6 +199,7 @@ const Projects = () => {
         </Dialog>
       </div>
 
+      <StatsOverview />
       {/* Projects List */}
       <div className="space-y-4">
         {loading ? (
@@ -212,7 +214,9 @@ const Projects = () => {
             <Card
               key={project.id}
               className="cursor-pointer border-white/10 bg-white/5 p-5"
-              onClick={() => router.push(`/client/projects/${project.id}`)}
+              onClick={() =>
+                router.push(`/client/projects/${project.id}/new-details`)
+              }
             >
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-col justify-between md:flex-row md:items-center">
