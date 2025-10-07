@@ -98,12 +98,11 @@ function Header() {
                 </span>
               </Link>
             )}
-            <button
-              onClick={handleScrollToPartner}
-              className="cursor-pointer rounded-lg bg-orange-500 px-6 py-2 font-medium text-white transition-colors duration-300 hover:bg-orange-600"
-            >
-              Book a Demo
-            </button>
+            <Link href="/auth/login">
+              <button className="cursor-pointer rounded-lg bg-orange-500 px-6 py-2 font-medium text-white transition-colors duration-300 hover:bg-orange-600">
+                Login as client
+              </button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -175,12 +174,15 @@ function Header() {
                     </span>
                   </Link>
                 )}
-                <button
-                  onClick={handleScrollToPartner}
-                  className="block w-full rounded-md bg-orange-500 px-3 py-3 text-center text-base font-medium text-white hover:bg-orange-600"
-                >
-                  Book A Demo
-                </button>
+
+                <Link href="/auth/login">
+                  <button
+                    onClick={handleScrollToPartner}
+                    className="block w-full rounded-md bg-orange-500 px-3 py-3 text-center text-base font-medium text-white hover:bg-orange-600"
+                  >
+                    Login as client
+                  </button>
+                </Link>
               </div>
             </div>
           </div>

@@ -1,7 +1,8 @@
-import { DownloadIcon } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AnimatedSection, AnimatedButton } from '../shared/animated-sections'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const FloatingParticle = ({ delay = 0 }) => (
   <motion.div
@@ -105,14 +106,18 @@ const Hero = () => {
 
           <AnimatedSection delay={0.8}>
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-              <AnimatedButton className="flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-3 font-medium text-white shadow-lg transition-all duration-300 hover:bg-orange-600 hover:shadow-orange-500/25">
-                <DownloadIcon size={20} />
-                App Store
-              </AnimatedButton>
-              <AnimatedButton className="flex items-center justify-center gap-2 rounded-lg bg-gray-800 px-6 py-3 font-medium text-white shadow-lg transition-all duration-300 hover:bg-gray-700">
-                <DownloadIcon size={20} />
-                Google Play
-              </AnimatedButton>
+              <Link href="/auth/role">
+                <AnimatedButton className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-3 font-bold text-white shadow-lg transition-all duration-300 hover:bg-orange-600 hover:shadow-orange-500/25">
+                  Create a Project
+                  <ArrowUpRight size={20} />
+                </AnimatedButton>
+              </Link>
+              <a href="#partnership">
+                <AnimatedButton className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-800 px-6 py-3 font-medium text-white shadow-lg transition-all duration-300 hover:bg-gray-700">
+                  {/* <LogIn size={20} /> */}
+                  Book a Demo
+                </AnimatedButton>
+              </a>
             </div>
           </AnimatedSection>
 
@@ -181,7 +186,7 @@ const Hero = () => {
             <div className="mt-16 grid grid-cols-2 gap-8 text-center md:grid-cols-4">
               {[
                 { value: '10K+', label: 'Expert Labelers' },
-                { value: '100+', label: 'Task Types Supported' },
+                { value: '5', label: 'Task Types Supported' },
                 { value: '99.5%', label: 'Quality Accuracy' },
                 { value: '24/7', label: 'Global Coverage' },
               ].map((stat, index) => (
