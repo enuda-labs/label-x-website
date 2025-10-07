@@ -112,7 +112,7 @@ const Hero = () => {
                   <ArrowUpRight size={20} />
                 </AnimatedButton>
               </Link>
-              <a href="#contact">
+              <a href="#partnership">
                 <AnimatedButton className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-800 px-6 py-3 font-medium text-white shadow-lg transition-all duration-300 hover:bg-gray-700">
                   {/* <LogIn size={20} /> */}
                   Book a Demo
