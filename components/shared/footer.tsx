@@ -8,10 +8,10 @@ export default function Footer() {
       <div className="pointer-events-none absolute top-0 left-0 h-64 w-full bg-gradient-to-b from-black/20 to-transparent"></div>
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
+        <div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3 lg:gap-12">
           <div>
             <div className="mb-6 flex items-center space-x-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-xl font-bold text-white">
+              <div className="bg-primary flex h-10 w-10 items-center justify-center rounded-lg text-xl font-bold text-white">
                 Lx
               </div>
               <span className="text-xl font-bold tracking-tight"> Labelx</span>
@@ -47,24 +47,19 @@ export default function Footer() {
           <div>
             <h3 className="mb-4 text-lg font-semibold">Company</h3>
             <ul className="space-y-3">
-              {[
-                'About Us',
-                'Our Team',
-                'Careers',
-                'Press',
-                'News',
-                'Contact',
-              ].map((item, index) => (
-                <li key={index}>
-                  <a
-                    href="#"
-                    className="flex items-center gap-1 text-gray-400 transition-colors duration-200 hover:text-white"
-                  >
-                    <ChevronRight size={14} className="text-orange-500" />
-                    {item}
-                  </a>
-                </li>
-              ))}
+              {['About Us', 'Our Team', 'Careers', 'Contact'].map(
+                (item, index) => (
+                  <li key={index}>
+                    <a
+                      href="#"
+                      className="flex items-center gap-1 text-gray-400 transition-colors duration-200 hover:text-white"
+                    >
+                      <ChevronRight size={14} className="text-orange-500" />
+                      {item}
+                    </a>
+                  </li>
+                )
+              )}
             </ul>
           </div>
 
@@ -74,9 +69,9 @@ export default function Footer() {
               {[
                 'Features',
                 'Pricing',
-                'API Documentation',
-                'Integrations',
-                'Case Studies',
+                // 'API Documentation',
+                // 'Integrations',
+                // 'Case Studies',
                 'Download App',
               ].map((item, index) => (
                 <li key={index}>
@@ -92,7 +87,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div>
+          {/* <div>
             <h3 className="mb-4 text-lg font-semibold">Resources</h3>
             <ul className="space-y-3">
               {[
@@ -114,7 +109,7 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
         </div>
 
         <div className="border-t border-gray-800 pt-8 text-center md:flex md:items-center md:justify-between">
