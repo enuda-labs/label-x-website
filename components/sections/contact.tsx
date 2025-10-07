@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Mail, Phone, Send, MessageSquare } from 'lucide-react'
+import { Mail, Send, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -49,7 +49,7 @@ export default function Contact() {
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-orange-500/20">
-                    <Mail size={20} className="text-orange-500" />
+                    <Mail size={20} className="text-primary" />
                   </div>
                   <div>
                     <h4 className="mb-1 font-medium">Email Us</h4>
@@ -58,7 +58,7 @@ export default function Contact() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
+                {/* <div className="flex items-start gap-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-orange-500/20">
                     <Phone size={20} className="text-orange-500" />
                   </div>
@@ -67,7 +67,7 @@ export default function Contact() {
                     <p className="text-gray-400">+1 (555) 123-4567</p>
                     <p className="text-gray-400">Mon-Fri, 9AM-6PM EST</p>
                   </div>
-                </div>
+                </div> */}
 
                 {/* <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
