@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { TaskClusterItem } from '@/type'
 import {
   Clock,
   FileText,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
-export const TaskCard = ({ task }: { task: TaskItem }) => {
+export const TaskCard = ({ task }: { task: TaskClusterItem }) => {
   const progressPercentage =
     (task.completedItems / task.labeller_per_item_count) * 100
 
@@ -84,7 +85,7 @@ export const TaskCard = ({ task }: { task: TaskItem }) => {
               {getTypeIcon(task.task_type)}
             </div>
             <div>
-              <CardTitle className="text-lg">{task.title}</CardTitle>
+              <CardTitle className="text-lg">{task.name}</CardTitle>
               <p className="text-muted-foreground mt-1 text-sm">
                 {task.labeller_instructions}
               </p>

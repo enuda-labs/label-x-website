@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getProject, ProjectData } from '@/services/apis/project'
 import { exportToCSV, listTasksClusterInProject } from '@/services/apis/task'
+import { TaskClusterItem } from '@/type'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Plus, Search } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
@@ -107,9 +108,10 @@ const Cluster = ({
   cluster,
   project,
 }: {
-  cluster: TaskItem
+  cluster: TaskClusterItem
   project: ProjectData
 }) => {
+  const router = useRouter()
   const exportMutation = useMutation({
     mutationFn: exportToCSV,
     onSuccess: (response) => {
@@ -153,7 +155,7 @@ const Cluster = ({
   return (
     <Card
       className="cursor-pointer border-white/10 bg-white/5 p-5"
-      // onClick={() => router.push(`/client/projects/${cluster.id}`)}
+      onClick={() => router.push(`tasks/${cluster.id}`)}
     >
       <div className="flex flex-col space-y-4">
         <div className="flex flex-col justify-between md:flex-row md:items-center">

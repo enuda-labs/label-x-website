@@ -1,7 +1,11 @@
-import { InputType } from '@/components/project/task/task-configurations'
+import {
+  InputType,
+  LabellingChoice,
+} from '@/components/project/task/task-configurations'
 import { AxiosClient } from '@/utils/axios'
 import { ApiResponse } from './user'
 import { SystemCosts } from '@/app/(dashboard)/(clients)/client/projects/[id]/tasks/new/datapoint-cost'
+import { TaskData, TaskClusterItem, TaskItemDetails } from '@/type'
 
 const axiosClient = new AxiosClient()
 
@@ -96,8 +100,15 @@ export const createTaskCluster = async (payload: TaskClusterPayload) => {
 }
 
 export const listTasksClusterInProject = async (projectId: string) => {
-  const response = await axiosClient.get<TaskItem[]>(
+  const response = await axiosClient.get<TaskClusterItem[]>(
     `/tasks/project/${projectId}/clusters/`
+  )
+  return response.data
+}
+
+export const clusterLabelsSummary = async (clusterId: string) => {
+  const response = await axiosClient.get<TaskItemDetails>(
+    `/tasks/cluster/${clusterId}/`
   )
   return response.data
 }
