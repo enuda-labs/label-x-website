@@ -18,31 +18,71 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import Image from 'next/image'
-import { Label, mockProjectData } from '@/constants'
+import { Label } from '@/constants'
 import AllLabelersReviewsTab from '@/components/project/client/labelers-reviews-tab'
 import AllTasksTab from '@/components/project/client/all-tasks-tabs'
 import AllLabelers from '@/components/project/client/all-labelers'
 import { getResponseTypeIcon } from '@/constants/status'
+import { useQuery } from '@tanstack/react-query'
+import { clusterLabelsSummary } from '@/services/apis/task'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const ProjectReviews = () => {
-  const { id: projectId } = useParams()
+  const { id, taskId } = useParams()
   //console.log(projectId)
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedLabeler, setSelectedLabeler] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
 
-  const project = mockProjectData[Number(projectId)]
+  const { data: labels, isPending } = useQuery({
+    queryKey: ['labels', id, taskId],
+    queryFn: () => clusterLabelsSummary(taskId as string),
+  })
 
+  const project = labels
+
+  if (isPending) {
+    return (
+      <>
+        <div className="sticky top-0 z-10 border-b backdrop-blur-sm">
+          <div className="container mx-auto px-2 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.back()}
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <div>
+                  <p className="text-muted-foreground">
+                    Review labeler submissions and track progress
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-5">
+          <Skeleton className="h-28 bg-white/5" />
+          <Skeleton className="h-28 bg-white/5" />
+          <Skeleton className="h-28 bg-white/5" />
+          <Skeleton className="h-28 bg-white/5" />
+        </div>
+      </>
+    )
+  }
   if (!project) {
     return (
       <div className="bg-background flex min-h-screen items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-            <h2 className="mb-2 text-xl font-bold">Project Not Found</h2>
+            <h2 className="mb-2 text-xl font-bold">Task Not Found</h2>
             <p className="text-muted-foreground mb-4">
-              The project you&#39;re looking for doesn&#39;t exist or has been
+              The task you&#39;re looking for doesn&#39;t exist or has been
               removed.
             </p>
             <Button onClick={() => router.push('/client/projects')}>
@@ -179,15 +219,11 @@ const ProjectReviews = () => {
         <div className="container mx-auto px-2 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.push('/client/projects')}
-              >
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold">{project.title}</h1>
+                <h1 className="text-3xl font-bold">{project.name}</h1>
                 <p className="text-muted-foreground">
                   Review labeler submissions and track progress
                 </p>
@@ -263,9 +299,7 @@ const ProjectReviews = () => {
                 </p>
               </div>
               <Badge
-                variant={
-                  project.status === 'in_review' ? 'secondary' : 'default'
-                }
+                variant={project.status === 'pending' ? 'secondary' : 'default'}
               >
                 {project.status}
               </Badge>

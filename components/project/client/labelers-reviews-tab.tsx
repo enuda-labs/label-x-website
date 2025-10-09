@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -12,9 +13,13 @@ import {
 import { TabsContent } from '@/components/ui/tabs'
 import { Label } from '@/constants'
 import { getStatusColor, getStatusIcon } from '@/constants/status'
+import { exportToCSV } from '@/services/apis/task'
+import { TaskItemDetails } from '@/type'
+import { useMutation } from '@tanstack/react-query'
 import { Filter, Search } from 'lucide-react'
 import Image from 'next/image'
 import React from 'react'
+import { toast } from 'sonner'
 
 interface Labeler {
   id: number
@@ -23,25 +28,12 @@ interface Labeler {
   domains?: Array<{ domain: string }>
 }
 
-interface Task {
-  id: number
-  serial_no: string
-  processing_status: string
-  file_url?: string
-}
-
-interface Project {
-  assigned_reviewers: Labeler[]
-  tasks: Task[]
-  input_type: string
-}
-
 interface AllLabelersTabProps {
   searchQuery: string
   setSearchQuery: (value: string) => void
   selectedLabeler: string
   setSelectedLabeler: (value: string) => void
-  project: Project
+  project: TaskItemDetails
   groupLabelsByLabeler: () => Record<string, Label[]>
   getLabelerById: (id: number) => Labeler | undefined
   renderLabelResponse: (label: Label, inputType: string) => React.ReactNode
@@ -57,6 +49,25 @@ function AllLabelersReviewsTab({
   getLabelerById,
   renderLabelResponse,
 }: AllLabelersTabProps) {
+  const exportMutation = useMutation({
+    mutationFn: exportToCSV,
+    onSuccess: (response) => {
+      console.log('response', response)
+      toast('Export Successful')
+      const url = window.URL.createObjectURL(new Blob([response]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'tasks-export.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    },
+    onError: () => {
+      toast('Failed to export data')
+    },
+  })
+
   return (
     <TabsContent value="reviews" className="space-y-6">
       {/* Filters */}
@@ -86,6 +97,15 @@ function AllLabelersReviewsTab({
                 ))}
               </SelectContent>
             </Select>
+
+            <Button
+              onClick={() => exportMutation.mutate(project.id)}
+              disabled={
+                exportMutation.isPending || project.my_labels.length < 1
+              }
+            >
+              {exportMutation.isPending ? 'Exporting...' : 'Export Labels'}
+            </Button>
           </div>
         </CardContent>
       </Card>

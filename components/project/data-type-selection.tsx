@@ -1,5 +1,12 @@
 import React from 'react'
-import { FileText, Image, Video, FileSpreadsheet, FileType } from 'lucide-react'
+import {
+  FileText,
+  Image,
+  Video,
+  FileSpreadsheet,
+  FileType,
+  AudioLines,
+} from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -24,6 +31,13 @@ const dataTypes = [
     title: 'Images',
     description: 'Classify, tag, or annotate visual content',
     examples: 'Photos, screenshots, drawings, charts',
+  },
+  {
+    type: 'AUDIO' as DataType,
+    icon: AudioLines,
+    title: 'Audio',
+    description: 'Analyze and label audio content',
+    examples: 'Podcasts, music, voice recordings',
   },
   {
     type: 'VIDEO' as DataType,

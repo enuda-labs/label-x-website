@@ -214,9 +214,7 @@ const Projects = () => {
             <Card
               key={project.id}
               className="cursor-pointer border-white/10 bg-white/5 p-5"
-              onClick={() =>
-                router.push(`/client/projects/${project.id}/new-details`)
-              }
+              onClick={() => router.push(`/client/projects/${project.id}`)}
             >
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-col justify-between md:flex-row md:items-center">

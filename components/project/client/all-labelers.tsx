@@ -3,13 +3,14 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TabsContent } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Label, Project, Reviewer } from '@/constants'
+import { Label } from '@/constants'
+import { TaskItemDetails } from '@/type'
 
-export default function AllLabelers({ project }: { project: Project }) {
+export default function AllLabelers({ project }: { project: TaskItemDetails }) {
   return (
     <TabsContent value="labelers">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {project.assigned_reviewers.map((labeler: Reviewer) => {
+        {project.assigned_reviewers.map((labeler) => {
           const submissions = project.my_labels.filter(
             (l: Label) => l.labeller === labeler.id
           ).length
