@@ -95,6 +95,7 @@ const Annotate = () => {
           taskConfig.taskName &&
           taskConfig.description &&
           taskConfig.instructions &&
+          taskConfig.labeler_domain &&
           taskConfig.tasks.length > 0 &&
           taskConfig.tasks.every((task) => task.data.trim()) &&
           (taskConfig.inputType === 'text' ||
@@ -338,7 +339,9 @@ const Annotate = () => {
 
       case 'AUDIO':
         const firstAudioTask = taskConfig.tasks[0]
-        const audioUrl = getFileUrl(firstAudioTask.file)
+        const audioUrl = getFileUrl(
+          firstAudioTask.file || firstAudioTask.recordedBlob
+        )
 
         return (
           <Card className="shadow-soft bg-card/30">

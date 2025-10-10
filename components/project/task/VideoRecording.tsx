@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Video, Square, Play, Trash2 } from 'lucide-react'
+import { Video, Square, Pause, Play, Trash2 } from 'lucide-react'
 import {
   formatTime,
   getSupportedMime,
@@ -24,9 +24,11 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [duration, setDuration] = useState<number | null>(null)
+  const [playDuration, setPlayDuration] = useState(0)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [maxRecorded, setMaxRecorded] = useState(0)
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -34,6 +36,7 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
   const cameraPreviewRef = useRef<HTMLVideoElement | null>(null)
   const recordedVideoRef = useRef<HTMLVideoElement | null>(null)
   const timerRef = useRef<number | null>(null)
+  const playTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     return () => {
@@ -97,11 +100,14 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
     if (timerRef.current) {
       window.clearInterval(timerRef.current)
       timerRef.current = null
+      playTimerRef.current = null
+      setMaxRecorded((e) => Math.max(e, elapsed))
     }
   }
 
   const startRecording = async () => {
     setError(null)
+    discardRecording()
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -212,7 +218,32 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
   const playVideo = () => {
     if (recordedVideoRef.current) {
       recordedVideoRef.current.play()
+      playTimerRef.current = window.setInterval(
+        () => setPlayDuration((e) => e + 1),
+        1000
+      )
       setIsPlaying(true)
+    }
+  }
+
+  const pauseVideo = () => {
+    if (recordedVideoRef.current) {
+      recordedVideoRef.current.pause()
+      setIsPlaying(false)
+
+      if (playTimerRef.current) {
+        window.clearInterval(playTimerRef.current)
+      }
+    }
+  }
+  const endVideo = () => {
+    setPlayDuration(0)
+    if (recordedVideoRef.current) {
+      setIsPlaying(false)
+
+      if (playTimerRef.current) {
+        window.clearInterval(playTimerRef.current)
+      }
     }
   }
 
@@ -261,16 +292,27 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
             Stop
           </button>
         )}
-
-        <button
-          type="button"
-          onClick={playVideo}
-          disabled={!videoBlob || isPlaying}
-          className="flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-white/80 transition-colors hover:bg-gray-50 disabled:opacity-50"
-        >
-          <Play className="h-4 w-4" />
-          Play
-        </button>
+        {isPlaying ? (
+          <button
+            type="button"
+            onClick={pauseVideo}
+            disabled={!isPlaying}
+            className="flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-white/80 transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Pause className="h-4 w-4" />
+            Pause
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={playVideo}
+            disabled={!videoBlob || isPlaying}
+            className="flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-white/80 transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Play className="h-4 w-4" />
+            Play
+          </button>
+        )}
 
         <button
           type="button"
@@ -301,9 +343,11 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
           <div className="text-xs text-gray-600">
             {isRecording
               ? `Recording — ${formatTime(elapsed)}`
-              : videoBlob
-                ? `Recorded • ${duration ? formatTime(duration) : '—'}`
-                : 'Ready to record'}
+              : isPlaying && playDuration
+                ? `Playing - ${formatTime(playDuration)}`
+                : videoBlob
+                  ? `Recorded • ${duration ? formatTime(duration) : '—'}`
+                  : 'Ready to record'}
           </div>
           <div className="ml-auto text-xs text-gray-500">
             Max {maxDurationSec}s
@@ -311,21 +355,32 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
         </div>
 
         {/* Progress bar */}
-        <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
-          <div
-            className="h-2 bg-red-500 transition-all duration-300"
-            style={{
-              width: `${Math.min(
-                100,
-                isRecording
-                  ? (elapsed / maxDurationSec) * 100
-                  : duration
-                    ? (duration / maxDurationSec) * 100
-                    : 0
-              )}%`,
-            }}
-          />
-        </div>
+        {isPlaying ? (
+          <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
+            <div
+              className="h-2 bg-red-500 transition-all duration-300"
+              style={{
+                width: `${Math.min(100, (playDuration / maxRecorded) * 100)}%`,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
+            <div
+              className="h-2 bg-red-500 transition-all duration-300"
+              style={{
+                width: `${Math.min(
+                  100,
+                  isRecording
+                    ? (elapsed / maxDurationSec) * 100
+                    : duration
+                      ? (duration / maxDurationSec) * 100
+                      : 0
+                )}%`,
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Camera preview while recording */}
@@ -352,8 +407,8 @@ const VideoRecording: React.FC<VideoRecordingProps> = ({
           src={videoUrl}
           className="w-full rounded-md"
           playsInline
-          onEnded={() => setIsPlaying(false)}
-          onPause={() => setIsPlaying(false)}
+          onEnded={endVideo}
+          onPause={pauseVideo}
         />
       )}
 

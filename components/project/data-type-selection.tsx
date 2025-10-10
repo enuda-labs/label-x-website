@@ -35,7 +35,7 @@ const dataTypes = [
   {
     type: 'AUDIO' as DataType,
     icon: AudioLines,
-    title: 'Audio',
+    title: 'Audios',
     description: 'Analyze and label audio content',
     examples: 'Podcasts, music, voice recordings',
   },
