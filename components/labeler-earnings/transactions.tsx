@@ -194,17 +194,18 @@ export const TransactionsContent = ({ showTen = false }: { showTen?: boolean }) 
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              transaction.status === 'completed'
-                                ? 'bg-green-500/20 text-green-400'
-                                : transaction.status === 'pending'
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : 'bg-red-500/20 text-red-400'
-                            }`}
+                        <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          transaction.status === 'completed' || transaction.status === 'success' || transaction.status === 'successful'
+                          ? 'bg-green-500/20 text-green-400'
+                          : transaction.status === 'pending'
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-red-500/20 text-red-400'
+                          }`}
                           >
-                            {transaction.status}
+                          {transaction.status}
                           </span>
+
                         </td>
                       </tr>
                     ))}

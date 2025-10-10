@@ -21,25 +21,68 @@ import {
 import { uploadToCloudinary, copyToClipboard } from "@/utils/cloudinaryUpload";
 import { annotateTask } from "@/services/apis/clusters";
 import { AxiosError } from "axios"
+import SubtitleAnnotator from "@/components/SubtitleAnnotator/SubtitleAnnotator";
 
 
 type Props = {
   type: "voice" | "video" | "image";
   taskId: string;
+  setUploading?: (value: boolean) => void;
 };
+
+
+async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob | null> {
+  return new Promise((resolve, reject) => {
+    try {
+      const video = document.createElement("video");
+      video.src = URL.createObjectURL(videoBlob);
+
+      video.addEventListener("loadedmetadata", () => {
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaElementSource(video);
+        const dest = audioContext.createMediaStreamDestination();
+        source.connect(dest);
+        source.connect(audioContext.destination);
+
+        const recorder = new MediaRecorder(dest.stream);
+        const chunks: Blob[] = [];
+
+        recorder.ondataavailable = (e) => chunks.push(e.data);
+        recorder.onstop = () => {
+          const audioBlob = new Blob(chunks, { type: "audio/webm" });
+          resolve(audioBlob);
+          URL.revokeObjectURL(video.src);
+        };
+
+        recorder.start();
+        video.play();
+
+        video.onended = () => {
+          recorder.stop();
+        };
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 
 export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const maxAudioSec = 60; // seconds
   const maxVideoSec = 30;
+  const [audioOnly, setAudioOnly] = useState(false);
 
   // audio/video state
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [liveSubtitle, setLiveSubtitle] = useState('');
 
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [isPreparingMic, setIsPreparingMic] = useState(false);
 
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
@@ -75,6 +118,8 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
 
   const audioTimerRef = useRef<number | null>(null);
   const videoTimerRef = useRef<number | null>(null);
+
+
 
   // cleanup on unmount
   useEffect(() => {
@@ -137,6 +182,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     }
     setError(null)
     setUploadingImage(true)
+     setUploading?.(true);
     setImageCloudUrl(null)
     try {
       const url = await uploadToCloudinary(imageFile, "image")
@@ -175,6 +221,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   }
   setError(null)
   setUploadingAudio(true)
+   setUploading?.(true);
   setAudioCloudUrl(null)
   try {
     const url = await uploadToCloudinary(audioBlob, "video") // ✅ keep video for audio uploads
@@ -202,12 +249,25 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       setError("No video to upload.");
       return;
     }
+
     setError(null);
     setUploadingVideo(true);
+     setUploading?.(true);
     setVideoCloudUrl(null);
 
     try {
-      const url = await uploadToCloudinary(videoBlob, "video");
+      let blobToUpload = videoBlob;
+      let uploadType = "video";
+
+      if (audioOnly) {
+        // ✅ Extract audio track
+        const audioBlob = await extractAudioFromVideo(videoBlob);
+        if (!audioBlob) throw new Error("Failed to extract audio track.");
+        blobToUpload = audioBlob;
+        uploadType = "audio";
+      }
+
+      const url = await uploadToCloudinary(blobToUpload, uploadType);
       setVideoCloudUrl(url);
 
       const payload = {
@@ -236,18 +296,47 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
         throw new Error("MediaDevices API unavailable");
       }
 
+      // 🎙️ Begin preparation state
+      setIsPreparingMic(true);
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
 
+      // ✅ Prime microphone before recording
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(2048, 1, 1);
+
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+
+      // warm-up read
+      let warmed = false;
+      const warmupPromise = new Promise<void>((resolve) => {
+        processor.onaudioprocess = () => {
+          if (!warmed) {
+            warmed = true;
+            resolve();
+          }
+        };
+      });
+
+      // ⏳ Wait until mic is ready
+      await warmupPromise;
+      processor.disconnect();
+      source.disconnect();
+
+      // ✅ Warm-up complete
+      setIsPreparingMic(false);
+
+      // ✅ after mic warmed, record
       const audioMime = getSupportedMime([
         "audio/webm;codecs=opus",
         "audio/webm",
         "audio/mp4",
         "audio/aac",
       ]);
-      if (!audioMime) {
-        throw new Error("No supported audio format available for recording.");
-      }
+      if (!audioMime) throw new Error("No supported audio format available.");
 
       const mr = new MediaRecorder(stream, { mimeType: audioMime });
       mr.ondataavailable = (e) => {
@@ -276,11 +365,13 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
         }
       };
 
-      mr.start();
+      // ✅ Start recording after mic is ready
+      mr.start(200);
       audioRecorderRef.current = mr;
       setIsRecordingAudio(true);
       startAudioTimer();
 
+      // ⏱️ Auto stop
       setTimeout(() => {
         if (mr.state === "recording") {
           mr.stop();
@@ -289,8 +380,8 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       }, maxAudioSec * 1000);
     } catch (err: unknown) {
       console.error(err);
-
-      if (err && typeof err === "object" && "name" in err && (err as { name?: string }).name === "NotAllowedError") {
+      setIsPreparingMic(false); // stop preparing state on error
+      if (err instanceof DOMException && err.name === "NotAllowedError") {
         setError("Permission denied: allow microphone access.");
       } else if (err instanceof Error) {
         setError(`Failed to start audio recording: ${err.message}`);
@@ -300,6 +391,10 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     }
   };
 
+  if (audioOnly && !('AudioContext' in window)) {
+    setError("AudioContext not supported in this browser.");
+    return;
+  }
 
   const stopAudioRecording = () => {
     try {
@@ -449,6 +544,42 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     }
   };
 
+  // FILE: VoiceVideoSubmission.tsx
+  // 🧠 Speech-to-text subtitle extraction (only while video is recording)
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("Speech recognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setLiveSubtitle(transcript);
+    };
+
+    // ✅ Only start when video recording is active
+    if (isRecordingVideo) {
+      recognition.start();
+    } else {
+      recognition.stop();
+    }
+
+    return () => recognition.stop();
+  }, [isRecordingVideo]);
+
+
+
+
   // ===== UI =====
   return (
     <div className="space-y-6">
@@ -472,7 +603,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     </div>
 
     <div className="mt-4 space-y-3">
-      {/* Recording controls */}
+      {/* 🎙 Recording controls */}
       <div className="flex items-center gap-2">
         {!isRecordingAudio ? (
           <button
@@ -496,7 +627,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
           type="button"
           className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80"
           onClick={() => audioRef.current?.play()}
-          disabled={!audioBlob}
+          disabled={!audioBlob || isBusy}
         >
           Play
         </button>
@@ -518,7 +649,15 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
         )}
       </div>
 
-      {/* Recording status */}
+      {/* 🌀 Preparing microphone */}
+      {isPreparingMic && (
+        <div className="text-xs text-white/60 flex items-center gap-2">
+          <span className="animate-spin rounded-full h-3 w-3 border-t-2 border-white/40"></span>
+          Preparing microphone...
+        </div>
+      )}
+
+      {/* 🎛 Recording status */}
       <div className="flex items-center gap-3">
         <div
           className={`h-3 w-3 rounded-full ${
@@ -557,12 +696,12 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       {/* Audio player */}
       <audio
         ref={audioRef}
-        controls
+         controls={!uploadingAudio}
         src={audioUrl ?? undefined}
         className="w-full"
       />
 
-      {/* Upload button moved below */}
+      {/* Upload button */}
       {audioBlob && (
         <div className="mt-4">
           <button
@@ -609,6 +748,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     </div>
   </div>
 )}
+
 
         {type === "image" && (
     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -707,161 +847,221 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
 
 
   {type === "video" && (
-<div className="rounded-xl border border-white/10 bg-white/5 p-4">
-<div className="flex items-start justify-between">
-<div>
-  <div className="text-sm text-white/60">Video Recording</div>
-  <div className="mt-2 text-sm text-white/80">
-    Record a short video to show context to labelers.
+    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-sm text-white/60">Video Recording</div>
+          <div className="mt-2 text-sm text-white/80">
+            Record a short video to show context to labelers.
+          </div>
+        </div>
+        <div className="text-xs text-white/60">Max {maxVideoSec}s</div>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {/* ✅ Show Extract Audio Only toggle AFTER recording */}
+{videoBlob && !isRecordingVideo && (
+  <div className="flex items-center gap-2">
+    <input
+      id="audioOnly"
+      type="checkbox"
+      className="h-4 w-4 accent-primary"
+      onChange={(e) => setAudioOnly(e.target.checked)}
+      checked={audioOnly}
+    />
+    <label htmlFor="audioOnly" className="text-sm text-white/80">
+      Extract audio only
+    </label>
   </div>
-</div>
-<div className="text-xs text-white/60">Max {maxVideoSec}s</div>
-</div>
+)}
 
-<div className="mt-4 space-y-3">
-{/* Recording controls */}
-<div className="flex items-center gap-2">
-  {!isRecordingVideo ? (
-    <button
-      type="button"
-      className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white"
-      onClick={startVideoRecording}
-    >
-      Record
-    </button>
-  ) : (
-    <button
-      type="button"
-      className="rounded-md bg-zinc-700 px-3 py-2 text-sm font-medium text-white"
-      onClick={stopVideoRecording}
-    >
-      Stop
-    </button>
-  )}
 
-  <button
-    type="button"
-    className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
-    onClick={() => recordedVideoRef.current?.play()}
-    disabled={!videoBlob}
-  >
-    Play
-  </button>
+        {/* Recording controls */}
+        <div className="flex items-center gap-2">
+          {!isRecordingVideo ? (
+            <button
+              type="button"
+              className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white"
+              onClick={startVideoRecording}
+              disabled={isRecordingAudio || isRecordingVideo}
+            >
+              Record
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="rounded-md bg-zinc-700 px-3 py-2 text-sm font-medium text-white"
+              onClick={stopVideoRecording}
+            >
+              Stop
+            </button>
+          )}
 
-  <button
-    type="button"
-    className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
-    onClick={discardVideo}
-    disabled={!videoBlob}
-  >
-    Discard
-  </button>
+          <button
+            type="button"
+            className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
+            onClick={() => recordedVideoRef.current?.play()}
+            disabled={!videoBlob || isBusy}
+          >
+            Play
+          </button>
 
-  {videoBlob && (
-    <div className="ml-auto text-xs text-white/60">
-      {readableSize(videoBlob.size)} •{" "}
-      {videoDuration ? `${formatTime(videoDuration)}` : "Recorded"}
-    </div>
-  )}
-</div>
+          <button
+            type="button"
+            className="rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
+            onClick={discardVideo}
+            disabled={!videoBlob}
+          >
+            Discard
+          </button>
 
-{/* Recording status */}
-<div className="flex items-center gap-3">
-  <div
-    className={`h-3 w-3 rounded-full ${
-      isRecordingVideo ? "bg-red-500 animate-pulse" : "bg-white/20"
-    }`}
-    aria-hidden
-  />
-  <div className="text-xs text-white/60">
-    {isRecordingVideo
-      ? `Recording — ${formatTime(videoElapsed)}`
-      : videoBlob
-      ? `Recorded • ${videoDuration ? formatTime(videoDuration) : "—"}`
-      : "Not recorded"}
-  </div>
-</div>
+          {videoBlob && (
+            <div className="ml-auto text-xs text-white/60">
+              {readableSize(videoBlob.size)} •{" "}
+              {videoDuration ? `${formatTime(videoDuration)}` : "Recorded"}
+            </div>
+          )}
+        </div>
 
-{/* Progress bar */}
-<div className="w-full bg-white/10 h-2 rounded overflow-hidden mt-2">
-  <div
-    className="h-2 bg-red-500"
-    style={{
-      width: `${Math.min(
-        100,
-        isRecordingVideo
-          ? (videoElapsed / maxVideoSec) * 100
-          : videoDuration
-          ? (videoDuration / maxVideoSec) * 100
-          : 0
-      )}%`,
-    }}
-  />
-</div>
 
-{/* Camera preview */}
-<div className="w-full overflow-hidden rounded-md bg-black/30">
-  <video
-    ref={cameraPreviewRef}
-    className="h-[180px] w-full object-cover"
-    playsInline
-    muted
-    autoPlay
-  />
-</div>
+        {/* below your recorded video element */}
+        <div className="mt-6">
+        <SubtitleAnnotator
+  videoSrc={videoUrl ?? videoCloudUrl ?? ""}
+  chunkSize={5}
+  liveText={liveSubtitle} // 👈 NEW prop for live subtitle updates
+  onExport={async (srtText) => {
+    // ✅ Create a .srt file and download locally
+    const blob = new Blob([srtText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
 
-{/* Recorded video */}
-<video
-  ref={recordedVideoRef}
-  controls
-  src={videoUrl ?? undefined}
-  className="w-full rounded-md"
-  playsInline
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "subtitles.srt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    // Cleanup
+    URL.revokeObjectURL(url);
+  }}
 />
 
-{/* Upload button moved below */}
-{videoBlob && (
-  <div className="mt-4">
-    <button
-      type="button"
-      onClick={handleUploadVideo}
-      disabled={!videoBlob || uploadingVideo}
-      className="w-full cursor-pointer rounded-md bg-primary hover:bg-primary/90 px-4 py-2 text-sm font-medium text-white"
-    >
-      {uploadingVideo ? "Uploading…" : "Upload"}
-    </button>
-  </div>
-)}
+        </div>
 
-{videoUrl && (
-  <div className="mt-2 text-xs">
-    <a href={videoUrl} download="recording_video.webm" className="underline">
-      Download video
-    </a>
-  </div>
-)}
 
-{videoCloudUrl && (
-  <div className="mt-2 text-xs flex items-center gap-2">
-    <a
-      href={videoCloudUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="underline"
-    >
-      Open uploaded video
-    </a>
-    <button
-      onClick={() => copyToClipboard(videoCloudUrl)}
-      className="text-xs underline"
-    >
-      Copy URL
-    </button>
-  </div>
-)}
-</div>
-</div>
-)}
+
+        {/* Recording status */}
+        <div className="flex items-center gap-3">
+          <div
+            className={`h-3 w-3 rounded-full ${
+              isRecordingVideo ? "bg-red-500 animate-pulse" : "bg-white/20"
+            }`}
+          />
+          <div className="text-xs text-white/60">
+            {isRecordingVideo
+              ? `Recording — ${formatTime(videoElapsed)}`
+              : videoBlob
+              ? `Recorded • ${videoDuration ? formatTime(videoDuration) : "—"}`
+              : "Not recorded"}
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="w-full bg-white/10 h-2 rounded overflow-hidden mt-2">
+          <div
+            className="h-2 bg-red-500"
+            style={{
+              width: `${Math.min(
+                100,
+                isRecordingVideo
+                  ? (videoElapsed / maxVideoSec) * 100
+                  : videoDuration
+                  ? (videoDuration / maxVideoSec) * 100
+                  : 0
+              )}%`,
+            }}
+          />
+        </div>
+
+        {/* Camera preview */}
+        <div className="w-full overflow-hidden rounded-md bg-black/30">
+          <video
+            ref={cameraPreviewRef}
+            className="h-[180px] w-full object-cover"
+            playsInline
+            muted
+            autoPlay
+          />
+          {isRecordingVideo && (
+    <div className="absolute bottom-8 w-full text-center z-50">
+      <p className="bg-black/60 text-white px-4 py-2 rounded-xl inline-block">
+        {liveSubtitle || 'Listening...'}
+      </p>
+    </div>
+  )}
+
+
+        </div>
+
+        {/* Recorded video */}
+        <video
+          ref={recordedVideoRef}
+           controls={!uploadingVideo}
+          src={videoUrl ?? undefined}
+          className="w-full rounded-md"
+          playsInline
+        />
+
+        {/* Upload button */}
+        {videoBlob && (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={handleUploadVideo}
+              disabled={!videoBlob || uploadingVideo}
+              className="w-full cursor-pointer rounded-md bg-primary hover:bg-primary/90 px-4 py-2 text-sm font-medium text-white"
+            >
+              {uploadingVideo
+                ? audioOnly
+                  ? "Uploading audio…"
+                  : "Uploading video…"
+                : audioOnly
+                ? "Upload Audio Only"
+                : "Upload Video"}
+            </button>
+          </div>
+        )}
+
+        {videoUrl && (
+          <div className="mt-2 text-xs">
+            <a href={videoUrl} download="recording_video.webm" className="underline">
+              Download video
+            </a>
+          </div>
+        )}
+
+        {videoCloudUrl && (
+          <div className="mt-2 text-xs flex items-center gap-2">
+            <a
+              href={videoCloudUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Open uploaded {audioOnly ? "audio" : "video"}
+            </a>
+            <button
+              onClick={() => copyToClipboard(videoCloudUrl)}
+              className="text-xs underline"
+            >
+              Copy URL
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
 
       </div>
 

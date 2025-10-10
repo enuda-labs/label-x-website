@@ -284,6 +284,7 @@ const LabelTask = () => {
   const [taskData, setTaskData] = useState<ApiTaskResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false);
 
   const [currentItemIndex, setCurrentItemIndex] = useState(0)
   const [selectedCategory, setSelectedCategory] = useState<string>('')
@@ -742,20 +743,36 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
 
   // Next/Previous should move between items within the cluster
   const handleNextTask = () => {
-    if (currentItemIndex < totalItems - 1) {
-      goToItemIndex(currentItemIndex + 1)
-    } else {
-      toast('This is the last item in the cluster.')
+    if (uploading) {
+      const confirmMove = window.confirm(
+        "A file is still uploading. Are you sure you want to move to the next item?"
+      );
+      if (!confirmMove) return; // user canceled → stop navigation
     }
-  }
+
+    if (currentItemIndex < totalItems - 1) {
+      goToItemIndex(currentItemIndex + 1);
+    } else {
+      toast("This is the last item in the cluster.");
+    }
+  };
 
   const handlePreviousTask = () => {
-    if (currentItemIndex > 0) {
-      goToItemIndex(currentItemIndex - 1)
-    } else {
-      toast('This is the first item in the cluster.')
+    if (uploading) {
+      const confirmMove = window.confirm(
+        "A file is still uploading. Are you sure you want to go back?"
+      );
+      if (!confirmMove) return;
     }
-  }
+
+    if (currentItemIndex > 0) {
+      goToItemIndex(currentItemIndex - 1);
+    } else {
+      toast("This is the first item in the cluster.");
+    }
+  };
+
+  console.log("itemType:", itemType);
 
   // --- Render ---
   return (
@@ -948,6 +965,30 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
                       )
                     }
 
+
+
+                    if (itemType === 'VOICE' || itemType === 'AUDIO') {
+  return (
+    <div className="text-center">
+      <audio
+        src={fileUrl}
+        controls
+        className="mx-auto w-full max-w-md rounded-lg"
+      />
+      <div className="bg-muted/50 mt-4 rounded-lg p-4">
+        {fileName && (
+          <p className="text-muted-foreground text-sm">
+            File: {fileName}
+          </p>
+        )}
+        <p className="mt-2 text-lg">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+
+
                     if (itemType === 'PDF') {
                       return (
                         <div className="text-center">
@@ -1099,6 +1140,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
   <VoiceVideoSubmission
     type={inputType as "video" | "voice" | "image"}
     taskId={currentItem?.id ? String(currentItem.id) : ""}
+     setUploading={setUploading}
   />
 ) : (
     <>
@@ -1157,6 +1199,22 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
     </>
   )}
 
+  {itemType?.toLowerCase() === "image" && (
+    <div className="mt-6 flex justify-center">
+      <Button
+        variant="default"
+        className="gap-2"
+        onClick={() =>
+          router.push(`/label/recorder/taskId=${currentItem?.id}?type=video`)
+        }
+      >
+        <Video className="h-4 w-4" />
+        Go to Video Submission
+      </Button>
+    </div>
+  )}
+
+
 
   <div className="space-y-3">
     {(inputType === 'multiple_choice' || inputType === 'text') && (
@@ -1195,7 +1253,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
                 Previous Task
               </Button>
 
-              <Button onClick={handleNextTask} className="flex-1">
+              <Button  onClick={handleNextTask} className="flex-1">
                 Next Task
               </Button>
             </div>
