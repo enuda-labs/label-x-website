@@ -127,46 +127,6 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const audioTimerRef = useRef<number | null>(null);
   const videoTimerRef = useRef<number | null>(null);
 
-  // at top of the component
-  const [liveSubtitle, setLiveSubtitle] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
-  // 🔹 Temporary test effect to confirm mic + speech detection works
-  useEffect(() => {
-    if (!isRecordingVideo) return;
-    setError(null);
-    setLiveSubtitle("");
-
-    const SpeechRecognitionConstructor =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionConstructor) {
-      console.warn("SpeechRecognition not supported in this browser");
-      return;
-    }
-
-    const rec = new SpeechRecognitionConstructor();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = "en-US";
-
-    rec.onresult = (e: any) => {
-      let transcript = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
-      }
-      setLiveSubtitle(transcript);
-    };
-
-    // 🔍 Add diagnostic event logs
-    rec.onaudiostart = () => console.log("🎤 Audio capturing started");
-    rec.onsoundstart = () => console.log("🔊 Sound detected");
-    rec.onspeechstart = () => console.log("🗣️ Speech detected");
-    rec.onerror = (e: any) => console.log("SpeechRecognition error:", e.error);
-
-    rec.start();
-
-    return () => rec.stop();
-  }, [isRecordingVideo]);
 
 
   // cleanup on unmount
@@ -636,111 +596,38 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     }
   };
 
-  // FILE: VoiceVideoSubmission.tsx
-  // 🧠 Speech-to-text subtitle extraction (only while video is recording)
   useEffect(() => {
-    const SpeechRecognitionConstructor =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionConstructor) {
-      console.warn("Speech recognition not supported in this browser.");
-      return;
-    }
-
-    if (!recognitionRef.current) {
-      const r = new SpeechRecognitionConstructor();
-      r.continuous = true;
-      r.interimResults = true;
-      r.lang = "en-US";
-
-      r.onresult = (event: SpeechRecognitionEvent) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setLiveSubtitle(transcript);
-      };
-
-      r.onerror = (ev: any) => {
-        console.error("SpeechRecognition error", ev);
-        if (ev?.error === "not-allowed") {
-          setError("Microphone access blocked for speech recognition.");
-        } else if (ev?.error) {
-          setError(`Speech recognition error: ${ev.error}`);
-        }
-      };
-
-      r.onend = () => {
-        recognitionActiveRef.current = false;
-        if (isRecordingVideo) {
-          try {
-            r.start();
-            recognitionActiveRef.current = true;
-          } catch (err) {
-            setTimeout(() => {
-              try {
-                r.start();
-                recognitionActiveRef.current = true;
-              } catch (e) {
-                console.warn("Failed to restart SpeechRecognition", e);
-              }
-            }, 250);
-          }
-        }
-      };
-
-      recognitionRef.current = r;
-    }
-
-    const rec = recognitionRef.current;
-
-    if (isRecordingVideo) {
-      setError(null);
-      try {
-        if (!recognitionActiveRef.current) {
-          rec.start();
-          recognitionActiveRef.current = true;
-        }
-      } catch (err) {
-        console.warn("recognition.start() threw:", err);
-        setTimeout(() => {
-          try {
-            if (!recognitionActiveRef.current) {
-              rec.start();
-              recognitionActiveRef.current = true;
-            }
-          } catch (e) {
-            console.warn("retry start failed", e);
-          }
-        }, 300);
-      }
-    } else {
-      try {
-        if (recognitionActiveRef.current) {
-          rec.stop();
-        }
-      } catch (err) {
-        console.warn("recognition.stop() threw:", err);
-      } finally {
-        recognitionActiveRef.current = false;
-      }
-    }
-
-    return () => {
-      try {
-        if (recognitionRef.current) {
-          recognitionRef.current.onresult = null;
-          recognitionRef.current.onend = null;
-          recognitionRef.current.onerror = null;
-          try {
-            recognitionRef.current.stop();
-          } catch {}
-          recognitionRef.current = null;
-        }
-      } catch {}
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRecordingVideo]);
-
+     const SpeechRecognition =
+       window.SpeechRecognition || window.webkitSpeechRecognition;
+     if (!SpeechRecognition) {
+       console.warn("Speech recognition not supported in this browser.");
+       return;
+     }
+ 
+     const recognition = new SpeechRecognition();
+     recognition.continuous = true;
+     recognition.interimResults = true;
+     recognition.lang = "en-US";
+ 
+     recognition.onresult = (event: SpeechRecognitionEvent) => {
+       let transcript = "";
+       for (let i = event.resultIndex; i < event.results.length; i++) {
+         transcript += event.results[i][0].transcript;
+       }
+       setLiveSubtitle(transcript);
+     };
+ 
+     // ✅ Only start when video recording is active
+     if (isRecordingVideo) {
+       recognition.start();
+     } else {
+       recognition.stop();
+     }
+ 
+     return () => recognition.stop();
+   }, [isRecordingVideo]);
+ 
+ 
 
 
   // ===== UI =====
