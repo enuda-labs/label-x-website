@@ -141,26 +141,7 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
           />
         </div>
 
-        <div className="w-full overflow-hidden rounded-md bg-black/30 relative">
-        {/*
-<video
-  ref={cameraPreviewRef}
-  className="h-[180px] w-full object-cover"
-  playsInline
-  muted
-  autoPlay
-/>
-*/}
-
-          {isRecordingVideo && (
-            <div className="absolute bottom-8 w-full text-center z-50">
-              <p className="bg-black/60 text-white px-4 py-2 rounded-xl inline-block">
-                {liveSubtitle || "Listening..."}
-              </p>
-            </div>
-          )}
-        </div>
-
+       
         {videoBlob && (
           <div className="mt-4">
             <button
