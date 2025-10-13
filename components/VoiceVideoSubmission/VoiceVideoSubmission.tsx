@@ -116,6 +116,9 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const audioChunksRef = useRef<Blob[]>([]);
   const videoChunksRef = useRef<Blob[]>([]);
   const videoStreamRef = useRef<MediaStream | null>(null);
+  // --- Speech Recognition refs ---
+  const recognitionRef = useRef<any>(null);
+  const recognitionActiveRef = useRef(false);
 
   const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
   const recordedVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -396,10 +399,17 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     }
   };
 
-  if (audioOnly && !('AudioContext' in window)) {
-    setError("AudioContext not supported in this browser.");
-    return;
-  }
+  useEffect(() => {
+    if (audioOnly) {
+      if (!(window as any).AudioContext && !(window as any).webkitAudioContext) {
+        setError("AudioContext not supported in this browser.");
+      } else {
+        // clear previous error if support detected
+        setError((err) => (err === "AudioContext not supported in this browser." ? null : err));
+      }
+    }
+  }, [audioOnly]);
+
 
   const stopAudioRecording = () => {
     try {
@@ -589,36 +599,107 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   // FILE: VoiceVideoSubmission.tsx
   // 🧠 Speech-to-text subtitle extraction (only while video is recording)
   useEffect(() => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    const SpeechRecognitionConstructor =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionConstructor) {
       console.warn("Speech recognition not supported in this browser.");
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
+    if (!recognitionRef.current) {
+      const r = new SpeechRecognitionConstructor();
+      r.continuous = true;
+      r.interimResults = true;
+      r.lang = "en-US";
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setLiveSubtitle(transcript);
-    };
+      r.onresult = (event: SpeechRecognitionEvent) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        setLiveSubtitle(transcript);
+      };
 
-    // ✅ Only start when video recording is active
-    if (isRecordingVideo) {
-      recognition.start();
-    } else {
-      recognition.stop();
+      r.onerror = (ev: any) => {
+        console.error("SpeechRecognition error", ev);
+        if (ev?.error === "not-allowed") {
+          setError("Microphone access blocked for speech recognition.");
+        } else if (ev?.error) {
+          setError(`Speech recognition error: ${ev.error}`);
+        }
+      };
+
+      r.onend = () => {
+        recognitionActiveRef.current = false;
+        if (isRecordingVideo) {
+          try {
+            r.start();
+            recognitionActiveRef.current = true;
+          } catch (err) {
+            setTimeout(() => {
+              try {
+                r.start();
+                recognitionActiveRef.current = true;
+              } catch (e) {
+                console.warn("Failed to restart SpeechRecognition", e);
+              }
+            }, 250);
+          }
+        }
+      };
+
+      recognitionRef.current = r;
     }
 
-    return () => recognition.stop();
-  }, [isRecordingVideo]);
+    const rec = recognitionRef.current;
 
+    if (isRecordingVideo) {
+      setError(null);
+      try {
+        if (!recognitionActiveRef.current) {
+          rec.start();
+          recognitionActiveRef.current = true;
+        }
+      } catch (err) {
+        console.warn("recognition.start() threw:", err);
+        setTimeout(() => {
+          try {
+            if (!recognitionActiveRef.current) {
+              rec.start();
+              recognitionActiveRef.current = true;
+            }
+          } catch (e) {
+            console.warn("retry start failed", e);
+          }
+        }, 300);
+      }
+    } else {
+      try {
+        if (recognitionActiveRef.current) {
+          rec.stop();
+        }
+      } catch (err) {
+        console.warn("recognition.stop() threw:", err);
+      } finally {
+        recognitionActiveRef.current = false;
+      }
+    }
+
+    return () => {
+      try {
+        if (recognitionRef.current) {
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.onerror = null;
+          try {
+            recognitionRef.current.stop();
+          } catch {}
+          recognitionRef.current = null;
+        }
+      } catch {}
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRecordingVideo]);
 
 
 

@@ -205,7 +205,7 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
         <SubtitleAnnotator
           videoSrc={videoUrl ?? videoCloudUrl ?? ""}
           chunkSize={5}
-          videoStream={videoStreamRef.current ?? null}
+          videoStream={videoStreamRef?.current ?? null}
           liveText={liveSubtitle}
           onExport={async (srtText: string) => {
             const blob = new Blob([srtText], { type: "text/plain" });
