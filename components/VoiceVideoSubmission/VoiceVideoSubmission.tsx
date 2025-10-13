@@ -127,6 +127,46 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const audioTimerRef = useRef<number | null>(null);
   const videoTimerRef = useRef<number | null>(null);
 
+  // at top of the component
+  const [liveSubtitle, setLiveSubtitle] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  // 🔹 Temporary test effect to confirm mic + speech detection works
+  useEffect(() => {
+    if (!isRecordingVideo) return;
+    setError(null);
+    setLiveSubtitle("");
+
+    const SpeechRecognitionConstructor =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionConstructor) {
+      console.warn("SpeechRecognition not supported in this browser");
+      return;
+    }
+
+    const rec = new SpeechRecognitionConstructor();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+
+    rec.onresult = (e: any) => {
+      let transcript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      setLiveSubtitle(transcript);
+    };
+
+    // 🔍 Add diagnostic event logs
+    rec.onaudiostart = () => console.log("🎤 Audio capturing started");
+    rec.onsoundstart = () => console.log("🔊 Sound detected");
+    rec.onspeechstart = () => console.log("🗣️ Speech detected");
+    rec.onerror = (e: any) => console.log("SpeechRecognition error:", e.error);
+
+    rec.start();
+
+    return () => rec.stop();
+  }, [isRecordingVideo]);
 
 
   // cleanup on unmount
