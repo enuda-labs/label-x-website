@@ -309,30 +309,40 @@ export default function SubtitleAnnotator({
         <div className="p-6 space-y-6">
           {/* Video player */}
           {/* Video player */}
-    <div className="w-full h-[420px] sm:h-[480px] md:h-[540px] rounded-xl border border-slate-200 bg-black flex items-center justify-center overflow-hidden">
-      {videoStream ? (
-        // 🔴 Live camera preview mode
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-        />
-      ) : videoSrc ? (
-        // 🎥 Playback mode (after recording)
-        <video
-          ref={videoRef}
-          src={videoSrc}
-          className="w-full h-full object-cover"
-          controls
-          playsInline
-        />
-      ) : (
-        // 🕳️ Placeholder before recording starts
-        <p className="text-white/50 text-sm">Camera preview will appear here</p>
-      )}
-    </div>
+    <div className="relative w-full h-[420px] sm:h-[480px] md:h-[540px] rounded-xl border border-slate-200 bg-black flex items-center justify-center overflow-hidden">
+  {videoStream ? (
+    <>
+      {/* 🔴 Live camera preview mode */}
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover"
+        autoPlay
+        muted
+        playsInline
+      />
+
+      {/* 🎙️ Overlay for live subtitles or listening indicator */}
+      <div className="absolute bottom-8 w-full text-center z-50">
+        <p className="bg-black/60 text-white px-4 py-2 rounded-xl inline-block">
+          {liveText?.trim() || "Listening..."}
+        </p>
+      </div>
+    </>
+  ) : videoSrc ? (
+    // 🎥 Playback mode (after recording)
+    <video
+      ref={videoRef}
+      src={videoSrc}
+      className="w-full h-full object-cover"
+      controls
+      playsInline
+    />
+  ) : (
+    // 🕳️ Placeholder before recording starts
+    <p className="text-white/50 text-sm">Camera preview will appear here</p>
+  )}
+</div>
+
 
 
           {/* Timeline */}
