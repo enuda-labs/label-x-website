@@ -33,11 +33,13 @@ function formatHHMMSS(time: number) {
 
 export default function SubtitleAnnotator({
   videoSrc = "",
+  videoStream = null,   // 👈 ADD THIS
   chunkSize = 5,
   initialSegments = [],
   liveText = "",
 }: {
   videoSrc?: string;
+  videoStream?: MediaStream | null;  // 👈 ADD THIS TYPE
   chunkSize?: number;
   initialSegments?: Segment[];
   liveText?: string;
@@ -191,29 +193,61 @@ export default function SubtitleAnnotator({
 
   useEffect(() => {
     if (!autoMode || !liveText?.trim()) return;
+
     const currentTime = videoRef.current?.currentTime || 0;
 
     setSegments((prev) => {
-      const last = prev[prev.length - 1];
-      // If the last segment ended more than 2s ago, start a new one
-      if (!last || currentTime - last.end > 2) {
+      if (prev.length === 0) {
         return [
-          ...prev,
           {
             id: cryptoRandomId(),
-            start: currentTime,
-            end: currentTime + 2,
+            start: 0,
+            end: chunkSize,
             text: liveText.trim(),
           },
         ];
-      } else {
-        // Otherwise, update the ongoing segment’s text
+      }
+
+      const last = prev[prev.length - 1];
+
+      if (currentTime < last.end) {
+        // 🧩 Append instead of replacing — but avoid duplicate appends
         const updated = [...prev];
-        updated[updated.length - 1].text = liveText.trim();
+        const existing = last.text.trim();
+        const addition = liveText.trim();
+
+        if (!addition) return prev;
+
+        // Only append if the new liveText isn't already included
+        if (!existing.endsWith(addition)) {
+          updated[updated.length - 1] = {
+            ...last,
+            text: existing ? `${existing} ${addition}` : addition,
+          };
+        }
         return updated;
+      } else {
+        // ⏱️ Segment time is up — start a new one
+        const newStart = last.end;
+        const newEnd = newStart + chunkSize;
+        const newSeg: Segment = {
+          id: cryptoRandomId(),
+          start: newStart,
+          end: newEnd,
+          text: liveText.trim(),
+        };
+        return [...prev, newSeg];
       }
     });
   }, [liveText, autoMode]);
+
+
+
+  useEffect(() => {
+    if (videoRef.current && videoStream) {
+      videoRef.current.srcObject = videoStream;
+    }
+  }, [videoStream]);
 
 
 
@@ -274,14 +308,32 @@ export default function SubtitleAnnotator({
 
         <div className="p-6 space-y-6">
           {/* Video player */}
-          <div>
-            <video
-              ref={videoRef}
-              src={videoSrc}
-              controls
-              className="w-full rounded-md border border-slate-100 bg-black"
-            />
-          </div>
+          {/* Video player */}
+    <div className="w-full h-[420px] sm:h-[480px] md:h-[540px] rounded-xl border border-slate-200 bg-black flex items-center justify-center overflow-hidden">
+      {videoStream ? (
+        // 🔴 Live camera preview mode
+        <video
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          autoPlay
+          muted
+          playsInline
+        />
+      ) : videoSrc ? (
+        // 🎥 Playback mode (after recording)
+        <video
+          ref={videoRef}
+          src={videoSrc}
+          className="w-full h-full object-cover"
+          controls
+          playsInline
+        />
+      ) : (
+        // 🕳️ Placeholder before recording starts
+        <p className="text-white/50 text-sm">Camera preview will appear here</p>
+      )}
+    </div>
+
 
           {/* Timeline */}
           <div className="mt-2">
