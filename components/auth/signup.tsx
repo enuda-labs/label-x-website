@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Eye, EyeOff, Check, X } from 'lucide-react'
+import { Eye, EyeOff, Check, X, CheckSquare2Icon, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,6 @@ import { listReviewersDomains } from '@/services/apis/reviewers'
 import {
   Select,
   SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -29,11 +28,14 @@ export const Signup = () => {
   const [error, setError] = useState('')
   const [passwordTouched, setPasswordTouched] = useState(false)
   const [selectedDomains, setSelectedDomains] = useState<number[]>([])
+  const [isDomainsOpen, setIsDomainsOpen] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') || 'free'
   const role = searchParams.get('role')
+
+  const MAX_DOMAINS = 5
 
   // Password validation rules
   const passwordValidation = {
@@ -117,6 +119,33 @@ export const Signup = () => {
     signupMutation.mutate({ email, password, name, company })
   }
 
+  const handleDomainToggle = (domainId: number) => {
+    setSelectedDomains((prev) => {
+      if (prev.includes(domainId)) {
+        return prev.filter((id) => id !== domainId)
+      } else {
+        if (prev.length >= MAX_DOMAINS) {
+          toast('Maximum domains reached', {
+            description: `You can select up to ${MAX_DOMAINS} fields`,
+          })
+          return prev
+        }
+        return [...prev, domainId]
+      }
+    })
+  }
+
+  const getSelectedDomainsText = () => {
+    if (selectedDomains.length === 0) return 'Select Fields'
+    if (selectedDomains.length) {
+      return selectedDomains
+        .map((domain) => domains?.find((d) => d.id === domain)?.domain)
+        .toString()
+        .replaceAll(',', ', ')
+    }
+    return 'Select Fields'
+  }
+
   const ValidationIcon = ({ isValid }: { isValid: boolean }) =>
     isValid ? (
       <Check size={16} className="text-green-500" />
@@ -168,24 +197,46 @@ export const Signup = () => {
         )}
         {isLabeler && (
           <div className="space-y-2">
-            <Select
-              onValueChange={(value) => setSelectedDomains([Number(value)])}
-              value={selectedDomains?.toString()}
-            >
+            <Label>Fields * (Max {MAX_DOMAINS})</Label>
+            <Select open={isDomainsOpen} onOpenChange={setIsDomainsOpen}>
               <SelectTrigger
                 className="w-full border-white/10 bg-white/5"
                 style={{ height: 44 }}
               >
-                <SelectValue placeholder="Select Field" />
+                <SelectValue placeholder={getSelectedDomainsText()} />
               </SelectTrigger>
               <SelectContent>
-                {domains?.map((domain) => (
-                  <SelectItem key={domain.id} value={domain.id.toString()}>
-                    {domain.domain}
-                  </SelectItem>
-                ))}
+                <div className="space-y-2 p-2">
+                  {domains?.map((domain) => (
+                    <div
+                      key={domain.id}
+                      className="flex cursor-pointer items-center space-x-2 rounded p-2 hover:bg-white/5"
+                      onClick={() => handleDomainToggle(domain.id)}
+                    >
+                      {selectedDomains.includes(domain.id) ? (
+                        <CheckSquare2Icon
+                          onClick={() => handleDomainToggle(domain.id)}
+                          className="border-gray-500 data-[state=checked]:border-[#d45c08] data-[state=checked]:bg-[#d45c08]"
+                        />
+                      ) : (
+                        <Square
+                          onClick={() => handleDomainToggle(domain.id)}
+                          className="border-gray-500 data-[state=checked]:border-[#d45c08] data-[state=checked]:bg-[#d45c08]"
+                        />
+                      )}
+                      <label className="flex-1 cursor-pointer text-sm">
+                        {domain.domain}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </SelectContent>
             </Select>
+            {selectedDomains.length > 0 && (
+              <div className="text-xs text-white/60">
+                {selectedDomains.length} of {MAX_DOMAINS} fields selected
+              </div>
+            )}
           </div>
         )}
         <div className="space-y-2">
