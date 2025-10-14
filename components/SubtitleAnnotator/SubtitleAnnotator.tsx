@@ -31,19 +31,23 @@ function formatHHMMSS(time: number) {
   return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
 }
 
+// inside SubtitleAnnotator.tsx — update signature to include onSegmentsChange
 export default function SubtitleAnnotator({
   videoSrc = "",
-  videoStream = null,   // 👈 ADD THIS
+  videoStream = null,
   chunkSize = 5,
   initialSegments = [],
   liveText = "",
+  onSegmentsChange, // <-- ADD
 }: {
   videoSrc?: string;
-  videoStream?: MediaStream | null;  // 👈 ADD THIS TYPE
+  videoStream?: MediaStream | null;
   chunkSize?: number;
   initialSegments?: Segment[];
   liveText?: string;
+  onSegmentsChange?: (segments: Segment[]) => void; // <-- ADD TYPE
 }) {
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -54,6 +58,17 @@ export default function SubtitleAnnotator({
       ? initialSegments
       : [{ id: cryptoRandomId(), start: 0, end: Math.max(chunkSize, 5), text: "" }]
   );
+
+
+  useEffect(() => {
+  if (!initialSegments || initialSegments.length === 0) {
+    // parent cleared segments — reset to a single empty chunk
+    setSegments([{ id: cryptoRandomId(), start: 0, end: Math.max(chunkSize, 5), text: "" }]);
+  } else {
+    // replace current segments with parent's segments
+    setSegments(initialSegments);
+  }
+}, [initialSegments, chunkSize]);
 
   const [isPreviewing, setIsPreviewing] = useState(false);
   const previewIndexRef = useRef<number | null>(null);
@@ -70,6 +85,13 @@ export default function SubtitleAnnotator({
       v.removeEventListener("timeupdate", onTime);
     };
   }, []);
+
+
+  useEffect(() => {
+    if (onSegmentsChange) onSegmentsChange(segments);
+  }, [segments, onSegmentsChange]);
+
+
 
   useEffect(() => {
     if (!isPreviewing) {
@@ -183,6 +205,9 @@ export default function SubtitleAnnotator({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+
+
+
   // timeline markers for chunked segments
   const markers = [];
   const totalMarkers = Math.max(1, Math.ceil((duration || 0) / chunkSize));
@@ -239,7 +264,7 @@ export default function SubtitleAnnotator({
         return [...prev, newSeg];
       }
     });
-  }, [liveText, autoMode]);
+  }, [liveText, autoMode, chunkSize]);
 
 
 
@@ -309,30 +334,40 @@ export default function SubtitleAnnotator({
         <div className="p-6 space-y-6">
           {/* Video player */}
           {/* Video player */}
-    <div className="w-full h-[420px] sm:h-[480px] md:h-[540px] rounded-xl border border-slate-200 bg-black flex items-center justify-center overflow-hidden">
-      {videoStream ? (
-        // 🔴 Live camera preview mode
-        <video
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          playsInline
-        />
-      ) : videoSrc ? (
-        // 🎥 Playback mode (after recording)
-        <video
-          ref={videoRef}
-          src={videoSrc}
-          className="w-full h-full object-cover"
-          controls
-          playsInline
-        />
-      ) : (
-        // 🕳️ Placeholder before recording starts
-        <p className="text-white/50 text-sm">Camera preview will appear here</p>
-      )}
-    </div>
+    <div className="relative w-full h-[420px] sm:h-[480px] md:h-[540px] rounded-xl border border-slate-200 bg-black flex items-center justify-center overflow-hidden">
+  {videoStream ? (
+    <>
+      {/* 🔴 Live camera preview mode */}
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover"
+        autoPlay
+        muted
+        playsInline
+      />
+
+      {/* 🎙️ Overlay for live subtitles or listening indicator */}
+      <div className="absolute bottom-8 w-full text-center z-50">
+        <p className="bg-black/60 text-white px-4 py-2 rounded-xl inline-block">
+          {liveText?.trim() || "Listening..."}
+        </p>
+      </div>
+    </>
+  ) : videoSrc ? (
+    // 🎥 Playback mode (after recording)
+    <video
+      ref={videoRef}
+      src={videoSrc}
+      className="w-full h-full object-cover"
+      controls
+      playsInline
+    />
+  ) : (
+    // 🕳️ Placeholder before recording starts
+    <p className="text-white/50 text-sm">Camera preview will appear here</p>
+  )}
+</div>
+
 
 
           {/* Timeline */}
@@ -456,4 +491,21 @@ export default function SubtitleAnnotator({
       </div>
     </div>
   );
+}
+
+
+
+
+
+// export helper so parent can generate and upload SRT
+export function generateSRTBlob(segments: Segment[]): Blob {
+const lines: string[] = [];
+for (let i = 0; i < segments.length; i++) {
+  const s = segments[i];
+  lines.push(String(i + 1));
+  lines.push(`${formatHHMMSSms(s.start)} --> ${formatHHMMSSms(s.end)}`);
+  lines.push(s.text || "");
+  lines.push("");
+}
+return new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
 }

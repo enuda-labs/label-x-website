@@ -9,7 +9,6 @@ import {
 } from "@/utils/mediaHelpers";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
-import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -21,10 +20,32 @@ import {
 import { uploadToCloudinary, copyToClipboard } from "@/utils/cloudinaryUpload";
 import { annotateTask } from "@/services/apis/clusters";
 import { AxiosError } from "axios"
-import SubtitleAnnotator from "@/components/SubtitleAnnotator/SubtitleAnnotator";
+import SubtitleAnnotator, { generateSRTBlob } from "@/components/SubtitleAnnotator/SubtitleAnnotator";
 import VideoRecorderSection from "@/components/submission/VideoRecorderSection";
 import ImageUploadSection from "@/components/submission/ImageUploadSection";
 import VoiceRecorderSection from '@/components/submission/VoiceRecorderSection'
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    start: () => void;
+    stop: () => void;
+    onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  }
+
+  interface SpeechRecognitionEvent extends Event {
+    resultIndex: number;
+    results: SpeechRecognitionResultList;
+  }
+}
+
 
 
 type Props = {
@@ -71,7 +92,8 @@ async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob | null> {
 }
 
 
-export default function VoiceVideoSubmission({ type, taskId }: Props) {
+export default function VoiceVideoSubmission({ type, taskId, setUploading }: Props) {
+
   const maxAudioSec = 60; // seconds
   const maxVideoSec = 30;
   const [audioOnly, setAudioOnly] = useState(false);
@@ -83,7 +105,15 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [liveSubtitle, setLiveSubtitle] = useState('');
   const [progress, setProgress] = useState(0);
-  const [isBusy, setIsBusy] = useState(false);
+  const [isBusy] = useState(false);
+
+  // hold latest segments from SubtitleAnnotator
+  const [subtitleSegments, setSubtitleSegments] = useState<{
+    id: string;
+    start: number;
+    end: number;
+    text: string;
+  }[]>([]);
 
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
@@ -93,7 +123,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
 
   const [audioElapsed, setAudioElapsed] = useState(0);
-  const [videoElapsed, setVideoElapsed] = useState(0);
+
 
   const [error, setError] = useState<string | null>(null);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -117,56 +147,16 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   const videoChunksRef = useRef<Blob[]>([]);
   const videoStreamRef = useRef<MediaStream | null>(null);
   // --- Speech Recognition refs ---
-  const recognitionRef = useRef<any>(null);
-  const recognitionActiveRef = useRef(false);
+  // const recognitionRef = useRef<any>(null);
+  // const recognitionActiveRef = useRef(false);
 
   const cameraPreviewRef = useRef<HTMLVideoElement | null>(null);
   const recordedVideoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const audioTimerRef = useRef<number | null>(null);
-  const videoTimerRef = useRef<number | null>(null);
 
-  // at top of the component
-  const [liveSubtitle, setLiveSubtitle] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isRecordingVideo, setIsRecordingVideo] = useState(false);
-  // 🔹 Temporary test effect to confirm mic + speech detection works
-  useEffect(() => {
-    if (!isRecordingVideo) return;
-    setError(null);
-    setLiveSubtitle("");
 
-    const SpeechRecognitionConstructor =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionConstructor) {
-      console.warn("SpeechRecognition not supported in this browser");
-      return;
-    }
-
-    const rec = new SpeechRecognitionConstructor();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = "en-US";
-
-    rec.onresult = (e: any) => {
-      let transcript = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
-      }
-      setLiveSubtitle(transcript);
-    };
-
-    // 🔍 Add diagnostic event logs
-    rec.onaudiostart = () => console.log("🎤 Audio capturing started");
-    rec.onsoundstart = () => console.log("🔊 Sound detected");
-    rec.onspeechstart = () => console.log("🗣️ Speech detected");
-    rec.onerror = (e: any) => console.log("SpeechRecognition error:", e.error);
-
-    rec.start();
-
-    return () => rec.stop();
-  }, [isRecordingVideo]);
 
 
   // cleanup on unmount
@@ -181,7 +171,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       if (videoRecorderRef.current && videoRecorderRef.current.state === "recording")
         videoRecorderRef.current.stop();
       if (audioTimerRef.current) window.clearInterval(audioTimerRef.current);
-      if (videoTimerRef.current) window.clearInterval(videoTimerRef.current);
+
       // revoke previews if left
       if (audioUrl) URL.revokeObjectURL(audioUrl);
       if (videoUrl) URL.revokeObjectURL(videoUrl);
@@ -210,17 +200,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     }
   };
 
-  const startVideoTimer = () => {
-    setVideoElapsed(0);
-    if (videoTimerRef.current) window.clearInterval(videoTimerRef.current);
-    videoTimerRef.current = window.setInterval(() => setVideoElapsed((e) => e + 1), 1000);
-  };
-  const stopVideoTimer = () => {
-    if (videoTimerRef.current) {
-      window.clearInterval(videoTimerRef.current);
-      videoTimerRef.current = null;
-    }
-  };
+
 
   // ===== Image functions =====
   const handleUploadImage = async () => {
@@ -249,6 +229,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       setError(error.response?.data?.detail || error.message || "Upload failed.")
     } finally {
       setUploadingImage(false)
+       setUploading?.(false);
     }
   }
 
@@ -288,6 +269,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     setError(error.response?.data?.detail || error.message || "Upload failed.")
   } finally {
     setUploadingAudio(false)
+     setUploading?.(false);
   }
 }
 
@@ -300,38 +282,61 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
 
     setError(null);
     setUploadingVideo(true);
-     setUploading?.(true);
+    setUploading?.(true);
     setVideoCloudUrl(null);
 
     try {
+      // prepare blob to upload (video or audio-only)
       let blobToUpload = videoBlob;
       let uploadType = "video";
 
       if (audioOnly) {
-        // ✅ Extract audio track
         const audioBlob = await extractAudioFromVideo(videoBlob);
         if (!audioBlob) throw new Error("Failed to extract audio track.");
         blobToUpload = audioBlob;
         uploadType = "audio";
       }
 
-      const url = await uploadToCloudinary(blobToUpload, uploadType);
-      setVideoCloudUrl(url);
+      // 1) upload video or audio to Cloudinary
+      const mediaUrl = await uploadToCloudinary(blobToUpload, uploadType as "video" | "image" | "raw" | "auto" | undefined);
 
+      setVideoCloudUrl(mediaUrl);
+
+      let subtitleUrl: string | null = null;
+  if (subtitleSegments && subtitleSegments.length > 0) {
+    try {
+      const srtBlob = generateSRTBlob(subtitleSegments);
+      const srtFile = new File([srtBlob], "subtitles.srt", { type: "text/plain" });
+      subtitleUrl = await uploadToCloudinary(srtFile, "raw");
+      console.log("Subtitle uploaded to:", subtitleUrl);
+    } catch (srtErr) {
+      console.warn("Subtitle upload failed, continuing without subtitles:", srtErr);
+      // continue — we'll send mediaUrl to backend without subtitles
+    }
+  }
+
+
+      // 3) build payload according to your schema
       const payload = {
         task_id: Number(taskId),
-        labels: url ? [url] : [],
+        labels: mediaUrl ? [mediaUrl] : [],
+        notes: "", // optional: add notes if you have any
+        subtitles_url: subtitleUrl ?? "",
       };
 
+      // 4) send to backend
       await annotateTask(payload);
+
+      // 5) success cleanup
       setSuccessOpen(true);
       discardVideo();
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string }>;
       console.error(error);
-      setError(error.response?.data?.detail || error.message || "Upload failed.");
+      setError(error.response?.data?.detail || (err as Error)?.message || "Upload failed.");
     } finally {
       setUploadingVideo(false);
+       setUploading?.(false);
     }
   };
 
@@ -440,15 +445,19 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
   };
 
   useEffect(() => {
-    if (audioOnly) {
-      if (!(window as any).AudioContext && !(window as any).webkitAudioContext) {
-        setError("AudioContext not supported in this browser.");
-      } else {
-        // clear previous error if support detected
-        setError((err) => (err === "AudioContext not supported in this browser." ? null : err));
-      }
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+    if (audioOnly && !AudioContextClass) {
+      setError("AudioContext not supported in this browser.");
+    } else if (audioOnly && AudioContextClass) {
+      setError((err) =>
+        err === "AudioContext not supported in this browser." ? null : err
+      );
     }
   }, [audioOnly]);
+
 
 
   const stopAudioRecording = () => {
@@ -522,7 +531,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
               videoStreamRef.current.getTracks().forEach((t) => t.stop());
               videoStreamRef.current = null;
             }
-            stopVideoTimer();
+
             return;
           }
 
@@ -538,7 +547,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
             videoStreamRef.current = null;
           }
           if (cameraPreviewRef.current) cameraPreviewRef.current.srcObject = null;
-          stopVideoTimer();
+
           setProgress(0); // reset progress bar
         }
       };
@@ -546,7 +555,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       mr.start();
       videoRecorderRef.current = mr;
       setIsRecordingVideo(true);
-      startVideoTimer();
+
 
       // 🕒 Set countdown for 40 minutes
       const MAX_RECORDING_MINUTES = 40;
@@ -603,7 +612,7 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     } finally {
       // 🧩 Mark recording as stopped
       setIsRecordingVideo(false);
-      stopVideoTimer();
+
 
       // 🧹 Clean up camera stream so SubtitleAnnotator switches to playback
       if (videoStreamRef.current) {
@@ -623,7 +632,10 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
       setVideoUrl(null);
     }
     setVideoDuration(null);
-    setVideoElapsed(0);
+
+
+    // clear subtitle segments when discarding a video
+    setSubtitleSegments([]);
 
     if (recordedVideoRef.current) {
       recordedVideoRef.current.pause();
@@ -636,110 +648,36 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     }
   };
 
-  // FILE: VoiceVideoSubmission.tsx
-  // 🧠 Speech-to-text subtitle extraction (only while video is recording)
+
+
+
   useEffect(() => {
-    const SpeechRecognitionConstructor =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionConstructor) {
+    const SpeechRecognitionClass =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
       console.warn("Speech recognition not supported in this browser.");
       return;
     }
 
-    if (!recognitionRef.current) {
-      const r = new SpeechRecognitionConstructor();
-      r.continuous = true;
-      r.interimResults = true;
-      r.lang = "en-US";
+    const recognition = new SpeechRecognitionClass();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
 
-      r.onresult = (event: SpeechRecognitionEvent) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        setLiveSubtitle(transcript);
-      };
-
-      r.onerror = (ev: any) => {
-        console.error("SpeechRecognition error", ev);
-        if (ev?.error === "not-allowed") {
-          setError("Microphone access blocked for speech recognition.");
-        } else if (ev?.error) {
-          setError(`Speech recognition error: ${ev.error}`);
-        }
-      };
-
-      r.onend = () => {
-        recognitionActiveRef.current = false;
-        if (isRecordingVideo) {
-          try {
-            r.start();
-            recognitionActiveRef.current = true;
-          } catch (err) {
-            setTimeout(() => {
-              try {
-                r.start();
-                recognitionActiveRef.current = true;
-              } catch (e) {
-                console.warn("Failed to restart SpeechRecognition", e);
-              }
-            }, 250);
-          }
-        }
-      };
-
-      recognitionRef.current = r;
-    }
-
-    const rec = recognitionRef.current;
-
-    if (isRecordingVideo) {
-      setError(null);
-      try {
-        if (!recognitionActiveRef.current) {
-          rec.start();
-          recognitionActiveRef.current = true;
-        }
-      } catch (err) {
-        console.warn("recognition.start() threw:", err);
-        setTimeout(() => {
-          try {
-            if (!recognitionActiveRef.current) {
-              rec.start();
-              recognitionActiveRef.current = true;
-            }
-          } catch (e) {
-            console.warn("retry start failed", e);
-          }
-        }, 300);
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
       }
-    } else {
-      try {
-        if (recognitionActiveRef.current) {
-          rec.stop();
-        }
-      } catch (err) {
-        console.warn("recognition.stop() threw:", err);
-      } finally {
-        recognitionActiveRef.current = false;
-      }
-    }
-
-    return () => {
-      try {
-        if (recognitionRef.current) {
-          recognitionRef.current.onresult = null;
-          recognitionRef.current.onend = null;
-          recognitionRef.current.onerror = null;
-          try {
-            recognitionRef.current.stop();
-          } catch {}
-          recognitionRef.current = null;
-        }
-      } catch {}
+      setLiveSubtitle(transcript);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    if (isRecordingVideo) recognition.start();
+    else recognition.stop();
+
+    return () => recognition.stop();
   }, [isRecordingVideo]);
+
 
 
 
@@ -794,10 +732,9 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     isRecordingVideo={isRecordingVideo}
     isRecordingAudio={isRecordingAudio}
     videoBlob={videoBlob}
-    videoDuration={videoDuration}
+    videoDuration={videoDuration ?? 0}
     videoUrl={videoUrl}
     videoCloudUrl={videoCloudUrl}
-    videoElapsed={videoElapsed}
     progress={progress}
     audioOnly={audioOnly}
     liveSubtitle={liveSubtitle}
@@ -812,9 +749,10 @@ export default function VoiceVideoSubmission({ type, taskId }: Props) {
     formatTime={formatTime}
     readableSize={readableSize}
     SubtitleAnnotator={SubtitleAnnotator}
-    cameraPreviewRef={cameraPreviewRef}
     recordedVideoRef={recordedVideoRef}
     videoStreamRef={videoStreamRef}
+    subtitleSegments={subtitleSegments}
+  onSegmentsChange={setSubtitleSegments}
   />
 
 

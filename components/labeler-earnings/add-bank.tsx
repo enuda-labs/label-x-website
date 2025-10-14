@@ -6,8 +6,16 @@ import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { fetchStripeAccount, initializeStripeAccount } from '@/services/apis/banks'
 
+
+interface StripeAccount {
+  account_id: string
+  payouts_enabled: boolean
+  status: string
+}
+
+
 export const BanksContent = () => {
-  const [stripeAccount, setStripeAccount] = useState<any | null>(null)
+    const [stripeAccount, setStripeAccount] = useState<StripeAccount | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {

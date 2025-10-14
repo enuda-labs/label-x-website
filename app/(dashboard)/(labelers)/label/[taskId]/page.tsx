@@ -967,7 +967,8 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
 
 
 
-                    if (itemType === 'VOICE' || itemType === 'AUDIO') {
+                    if ((itemType as string) === 'VOICE' || (itemType as string) === 'AUDIO') {
+
   return (
     <div className="text-center">
       <audio
@@ -1136,7 +1137,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
         )
       })()}
 
-            {inputType === "video" || inputType === "voice" || inputType === "image" ? (
+            {inputType === "voice" || inputType === "image" ? (
   <VoiceVideoSubmission
     type={inputType as "video" | "voice" | "image"}
     taskId={currentItem?.id ? String(currentItem.id) : ""}
@@ -1199,7 +1200,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
     </>
   )}
 
-  {itemType?.toLowerCase() === "image" && (
+  {itemType?.toLowerCase() === "video" && (
     <div className="mt-6 flex justify-center">
       <Button
         variant="default"

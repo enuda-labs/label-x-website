@@ -1,5 +1,12 @@
 import React from "react";
 
+interface SubtitleSegment {
+  id: string;
+  start: number;
+  end: number;
+  text: string;
+}
+
 interface VideoRecorderSectionProps {
   type: string;
   maxVideoSec: number;
@@ -9,24 +16,35 @@ interface VideoRecorderSectionProps {
   videoDuration: number;
   videoUrl: string | null;
   videoCloudUrl: string | null;
-  videoElapsed: number;
   progress: number;
+
+  // new props
+  subtitleSegments?: SubtitleSegment[];
+  onSegmentsChange?: (segments: SubtitleSegment[]) => void;
+
   audioOnly: boolean;
   liveSubtitle?: string;
   isBusy?: boolean;
   uploadingVideo?: boolean;
   setAudioOnly: (val: boolean) => void;
-  startVideoRecording: () => void;
+
+  // these may be async in the parent, allow either
+  startVideoRecording: () => Promise<void> | void;
   stopVideoRecording: () => void;
   discardVideo: () => void;
-  handleUploadVideo: () => void;
+  handleUploadVideo: () => Promise<void> | void;
+
   copyToClipboard: (text: string) => void;
   formatTime: (sec: number) => string;
   readableSize: (size: number) => string;
-  SubtitleAnnotator: React.ComponentType<any>;
-  cameraPreviewRef: React.RefObject<HTMLVideoElement>;
-  recordedVideoRef: React.RefObject<HTMLVideoElement>;
+
+  SubtitleAnnotator: React.ComponentType<Record<string, unknown>>;
+
+  // allow nullable refs (matches `useRef<HTMLVideoElement | null>(null)` in parent)
+  recordedVideoRef: React.RefObject<HTMLVideoElement | null>;
   videoStreamRef: React.RefObject<MediaStream | null>;
+
+
 }
 
 const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
@@ -38,8 +56,10 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
   videoDuration,
   videoUrl,
   videoCloudUrl,
-  videoElapsed,
   progress,
+  subtitleSegments,
+  onSegmentsChange,
+
   audioOnly,
   liveSubtitle,
   isBusy,
@@ -53,7 +73,6 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
   formatTime,
   readableSize,
   SubtitleAnnotator,
-  cameraPreviewRef,
   recordedVideoRef,
   videoStreamRef,
 }) => {
@@ -142,16 +161,6 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
         </div>
 
         <div className="w-full overflow-hidden rounded-md bg-black/30 relative">
-        {/*
-<video
-  ref={cameraPreviewRef}
-  className="h-[180px] w-full object-cover"
-  playsInline
-  muted
-  autoPlay
-/>
-*/}
-
           {isRecordingVideo && (
             <div className="absolute bottom-8 w-full text-center z-50">
               <p className="bg-black/60 text-white px-4 py-2 rounded-xl inline-block">
@@ -206,6 +215,8 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
           videoSrc={videoUrl ?? videoCloudUrl ?? ""}
           chunkSize={5}
           videoStream={videoStreamRef?.current ?? null}
+          initialSegments={subtitleSegments ?? []}
+          onSegmentsChange={onSegmentsChange}
           liveText={liveSubtitle}
           onExport={async (srtText: string) => {
             const blob = new Blob([srtText], { type: "text/plain" });
