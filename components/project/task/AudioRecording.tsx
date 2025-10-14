@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Mic, Square, Play, Trash2 } from 'lucide-react'
+import { Mic, Square, Pause, Play, Trash2 } from 'lucide-react'
 import {
   formatTime,
   getSupportedMime,
@@ -24,14 +24,17 @@ const AudioRecording: React.FC<AudioRecordingProps> = ({
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [duration, setDuration] = useState<number | null>(null)
+  const [playDuration, setPlayDuration] = useState(0)
   const [elapsed, setElapsed] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [maxRecorded, setMaxRecorded] = useState(0)
 
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const timerRef = useRef<number | null>(null)
+  const playTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     return () => {
@@ -57,11 +60,14 @@ const AudioRecording: React.FC<AudioRecordingProps> = ({
     if (timerRef.current) {
       window.clearInterval(timerRef.current)
       timerRef.current = null
+      playTimerRef.current = null
+      setMaxRecorded((e) => Math.max(e, elapsed))
     }
   }
 
   const startRecording = async () => {
     setError(null)
+    discardRecording()
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('MediaDevices API not supported in this browser.')
@@ -159,7 +165,32 @@ const AudioRecording: React.FC<AudioRecordingProps> = ({
   const playAudio = () => {
     if (audioRef.current) {
       audioRef.current.play()
+      playTimerRef.current = window.setInterval(
+        () => setPlayDuration((e) => e + 1),
+        1000
+      )
       setIsPlaying(true)
+    }
+  }
+
+  const pauseAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      setIsPlaying(false)
+
+      if (playTimerRef.current) {
+        window.clearInterval(playTimerRef.current)
+      }
+    }
+  }
+  const endAudio = () => {
+    setPlayDuration(0)
+    if (audioRef.current) {
+      setIsPlaying(false)
+
+      if (playTimerRef.current) {
+        window.clearInterval(playTimerRef.current)
+      }
     }
   }
 
@@ -170,6 +201,11 @@ const AudioRecording: React.FC<AudioRecordingProps> = ({
       setAudioUrl(null)
     }
     setDuration(null)
+    setPlayDuration(0)
+    if (playTimerRef.current) {
+      setPlayDuration(0)
+      window.clearInterval(playTimerRef.current)
+    }
     setElapsed(0)
     setIsPlaying(false)
     if (audioRef.current) {
@@ -209,16 +245,27 @@ const AudioRecording: React.FC<AudioRecordingProps> = ({
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={playAudio}
-          disabled={!audioBlob || isPlaying}
-          className="flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
-        >
-          <Play className="h-4 w-4" />
-          Play
-        </button>
-
+        {isPlaying ? (
+          <button
+            type="button"
+            onClick={pauseAudio}
+            disabled={!isPlaying}
+            className="flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-white/80 transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Pause className="h-4 w-4" />
+            Pause
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={playAudio}
+            disabled={!audioBlob || isPlaying}
+            className="flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm text-white/80 transition-colors hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Play className="h-4 w-4" />
+            Play
+          </button>
+        )}
         <button
           type="button"
           onClick={discardRecording}
@@ -248,9 +295,11 @@ const AudioRecording: React.FC<AudioRecordingProps> = ({
           <div className="text-xs text-gray-600">
             {isRecording
               ? `Recording — ${formatTime(elapsed)}`
-              : audioBlob
-                ? `Recorded • ${duration ? formatTime(duration) : '—'}`
-                : 'Ready to record'}
+              : isPlaying && playDuration
+                ? `Playing - ${formatTime(playDuration)}`
+                : audioBlob
+                  ? `Recorded • ${duration ? formatTime(duration) : '—'}`
+                  : 'Ready to record'}
           </div>
           <div className="ml-auto text-xs text-gray-500">
             Max {maxDurationSec}s
@@ -258,29 +307,40 @@ const AudioRecording: React.FC<AudioRecordingProps> = ({
         </div>
 
         {/* Progress bar */}
-        <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
-          <div
-            className="h-2 bg-red-500 transition-all duration-300"
-            style={{
-              width: `${Math.min(
-                100,
-                isRecording
-                  ? (elapsed / maxDurationSec) * 100
-                  : duration
-                    ? (duration / maxDurationSec) * 100
-                    : 0
-              )}%`,
-            }}
-          />
-        </div>
+        {isPlaying ? (
+          <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
+            <div
+              className="h-2 bg-red-500 transition-all duration-300"
+              style={{
+                width: `${Math.min(100, (playDuration / maxRecorded) * 100)}%`,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="h-2 w-full overflow-hidden rounded bg-gray-200">
+            <div
+              className="h-2 bg-red-500 transition-all duration-300"
+              style={{
+                width: `${Math.min(
+                  100,
+                  isRecording
+                    ? (elapsed / maxDurationSec) * 100
+                    : duration
+                      ? (duration / maxDurationSec) * 100
+                      : 0
+                )}%`,
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Hidden audio element for playback */}
       <audio
         ref={audioRef}
         src={audioUrl ?? undefined}
-        onEnded={() => setIsPlaying(false)}
-        onPause={() => setIsPlaying(false)}
+        onEnded={endAudio}
+        onPause={pauseAudio}
         className="hidden"
       />
 

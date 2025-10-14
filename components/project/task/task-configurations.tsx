@@ -279,7 +279,7 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="image" id="image" />
                 <Label htmlFor="image" className="cursor-pointer text-sm">
-                  Image{' '}
+                  Image
                 </Label>
               </div>
             </RadioGroup>
