@@ -93,6 +93,18 @@ async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob | null> {
 
 
 export default function VoiceVideoSubmission({ type, taskId, setUploading }: Props) {
+// 🔧 Decode malformed taskId strings like "taskId%3D51" or "taskId=51"
+try {
+  if (typeof taskId === "string") {
+    const decoded = decodeURIComponent(taskId);
+    const match = decoded.match(/(\d+)/);
+    if (match) {
+      taskId = match[1]; // overwrite with clean numeric id string
+    }
+  }
+} catch (e) {
+  console.warn("Failed to decode taskId:", taskId, e);
+}
 
   const maxAudioSec = 60; // seconds
   const maxVideoSec = 30;
@@ -106,6 +118,10 @@ export default function VoiceVideoSubmission({ type, taskId, setUploading }: Pro
   const [liveSubtitle, setLiveSubtitle] = useState('');
   const [progress, setProgress] = useState(0);
   const [isBusy] = useState(false);
+const recognitionRef = useRef<SpeechRecognition | null>(null);
+const recognitionStartedRef = useRef(false);
+const subtitleThrottleRef = useRef<number | null>(null);
+const lastTranscriptRef = useRef<string>("");
 
   // hold latest segments from SubtitleAnnotator
   const [subtitleSegments, setSubtitleSegments] = useState<{
@@ -307,7 +323,8 @@ export default function VoiceVideoSubmission({ type, taskId, setUploading }: Pro
     try {
       const srtBlob = generateSRTBlob(subtitleSegments);
       const srtFile = new File([srtBlob], "subtitles.srt", { type: "text/plain" });
-      subtitleUrl = await uploadToCloudinary(srtFile, "raw");
+      subtitleUrl = await uploadToCloudinary(srtFile, "auto");
+
       console.log("Subtitle uploaded to:", subtitleUrl);
     } catch (srtErr) {
       console.warn("Subtitle upload failed, continuing without subtitles:", srtErr);
@@ -320,7 +337,6 @@ export default function VoiceVideoSubmission({ type, taskId, setUploading }: Pro
       const payload = {
         task_id: Number(taskId),
         labels: mediaUrl ? [mediaUrl] : [],
-        notes: "", // optional: add notes if you have any
         subtitles_url: subtitleUrl ?? "",
       };
 
@@ -649,35 +665,105 @@ export default function VoiceVideoSubmission({ type, taskId, setUploading }: Pro
   };
 
 
+console.log("VoiceVideoSubmission taskId:", taskId)
 
+// create recognition instance once
+useEffect(() => {
+  const SpeechRecognitionClass =
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  if (!SpeechRecognitionClass) {
+    console.warn("Speech recognition not supported in this browser.");
+    return;
+  }
 
-  useEffect(() => {
-    const SpeechRecognitionClass =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionClass) {
-      console.warn("Speech recognition not supported in this browser.");
+  const recognition = new SpeechRecognitionClass();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = "en-US";
+
+  recognition.onresult = (event: SpeechRecognitionEvent) => {
+    // build full transcript from results (includes interim)
+    let transcript = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+
+    // throttle updates to once every 200ms to avoid layout thrash
+    if (subtitleThrottleRef.current) {
+      // update lastTranscriptRef so throttled callback can use latest value
+      lastTranscriptRef.current = transcript;
       return;
     }
 
-    const recognition = new SpeechRecognitionClass();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+    lastTranscriptRef.current = transcript;
+    subtitleThrottleRef.current = window.setTimeout(() => {
+      const latest = lastTranscriptRef.current || "";
+      // only set state when transcript actually changed
+      setLiveSubtitle((prev) => (prev === latest ? prev : latest));
+      if (subtitleThrottleRef.current) {
+        window.clearTimeout(subtitleThrottleRef.current);
+        subtitleThrottleRef.current = null;
       }
-      setLiveSubtitle(transcript);
-    };
+    }, 200); // <-- tweak delay as needed (200ms is a good starting point)
+  };
 
-    if (isRecordingVideo) recognition.start();
-    else recognition.stop();
+  recognition.onerror = (ev) => {
+    // optional: surface helpful errors without crashing
+    // console.warn("Speech recognition error:", ev);
+  };
 
-    return () => recognition.stop();
-  }, [isRecordingVideo]);
+  recognitionRef.current = recognition;
 
+  return () => {
+    try {
+      recognition.stop();
+    } catch (e) {
+      // ignore stop errors
+    }
+    recognitionRef.current = null;
+    if (subtitleThrottleRef.current) {
+      window.clearTimeout(subtitleThrottleRef.current);
+      subtitleThrottleRef.current = null;
+    }
+  };
+}, []);
+
+// start/stop recognition when recording state changes, but guard repeated calls
+useEffect(() => {
+  const rec = recognitionRef.current;
+  if (!rec) return;
+
+  if (isRecordingVideo) {
+    if (!recognitionStartedRef.current) {
+      try {
+        rec.start();
+        recognitionStartedRef.current = true;
+      } catch (err) {
+        // start() will throw if already started or permission issues — ignore here
+        console.warn("Recognition start() error:", err);
+      }
+    }
+  } else {
+    if (recognitionStartedRef.current) {
+      try {
+        rec.stop();
+      } catch (err) {
+        console.warn("Recognition stop() error:", err);
+      }
+      recognitionStartedRef.current = false;
+    }
+  }
+
+  // cleanup if component unmounts while running
+  return () => {
+    if (recognitionStartedRef.current && rec) {
+      try {
+        rec.stop();
+      } catch {}
+      recognitionStartedRef.current = false;
+    }
+  };
+}, [isRecordingVideo]);
 
 
 
