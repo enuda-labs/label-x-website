@@ -60,15 +60,27 @@ export default function SubtitleAnnotator({
   );
 
 
-  useEffect(() => {
+ useEffect(() => {
   if (!initialSegments || initialSegments.length === 0) {
-    // parent cleared segments — reset to a single empty chunk
-    setSegments([{ id: cryptoRandomId(), start: 0, end: Math.max(chunkSize, 5), text: "" }]);
-  } else {
-    // replace current segments with parent's segments
-    setSegments(initialSegments);
+    setSegments((cur) => {
+      const defaultSeg = [{ id: cryptoRandomId(), start: 0, end: Math.max(chunkSize, 5), text: "" }];
+      return areSegmentsEqual(cur, defaultSeg) ? cur : defaultSeg;
+    });
+    return;
   }
+
+  setSegments((cur) => {
+    if (areSegmentsEqual(cur, initialSegments)) return cur;
+    isApplyingInitialRef.current = true;
+    return initialSegments;
+  });
 }, [initialSegments, chunkSize]);
+
+
+
+// Add near other refs at top of component
+const isApplyingInitialRef = useRef(false);
+const lastLiveRef = useRef<string>("");
 
   const [isPreviewing, setIsPreviewing] = useState(false);
   const previewIndexRef = useRef<number | null>(null);
@@ -87,10 +99,28 @@ export default function SubtitleAnnotator({
   }, []);
 
 
-  useEffect(() => {
-    if (onSegmentsChange) onSegmentsChange(segments);
-  }, [segments, onSegmentsChange]);
+ useEffect(() => {
+  if (!onSegmentsChange) return;
+  if (isApplyingInitialRef.current) {
+    isApplyingInitialRef.current = false;
+    return;
+  }
+  onSegmentsChange(segments);
+}, [segments, onSegmentsChange]);
 
+
+function areSegmentsEqual(a: Segment[] = [], b: Segment[] = []) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const A = a[i], B = b[i];
+    if (!A || !B) return false;
+    if (A.id !== B.id) return false;
+    if (Number(A.start).toFixed(3) !== Number(B.start).toFixed(3)) return false;
+    if (Number(A.end).toFixed(3) !== Number(B.end).toFixed(3)) return false;
+    if ((A.text || "").trim() !== (B.text || "").trim()) return false;
+  }
+  return true;
+}
 
 
   useEffect(() => {
@@ -216,55 +246,38 @@ export default function SubtitleAnnotator({
   }
 
 
-  useEffect(() => {
-    if (!autoMode || !liveText?.trim()) return;
+useEffect(() => {
+  if (!autoMode) return;
+  const addition = (liveText || "").trim();
+  if (!addition) return;
+  if (addition === lastLiveRef.current) return;
+  lastLiveRef.current = addition;
 
+  setSegments((prev) => {
+    if (prev.length === 0) {
+      return [{ id: cryptoRandomId(), start: 0, end: chunkSize, text: addition }];
+    }
+    const last = prev[prev.length - 1];
     const currentTime = videoRef.current?.currentTime || 0;
 
-    setSegments((prev) => {
-      if (prev.length === 0) {
-        return [
-          {
-            id: cryptoRandomId(),
-            start: 0,
-            end: chunkSize,
-            text: liveText.trim(),
-          },
-        ];
-      }
-
-      const last = prev[prev.length - 1];
-
-      if (currentTime < last.end) {
-        // 🧩 Append instead of replacing — but avoid duplicate appends
+    if (currentTime < last.end) {
+      const existing = (last.text || "").trim();
+      if (!existing.endsWith(addition)) {
         const updated = [...prev];
-        const existing = last.text.trim();
-        const addition = liveText.trim();
-
-        if (!addition) return prev;
-
-        // Only append if the new liveText isn't already included
-        if (!existing.endsWith(addition)) {
-          updated[updated.length - 1] = {
-            ...last,
-            text: existing ? `${existing} ${addition}` : addition,
-          };
-        }
-        return updated;
-      } else {
-        // ⏱️ Segment time is up — start a new one
-        const newStart = last.end;
-        const newEnd = newStart + chunkSize;
-        const newSeg: Segment = {
-          id: cryptoRandomId(),
-          start: newStart,
-          end: newEnd,
-          text: liveText.trim(),
+        updated[updated.length - 1] = {
+          ...last,
+          text: existing ? `${existing} ${addition}` : addition,
         };
-        return [...prev, newSeg];
+        return updated;
       }
-    });
-  }, [liveText, autoMode, chunkSize]);
+      return prev;
+    } else {
+      const newStart = last.end;
+      const newEnd = newStart + chunkSize;
+      return [...prev, { id: cryptoRandomId(), start: newStart, end: newEnd, text: addition }];
+    }
+  });
+}, [liveText, autoMode, chunkSize]);
 
 
 
