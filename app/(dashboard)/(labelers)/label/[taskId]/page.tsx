@@ -520,7 +520,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
       const payload = {
         task_id: currentTaskIdToSend,
         labels: labelsToSend,
-        notes,
+         notes: notes || "",
       }
 
       const resp = await annotateTask(payload)
