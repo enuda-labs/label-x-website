@@ -303,7 +303,7 @@ useEffect(() => {
           <div className="subtitle-toggle">
   <button
     onClick={() => setAutoMode((prev) => !prev)}
-    className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600"
+    className="px-3 py-1 rounded bg-primary text-white hover:bg-blue-600"
   >
     {autoMode ? "Switch to Manual Mode" : "Switch to Auto Mode"}
   </button>

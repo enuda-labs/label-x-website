@@ -1200,7 +1200,7 @@ const inputType = (taskData?.input_type ?? 'multiple_choice').toString().toLower
     </>
   )}
 
-  {itemType?.toLowerCase() === "video" && (
+  {itemType?.toLowerCase() === "image" && (
     <div className="mt-6 flex justify-center">
       <Button
         variant="default"
