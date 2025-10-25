@@ -1,4 +1,3 @@
-// services/apis/banks.ts
 import { AxiosClient } from '@/utils/axios'
 import { BankAccount, BankAccountPayload } from '@/types/banks'
 
@@ -23,9 +22,7 @@ export const createBankAccount = async (
   payload: BankAccountPayload
 ): Promise<BankAccount | null> => {
   try {
-    // DON'T pass a generic that confuses your Axios wrapper.
     const response = await axiosClient.post('/account/banks/paystack/', payload)
-    // response may be AxiosResponse. Use unwrap helper to get BankAccount
     const result = unwrap<BankAccount>(response)
     return result
   } catch (error) {
@@ -39,7 +36,6 @@ export const fetchUserBanks = async (): Promise<BankAccount[]> => {
   try {
     const response = await axiosClient.get('/account/banks/')
     const result = unwrap<BankAccount[] | BankAccount[]>(response)
-    // ensure we always return an array
     return (result ?? []) as BankAccount[]
   } catch (error) {
     console.error('Error fetching user banks:', error)
@@ -48,9 +44,7 @@ export const fetchUserBanks = async (): Promise<BankAccount[]> => {
 }
 
 // --- Fetch a single bank account by ID ---
-export const fetchBankById = async (
-  id: string
-): Promise<BankAccount | null> => {
+export const fetchBankById = async (id: string): Promise<BankAccount | null> => {
   try {
     const response = await axiosClient.get(`/account/banks/${id}/`)
     const result = unwrap<BankAccount>(response)
@@ -67,10 +61,7 @@ export const updateBankAccount = async (
   payload: BankAccountPayload
 ): Promise<BankAccount | null> => {
   try {
-    const response = await axiosClient.put(
-      `/account/banks/paystack/${id}/edit/`,
-      payload
-    )
+    const response = await axiosClient.put(`/account/banks/paystack/${id}/edit/`, payload)
     const result = unwrap<BankAccount>(response)
     return result
   } catch (error) {
@@ -80,9 +71,7 @@ export const updateBankAccount = async (
 }
 
 // --- Set a bank as primary ---
-export const setPrimaryBank = async (
-  id: string
-): Promise<BankAccount | null> => {
+export const setPrimaryBank = async (id: string): Promise<BankAccount | null> => {
   try {
     const response = await axiosClient.post(`/account/banks/${id}/primary/`)
     const result = unwrap<BankAccount>(response)
@@ -100,5 +89,33 @@ export const deleteBankAccount = async (id: string): Promise<void> => {
   } catch (error) {
     console.error(`Error deleting bank account ${id}:`, error)
     throw error
+  }
+}
+
+/* -------------------------------
+   🟢 STRIPE CONNECT INTEGRATION
+-------------------------------- */
+
+// --- Fetch Stripe connected account ---
+export const fetchStripeAccount = async (): Promise<any | null> => {
+  try {
+    const response = await axiosClient.get('/account/banks/stripe/')
+    const result = unwrap<any>(response)
+    return result
+  } catch (error) {
+    console.error('Error fetching Stripe account:', error)
+    return null
+  }
+}
+
+// --- Initialize Stripe connection ---
+export const initializeStripeAccount = async (): Promise<string | null> => {
+  try {
+    const response = await axiosClient.post('/account/banks/stripe/initialize/')
+    const result = unwrap<{ link: string }>(response)
+    return result?.link ?? null
+  } catch (error) {
+    console.error('Error initializing Stripe account:', error)
+    return null
   }
 }
