@@ -102,7 +102,7 @@ export const Login = () => {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="relative space-y-2">
           <Label htmlFor="password">Password</Label>
           <div className="relative">
             <Input
@@ -122,6 +122,14 @@ export const Login = () => {
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+          <Link
+            href="/auth/forgot-password"
+            className="absolute right-0 -bottom-7"
+          >
+            <button className="text-primary text-sm hover:underline">
+              Forgot Password
+            </button>
+          </Link>
         </div>
 
         {show2fa && (
@@ -152,7 +160,7 @@ export const Login = () => {
         <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
         <Button
           type="submit"
-          className="bg-primary hover:bg-primary/90 mt-3 h-12 w-full"
+          className="bg-primary hover:bg-primary/90 mt-7 h-12 w-full"
           disabled={loginMutation.isPending}
         >
           {loginMutation.isPending ? 'Logging in...' : 'Login'}
