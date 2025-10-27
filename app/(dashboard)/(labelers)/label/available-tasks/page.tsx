@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'   // ✅ import router
+import { useRouter } from 'next/navigation' // ✅ import router
 import { AxiosError } from 'axios'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,9 +50,10 @@ const AvailableClustersPage = () => {
   const [clusters, setClusters] = useState<AvailableCluster[]>([])
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState<number | null>(null)
-  const [selectedCluster, setSelectedCluster] = useState<AvailableCluster | null>(null)
+  const [selectedCluster, setSelectedCluster] =
+    useState<AvailableCluster | null>(null)
 
-  const router = useRouter()   // ✅ initialize router
+  const router = useRouter() // ✅ initialize router
 
   interface BackendError {
     error?: string
@@ -99,7 +100,7 @@ const AvailableClustersPage = () => {
       })
       setClusters((prev) => prev.filter((c) => c.id !== clusterId))
       setSelectedCluster(null)
-       router.push(`/label/tasks`)
+      router.push(`/label/tasks`)
     } catch (err: unknown) {
       let backendError = 'Failed to assign cluster. Please try again.'
 
@@ -117,8 +118,10 @@ const AvailableClustersPage = () => {
         }
 
         if (status === 400) backendError ||= 'Bad Request: Invalid input'
-        else if (status === 403) backendError ||= 'Forbidden: You are not authorized'
-        else if (status === 404) backendError ||= 'Not Found: Cluster does not exist'
+        else if (status === 403)
+          backendError ||= 'Forbidden: You are not authorized'
+        else if (status === 404)
+          backendError ||= 'Not Found: Cluster does not exist'
       } else if (err instanceof Error) {
         backendError = err.message
       }
@@ -131,18 +134,20 @@ const AvailableClustersPage = () => {
 
   return (
     <DashboardLayout title="Available Projects">
-    <div className="flex items-center justify-end mb-4 gap-3">
-       <div className="text-muted-foreground flex items-center gap-2 text-sm">
-         <User className="h-4 w-4" />
-         <span suppressHydrationWarning>
-           {userLoading ? 'Loading...' : `${username} (${role})`}
-         </span>
-       </div>
-     </div>
+      <div className="mb-4 flex items-center justify-end gap-3">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
+          <User className="h-4 w-4" />
+          <span suppressHydrationWarning>
+            {userLoading ? 'Loading...' : `${username} (${role})`}
+          </span>
+        </div>
+      </div>
 
       {loading && <p className="text-muted-foreground">Loading clusters...</p>}
       {!loading && clusters.length === 0 && (
-        <p className="text-muted-foreground">No available clusters right now.</p>
+        <p className="text-muted-foreground">
+          No available clusters right now.
+        </p>
       )}
 
       <div className="grid gap-6">
@@ -190,10 +195,11 @@ const AvailableClustersPage = () => {
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
 
-
                 <Button
                   variant="outline"
-                   onClick={() => router.push(`/label/reviewTasks/${cluster.id}`)}
+                  onClick={() =>
+                    router.push(`/label/reviewTasks/${cluster.id}`)
+                  }
                 >
                   Review Task
                 </Button>
@@ -204,14 +210,17 @@ const AvailableClustersPage = () => {
       </div>
 
       {/* Confirmation Modal */}
-      <Dialog open={!!selectedCluster} onOpenChange={() => setSelectedCluster(null)}>
+      <Dialog
+        open={!!selectedCluster}
+        onOpenChange={() => setSelectedCluster(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Assignment</DialogTitle>
             <DialogDescription>
               Are you sure you want to assign cluster{' '}
-              <b>{selectedCluster?.labeller_instructions}</b> (#{selectedCluster?.id}) to
-              yourself?
+              <b>{selectedCluster?.labeller_instructions}</b> (#
+              {selectedCluster?.id}) to yourself?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -219,15 +228,19 @@ const AvailableClustersPage = () => {
               Cancel
             </Button>
             <Button
-              onClick={() => selectedCluster && handleAssign(selectedCluster.id)}
+              onClick={() =>
+                selectedCluster && handleAssign(selectedCluster.id)
+              }
               disabled={assigning === selectedCluster?.id}
             >
-              {assigning === selectedCluster?.id ? 'Assigning...' : 'Yes, Assign'}
+              {assigning === selectedCluster?.id
+                ? 'Assigning...'
+                : 'Yes, Assign'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-  </DashboardLayout>
+    </DashboardLayout>
   )
 }
 

@@ -44,7 +44,9 @@ export const fetchUserBanks = async (): Promise<BankAccount[]> => {
 }
 
 // --- Fetch a single bank account by ID ---
-export const fetchBankById = async (id: string): Promise<BankAccount | null> => {
+export const fetchBankById = async (
+  id: string
+): Promise<BankAccount | null> => {
   try {
     const response = await axiosClient.get(`/account/banks/${id}/`)
     const result = unwrap<BankAccount>(response)
@@ -61,7 +63,10 @@ export const updateBankAccount = async (
   payload: BankAccountPayload
 ): Promise<BankAccount | null> => {
   try {
-    const response = await axiosClient.put(`/account/banks/paystack/${id}/edit/`, payload)
+    const response = await axiosClient.put(
+      `/account/banks/paystack/${id}/edit/`,
+      payload
+    )
     const result = unwrap<BankAccount>(response)
     return result
   } catch (error) {
@@ -71,7 +76,9 @@ export const updateBankAccount = async (
 }
 
 // --- Set a bank as primary ---
-export const setPrimaryBank = async (id: string): Promise<BankAccount | null> => {
+export const setPrimaryBank = async (
+  id: string
+): Promise<BankAccount | null> => {
   try {
     const response = await axiosClient.post(`/account/banks/${id}/primary/`)
     const result = unwrap<BankAccount>(response)

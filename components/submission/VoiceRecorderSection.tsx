@@ -43,7 +43,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
   handleUploadAudio,
   copyToClipboard,
   readableSize,
-  formatTime
+  formatTime,
 }) => {
   if (type !== 'voice') return null
 
@@ -65,7 +65,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
           {!isRecordingAudio ? (
             <button
               type="button"
-              className="rounded-md bg-red-600 px-3 py-2 text-sm cursor-pointer font-medium text-white"
+              className="cursor-pointer rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white"
               onClick={startAudioRecording}
             >
               Record
@@ -73,7 +73,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
           ) : (
             <button
               type="button"
-              className="rounded-md bg-zinc-700 px-3 py-2 text-sm cursor-pointer font-medium text-white"
+              className="cursor-pointer rounded-md bg-zinc-700 px-3 py-2 text-sm font-medium text-white"
               onClick={stopAudioRecording}
             >
               Stop
@@ -82,7 +82,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
 
           <button
             type="button"
-            className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80"
+            className="cursor-pointer rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
             onClick={() => audioRef.current?.play()}
             disabled={!audioBlob || isBusy}
           >
@@ -91,7 +91,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
 
           <button
             type="button"
-            className="rounded-md border border-white/10 px-3 py-2 text-sm cursor-pointer text-white/80"
+            className="cursor-pointer rounded-md border border-white/10 px-3 py-2 text-sm text-white/80"
             onClick={discardAudio}
             disabled={!audioBlob}
           >
@@ -108,8 +108,8 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
 
         {/* 🌀 Preparing microphone */}
         {isPreparingMic && (
-          <div className="text-xs text-white/60 flex items-center gap-2">
-            <span className="animate-spin rounded-full h-3 w-3 border-t-2 border-white/40"></span>
+          <div className="flex items-center gap-2 text-xs text-white/60">
+            <span className="h-3 w-3 animate-spin rounded-full border-t-2 border-white/40"></span>
             Preparing microphone...
           </div>
         )}
@@ -118,7 +118,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
         <div className="flex items-center gap-3">
           <div
             className={`h-3 w-3 rounded-full ${
-              isRecordingAudio ? 'bg-red-500 animate-pulse' : 'bg-white/20'
+              isRecordingAudio ? 'animate-pulse bg-red-500' : 'bg-white/20'
             }`}
             aria-hidden
           />
@@ -126,13 +126,13 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
             {isRecordingAudio
               ? `Recording — ${formatTime(audioElapsed)}`
               : audioBlob
-              ? `Recorded • ${audioDuration ? formatTime(audioDuration) : '—'}`
-              : 'Not recorded'}
+                ? `Recorded • ${audioDuration ? formatTime(audioDuration) : '—'}`
+                : 'Not recorded'}
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-white/10 h-2 rounded overflow-hidden mt-2">
+        <div className="mt-2 h-2 w-full overflow-hidden rounded bg-white/10">
           <div
             className="h-2 bg-red-500"
             style={{
@@ -141,9 +141,9 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
                 isRecordingAudio
                   ? (audioElapsed / maxAudioSec) * 100
                   : audioDuration
-                  ? (audioDuration / maxAudioSec) * 100
-                  : 0
-              )}%`
+                    ? (audioDuration / maxAudioSec) * 100
+                    : 0
+              )}%`,
             }}
           />
         </div>
@@ -163,7 +163,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
               type="button"
               onClick={handleUploadAudio}
               disabled={!audioBlob || uploadingAudio}
-              className="w-full rounded-md cursor-pointer bg-primary hover:bg-primary/90 px-4 py-2 text-sm font-medium text-white"
+              className="bg-primary hover:bg-primary/90 w-full cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-white"
             >
               {uploadingAudio ? 'Uploading…' : 'Upload'}
             </button>
@@ -183,7 +183,7 @@ const VoiceRecorderSection: React.FC<VoiceRecorderSectionProps> = ({
         )}
 
         {audioCloudUrl && (
-          <div className="mt-2 text-xs flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-2 text-xs">
             <a
               href={audioCloudUrl}
               target="_blank"
