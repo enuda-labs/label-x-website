@@ -1,50 +1,48 @@
-import React from "react";
+import React from 'react'
 
 interface SubtitleSegment {
-  id: string;
-  start: number;
-  end: number;
-  text: string;
+  id: string
+  start: number
+  end: number
+  text: string
 }
 
 interface VideoRecorderSectionProps {
-  type: string;
-  maxVideoSec: number;
-  isRecordingVideo: boolean;
-  isRecordingAudio: boolean;
-  videoBlob: Blob | null;
-  videoDuration: number;
-  videoUrl: string | null;
-  videoCloudUrl: string | null;
-  progress: number;
+  type: string
+  maxVideoSec: number
+  isRecordingVideo: boolean
+  isRecordingAudio: boolean
+  videoBlob: Blob | null
+  videoDuration: number
+  videoUrl: string | null
+  videoCloudUrl: string | null
+  progress: number
 
   // new props
-  subtitleSegments?: SubtitleSegment[];
-  onSegmentsChange?: (segments: SubtitleSegment[]) => void;
+  subtitleSegments?: SubtitleSegment[]
+  onSegmentsChange?: (segments: SubtitleSegment[]) => void
 
-  audioOnly: boolean;
-  liveSubtitle?: string;
-  isBusy?: boolean;
-  uploadingVideo?: boolean;
-  setAudioOnly: (val: boolean) => void;
+  audioOnly: boolean
+  liveSubtitle?: string
+  isBusy?: boolean
+  uploadingVideo?: boolean
+  setAudioOnly: (val: boolean) => void
 
   // these may be async in the parent, allow either
-  startVideoRecording: () => Promise<void> | void;
-  stopVideoRecording: () => void;
-  discardVideo: () => void;
-  handleUploadVideo: () => Promise<void> | void;
+  startVideoRecording: () => Promise<void> | void
+  stopVideoRecording: () => void
+  discardVideo: () => void
+  handleUploadVideo: () => Promise<void> | void
 
-  copyToClipboard: (text: string) => void;
-  formatTime: (sec: number) => string;
-  readableSize: (size: number) => string;
+  copyToClipboard: (text: string) => void
+  formatTime: (sec: number) => string
+  readableSize: (size: number) => string
 
-  SubtitleAnnotator: React.ComponentType<Record<string, unknown>>;
+  SubtitleAnnotator: React.ComponentType<Record<string, unknown>>
 
   // allow nullable refs (matches `useRef<HTMLVideoElement | null>(null)` in parent)
-  recordedVideoRef: React.RefObject<HTMLVideoElement | null>;
-  videoStreamRef: React.RefObject<MediaStream | null>;
-
-
+  recordedVideoRef: React.RefObject<HTMLVideoElement | null>
+  videoStreamRef: React.RefObject<MediaStream | null>
 }
 
 const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
@@ -76,7 +74,7 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
   recordedVideoRef,
   videoStreamRef,
 }) => {
-  if (type !== "video") return null;
+  if (type !== 'video') return null
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -96,7 +94,7 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
             <input
               id="audioOnly"
               type="checkbox"
-              className="h-4 w-4 accent-primary"
+              className="accent-primary h-4 w-4"
               onChange={(e) => setAudioOnly(e.target.checked)}
               checked={audioOnly}
             />
@@ -146,25 +144,25 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
 
           {videoBlob && (
             <div className="ml-auto text-xs text-white/60">
-              {readableSize(videoBlob.size)} •{" "}
-              {videoDuration ? `${formatTime(videoDuration)}` : "Recorded"}
+              {readableSize(videoBlob.size)} •{' '}
+              {videoDuration ? `${formatTime(videoDuration)}` : 'Recorded'}
             </div>
           )}
         </div>
 
         {/* ✅ Progress bar showing 40-min countdown */}
-        <div className="w-full bg-gray-300 h-2 rounded">
+        <div className="h-2 w-full rounded bg-gray-300">
           <div
-            className="bg-red-600 h-2 rounded"
-            style={{ width: `${progress}%`, transition: "width 1s linear" }}
+            className="h-2 rounded bg-red-600"
+            style={{ width: `${progress}%`, transition: 'width 1s linear' }}
           />
         </div>
 
-        <div className="w-full overflow-hidden rounded-md bg-black/30 relative">
+        <div className="relative w-full overflow-hidden rounded-md bg-black/30">
           {isRecordingVideo && (
-            <div className="absolute bottom-8 w-full text-center z-50">
-              <p className="bg-black/60 text-white px-4 py-2 rounded-xl inline-block">
-                {liveSubtitle || "Listening..."}
+            <div className="absolute bottom-8 z-50 w-full text-center">
+              <p className="inline-block rounded-xl bg-black/60 px-4 py-2 text-white">
+                {liveSubtitle || 'Listening...'}
               </p>
             </div>
           )}
@@ -176,31 +174,40 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
               type="button"
               onClick={handleUploadVideo}
               disabled={!videoBlob || uploadingVideo}
-              className="w-full cursor-pointer rounded-md bg-primary hover:bg-primary/90 px-4 py-2 text-sm font-medium text-white"
+              className="bg-primary hover:bg-primary/90 w-full cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-white"
             >
               {uploadingVideo
                 ? audioOnly
-                  ? "Uploading audio…"
-                  : "Uploading video…"
+                  ? 'Uploading audio…'
+                  : 'Uploading video…'
                 : audioOnly
-                ? "Upload Audio Only"
-                : "Upload Video"}
+                  ? 'Upload Audio Only'
+                  : 'Upload Video'}
             </button>
           </div>
         )}
 
         {videoUrl && (
           <div className="mt-2 text-xs">
-            <a href={videoUrl} download="recording_video.webm" className="underline">
+            <a
+              href={videoUrl}
+              download="recording_video.webm"
+              className="underline"
+            >
               Download video
             </a>
           </div>
         )}
 
         {videoCloudUrl && (
-          <div className="mt-2 text-xs flex items-center gap-2">
-            <a href={videoCloudUrl} target="_blank" rel="noreferrer" className="underline">
-              Open uploaded {audioOnly ? "audio" : "video"}
+          <div className="mt-2 flex items-center gap-2 text-xs">
+            <a
+              href={videoCloudUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              Open uploaded {audioOnly ? 'audio' : 'video'}
             </a>
             <button
               onClick={() => copyToClipboard(videoCloudUrl)}
@@ -212,27 +219,27 @@ const VideoRecorderSection: React.FC<VideoRecorderSectionProps> = ({
         )}
 
         <SubtitleAnnotator
-          videoSrc={videoUrl ?? videoCloudUrl ?? ""}
+          videoSrc={videoUrl ?? videoCloudUrl ?? ''}
           chunkSize={5}
           videoStream={videoStreamRef?.current ?? null}
           initialSegments={subtitleSegments ?? []}
           onSegmentsChange={onSegmentsChange}
           liveText={liveSubtitle}
           onExport={async (srtText: string) => {
-            const blob = new Blob([srtText], { type: "text/plain" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "subtitles.srt";
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
+            const blob = new Blob([srtText], { type: 'text/plain' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'subtitles.srt'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+            URL.revokeObjectURL(url)
           }}
         />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default VideoRecorderSection;
+export default VideoRecorderSection
