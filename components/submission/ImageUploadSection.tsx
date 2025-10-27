@@ -1,19 +1,19 @@
-"use client";
-import React from "react";
-import Image from "next/image";
-import { Button } from "../ui/button";
+'use client'
+import React from 'react'
+import Image from 'next/image'
+import { Button } from '../ui/button'
 
 interface ImageUploadSectionProps {
-  type: string;
-  imagePreview: string | null;
-  imageFile: File | null;
-  imageCloudUrl: string | null;
-  uploadingImage: boolean;
-  setImageFile: (file: File | null) => void;
-  setImagePreview: (url: string | null) => void;
-  discardImage: () => void;
-  handleUploadImage: () => void;
-  copyToClipboard: (text: string) => void;
+  type: string
+  imagePreview: string | null
+  imageFile: File | null
+  imageCloudUrl: string | null
+  uploadingImage: boolean
+  setImageFile: (file: File | null) => void
+  setImagePreview: (url: string | null) => void
+  discardImage: () => void
+  handleUploadImage: () => void
+  copyToClipboard: (text: string) => void
 }
 
 const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
@@ -28,7 +28,7 @@ const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   handleUploadImage,
   copyToClipboard,
 }) => {
-  if (type !== "image") return null;
+  if (type !== 'image') return null
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -50,13 +50,13 @@ const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
             accept="image/*"
             className="hidden"
             onChange={(e) => {
-              const file = e.target.files?.[0] ?? null;
+              const file = e.target.files?.[0] ?? null
               if (file) {
-                if (imagePreview) URL.revokeObjectURL(imagePreview);
-                setImageFile(file);
-                setImagePreview(URL.createObjectURL(file));
+                if (imagePreview) URL.revokeObjectURL(imagePreview)
+                setImageFile(file)
+                setImagePreview(URL.createObjectURL(file))
               } else {
-                discardImage();
+                discardImage()
               }
             }}
           />
@@ -93,16 +93,16 @@ const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
                 onClick={handleUploadImage}
                 disabled={!imageFile || uploadingImage}
                 size="sm"
-                className="w-full cursor-pointer bg-primary hover:bg-primary/90 text-white font-medium rounded-md"
+                className="bg-primary hover:bg-primary/90 w-full cursor-pointer rounded-md font-medium text-white"
               >
-                {uploadingImage ? "Uploading…" : "Upload"}
+                {uploadingImage ? 'Uploading…' : 'Upload'}
               </Button>
             </div>
           </div>
         )}
 
         {imageCloudUrl && (
-          <div className="mt-2 text-xs flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-2 text-xs">
             <a
               href={imageCloudUrl}
               target="_blank"
@@ -121,7 +121,7 @@ const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ImageUploadSection;
+export default ImageUploadSection

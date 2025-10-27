@@ -61,7 +61,8 @@ const LabelerDashboard = () => {
         setLoading(true)
         const assigned = await fetchAssignedClusters()
 
-        const sortNewest = (a: AssignedCluster, b: AssignedCluster) => b.id - a.id
+        const sortNewest = (a: AssignedCluster, b: AssignedCluster) =>
+          b.id - a.id
 
         // 🔹 Active tasks (not yet completed)
         const activeAssigned = assigned
@@ -87,7 +88,7 @@ const LabelerDashboard = () => {
 
   return (
     <DashboardLayout title="Labeler Dashboard">
-      <div className="flex items-center justify-end mb-4 gap-3">
+      <div className="mb-4 flex items-center justify-end gap-3">
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <User className="h-4 w-4" />
           <span suppressHydrationWarning>
@@ -274,8 +275,8 @@ const LabelerDashboard = () => {
                         {task.pending_tasks === 0
                           ? 'Review'
                           : task.pending_tasks < task.tasks_count
-                          ? 'Continue Labeling'
-                          : 'Start Labeling'}
+                            ? 'Continue Labeling'
+                            : 'Start Labeling'}
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>

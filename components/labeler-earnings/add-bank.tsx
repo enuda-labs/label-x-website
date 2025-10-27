@@ -4,8 +4,10 @@ import { CreditCard, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
-import { fetchStripeAccount, initializeStripeAccount } from '@/services/apis/banks'
-
+import {
+  fetchStripeAccount,
+  initializeStripeAccount,
+} from '@/services/apis/banks'
 
 interface StripeAccount {
   account_id: string
@@ -13,9 +15,8 @@ interface StripeAccount {
   status: string
 }
 
-
 export const BanksContent = () => {
-    const [stripeAccount, setStripeAccount] = useState<StripeAccount | null>(null)
+  const [stripeAccount, setStripeAccount] = useState<StripeAccount | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -34,7 +35,9 @@ export const BanksContent = () => {
         }
       } catch (err) {
         console.error('Error fetching Stripe account:', err)
-        toast('Error', { description: 'Failed to load Stripe connection status.' })
+        toast('Error', {
+          description: 'Failed to load Stripe connection status.',
+        })
       }
     }
     loadStripeAccount()
@@ -47,7 +50,9 @@ export const BanksContent = () => {
       if (link) {
         window.location.href = link
       } else {
-        toast('Error', { description: 'Unable to initialize Stripe connection.' })
+        toast('Error', {
+          description: 'Unable to initialize Stripe connection.',
+        })
       }
     } catch (err) {
       console.error('Error initializing Stripe:', err)
@@ -66,8 +71,12 @@ export const BanksContent = () => {
         </div>
 
         {!stripeAccount ? (
-          <Button onClick={handleConnectStripe} className="flex items-center gap-2">
-            <Plus size={16} /> {loading ? 'Connecting...' : 'Connect Stripe Account'}
+          <Button
+            onClick={handleConnectStripe}
+            className="flex items-center gap-2"
+          >
+            <Plus size={16} />{' '}
+            {loading ? 'Connecting...' : 'Connect Stripe Account'}
           </Button>
         ) : (
           <span className="rounded bg-green-500/20 px-3 py-2 text-sm text-green-400">
@@ -89,7 +98,8 @@ export const BanksContent = () => {
                   Account ID: {stripeAccount.account_id}
                 </p>
                 <p className="text-sm text-gray-400">
-                  Payouts: {stripeAccount.payouts_enabled ? 'Enabled' : 'Disabled'}
+                  Payouts:{' '}
+                  {stripeAccount.payouts_enabled ? 'Enabled' : 'Disabled'}
                 </p>
                 <p className="text-sm text-gray-400">
                   Status: {stripeAccount.status}
