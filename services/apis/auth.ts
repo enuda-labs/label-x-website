@@ -23,6 +23,9 @@ export interface LoginResponse {
   refresh: string
   access: string
   user_data: UserData
+  data: {
+    requires_email_verification: boolean
+  }
 }
 
 export const login = async (payload: LoginBody): Promise<LoginResponse> => {
@@ -114,4 +117,46 @@ export const disable2FASetup = async (password: string): Promise<void> => {
   await axiosClient.post<{ password: string }>('/account/2fa/disable/', {
     password,
   })
+}
+
+/** ----- Password Reset ----- **/
+
+export interface PasswordResetRequestBody {
+  email: string
+}
+export const requestPasswordReset = async (
+  payload: PasswordResetRequestBody
+): Promise<void> => {
+  await axiosClient.post<PasswordResetRequestBody>(
+    '/account/email/password/request-reset/',
+    payload
+  )
+}
+
+export interface PasswordResetVerifyBody {
+  email: string
+  otp: string
+}
+
+export const verifyPasswordResetCode = async (
+  payload: PasswordResetVerifyBody
+): Promise<void> => {
+  await axiosClient.post<PasswordResetVerifyBody>(
+    '/account/email/verify/',
+    payload
+  )
+}
+
+export interface PasswordResetBody {
+  email: string
+  otp: string
+  new_password: string
+}
+export const resetPassword = async (
+  payload: PasswordResetBody
+): Promise<void> => {
+  await axiosClient.post<PasswordResetBody>(
+    '/account/email/password/reset/',
+    payload
+  )
 }

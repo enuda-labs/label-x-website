@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { login, LoginBody } from '@/services/apis/auth'
+import { login, LoginBody, verifyPasswordResetCode } from '@/services/apis/auth'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
-import { AxiosError } from 'axios'
+import { AxiosError, isAxiosError } from 'axios'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp'
 import { useGlobalStore } from '@/context/store'
 import Link from 'next/link'
@@ -21,6 +21,7 @@ export const Login = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [show2fa, setShow2fa] = useState(false)
+  const [needsVerify, setNeedsVerify] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
 
   const router = useRouter()
@@ -64,6 +65,16 @@ export const Login = () => {
         ) {
           setShow2fa(true)
           return
+        } else if (
+          err.response?.status === 401 &&
+          err.response?.data?.data?.requires_email_verification
+        ) {
+          setNeedsVerify(true)
+          toast('Email verification required', {
+            description:
+              'Please enter the verification code sent to your email',
+          })
+          return
         }
         setError(err.response?.data?.error || err.message)
       } else {
@@ -72,6 +83,20 @@ export const Login = () => {
       toast('Login failed', {
         description: 'Please check your credentials and try again',
       })
+    },
+  })
+
+  const otpMutation = useMutation({
+    mutationFn: verifyPasswordResetCode,
+    onSuccess: () => {
+      setNeedsVerify(false)
+      toast('Email verified', {
+        description: 'You can now log in with your credentials',
+      })
+    },
+    onError: (err) => {
+      if (isAxiosError(err))
+        setError(err.response?.data?.error || 'Failed to verify code')
     },
   })
 
@@ -87,14 +112,29 @@ export const Login = () => {
     })
   }
 
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (verificationCode.length !== 6) {
+      setError('Please enter a valid 6-digit code')
+      return
+    }
+
+    otpMutation.mutate({ email, otp: verificationCode })
+  }
+
   return (
     <>
-      <form onSubmit={handleLogin} className="space-y-4 pt-5">
+      <form
+        onSubmit={needsVerify ? handleOtpVerify : handleLogin}
+        className="space-y-4 pt-5"
+      >
         <div className="space-y-2">
-          <Label htmlFor="email">Username</Label>
+          <Label htmlFor="email">Email / Username</Label>
           <Input
             id="email"
-            placeholder="Username"
+            placeholder="Email or Username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -123,14 +163,42 @@ export const Login = () => {
             </button>
           </div>
           <Link
-            href="/auth/forgot-password"
+            href={`/auth/forgot-password?email=${email.includes('@') ? email : ''}`}
             className="absolute right-0 -bottom-7"
           >
-            <button className="text-primary text-sm hover:underline">
+            <button
+              className="text-primary cursor-pointer text-sm hover:underline"
+              type="button"
+            >
               Forgot Password
             </button>
           </Link>
         </div>
+
+        {needsVerify && (
+          <div>
+            <h3 className="mt-8 mb-4">
+              Enter the verification code sent to your email
+            </h3>
+            <div className="mb-10 flex justify-center">
+              <InputOTP
+                maxLength={6}
+                value={verificationCode}
+                onChange={setVerificationCode}
+              >
+                <InputOTPGroup>
+                  {[...Array(6)].map((_, i) => (
+                    <InputOTPSlot
+                      key={i}
+                      index={i}
+                      className="border-white/10 bg-white/5 text-white"
+                    />
+                  ))}
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+          </div>
+        )}
 
         {show2fa && (
           <div>
@@ -157,13 +225,24 @@ export const Login = () => {
           </div>
         )}
 
-        <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
+        <span className="mt-5 mb-2 inline-block text-sm text-red-500">
+          {error}
+        </span>
         <Button
           type="submit"
           className="bg-primary hover:bg-primary/90 mt-7 h-12 w-full"
-          disabled={loginMutation.isPending}
+          disabled={
+            loginMutation.isPending ||
+            otpMutation.isPending ||
+            (show2fa && verificationCode.length < 6) ||
+            (needsVerify && verificationCode.length < 6)
+          }
         >
-          {loginMutation.isPending ? 'Logging in...' : 'Login'}
+          {otpMutation.isPending
+            ? 'Verifying...'
+            : loginMutation.isPending
+              ? 'Logging in...'
+              : 'Login'}
         </Button>
       </form>
       <div className="flex items-end justify-end pb-5">
