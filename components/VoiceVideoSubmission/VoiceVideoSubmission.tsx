@@ -706,8 +706,7 @@ export default function VoiceVideoSubmission({
   // create recognition instance once
   useEffect(() => {
     const SpeechRecognitionClass =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition
+      window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognitionClass) {
       console.warn('Speech recognition not supported in this browser.')
       return
@@ -744,17 +743,17 @@ export default function VoiceVideoSubmission({
       }, 200) // <-- tweak delay as needed (200ms is a good starting point)
     }
 
-    recognition.onerror = (ev) => {
-      // optional: surface helpful errors without crashing
-      // console.warn("Speech recognition error:", ev);
-    }
+    // recognition.onerror = (ev) => {
+    // optional: surface helpful errors without crashing
+    // console.warn("Speech recognition error:", ev);
+    // }
 
     recognitionRef.current = recognition
 
     return () => {
       try {
         recognition.stop()
-      } catch (e) {
+      } catch {
         // ignore stop errors
       }
       recognitionRef.current = null
