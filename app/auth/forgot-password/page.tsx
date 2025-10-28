@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, ArrowLeft, Brain } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,38 +10,69 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
+import { GridBackground } from '@/components/shared/grid-line'
+import {
+  requestPasswordReset,
+  resetPassword,
+  verifyPasswordResetCode,
+} from '@/services/apis/auth'
+import { useMutation } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
+import { toast } from 'sonner'
 
 type Step = 'email' | 'verify-otp' | 'new-password' | 'success'
 
 export default function ForgotPassword() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [step, setStep] = useState<Step>('email')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(searchParams.get('email') || '')
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+
+  const emailMutation = useMutation({
+    mutationFn: requestPasswordReset,
+    onSuccess: () => {
+      setStep('verify-otp')
+    },
+    onError: (err) => {
+      if (isAxiosError(err))
+        setError(err.response?.data?.error || 'Failed to send reset code')
+    },
+  })
+
+  const otpMutation = useMutation({
+    mutationFn: verifyPasswordResetCode,
+    onSuccess: () => {
+      setStep('new-password')
+    },
+    onError: (err) => {
+      if (isAxiosError(err))
+        setError(err.response?.data?.error || 'Failed to verify code')
+    },
+  })
+
+  const passwordMutation = useMutation({
+    mutationFn: resetPassword,
+    onSuccess: () => {
+      setStep('success')
+    },
+    onError: (err) => {
+      if (isAxiosError(err))
+        setError(err.response?.data?.error || 'Failed to reset password')
+    },
+  })
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setIsLoading(true)
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setStep('verify-otp')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to send reset code')
-    } finally {
-      setIsLoading(false)
-    }
+    emailMutation.mutate({ email })
   }
 
   const handleOtpVerify = async (e: React.FormEvent) => {
@@ -53,18 +84,8 @@ export default function ForgotPassword() {
       return
     }
 
-    setIsLoading(true)
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setStep('new-password')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid or expired code')
-    } finally {
-      setIsLoading(false)
-    }
+    // otpMutation.mutate({ email, otp })
+    setStep('new-password')
   }
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -81,42 +102,31 @@ export default function ForgotPassword() {
       return
     }
 
-    setIsLoading(true)
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setStep('success')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to reset password')
-    } finally {
-      setIsLoading(false)
-    }
+    passwordMutation.mutate({ email, otp, new_password: newPassword })
   }
 
   const handleResendCode = async () => {
     setError('')
-    setIsLoading(true)
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      emailMutation.mutate({ email })
 
-      alert('Verification code resent successfully')
+      toast('Verification code resent', {
+        description: 'Please check your email for the new code',
+      })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to resend code')
-    } finally {
-      setIsLoading(false)
     }
   }
 
   const handleBackToLogin = () => {
-    router.push('/auth/login')
+    router.back()
   }
 
   return (
-    <>
+    <div className="relative min-h-screen bg-[#0A0A0A] bg-[url(/auth-bg.jpg)] bg-cover bg-fixed bg-center text-white lg:overflow-hidden">
+      <div className="absolute inset-0 bg-black/85" />
       {step === 'email' && (
         <button
           onClick={() => router.back()}
@@ -125,11 +135,15 @@ export default function ForgotPassword() {
           <ArrowLeft /> Back
         </button>
       )}
-      <div className="m-auto flex h-screen w-full max-w-lg flex-col items-center justify-center space-y-6 px-5">
+      <div className="justify-cente m-auto flex h-screen w-full max-w-lg flex-col items-center space-y-6 px-5 pt-10 pb-20">
+        <GridBackground />
         {step === 'email' && (
           <>
-            <div className="space-y-2 text-center">
-              <h2 className="text-2xl font-bold text-white">
+            <div className="z-10 space-y-2 text-center">
+              <div className="from-primary/20 to-primary-glow/20 border-primary/20 inline-flex items-center justify-center rounded-2xl border bg-gradient-to-r p-3 backdrop-blur-sm">
+                <Brain className="text-primary h-8 w-8" />
+              </div>
+              <h2 className="text-3xl font-bold text-white md:text-4xl">
                 Forgot Password?
               </h2>
               <p className="text-sm text-white/60">
@@ -137,7 +151,7 @@ export default function ForgotPassword() {
                 your password
               </p>
             </div>
-            <Card className="max-h-[80vh] border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
+            <Card className="max-h-[80vh] w-full border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
               <form onSubmit={handleEmailSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
@@ -161,9 +175,9 @@ export default function ForgotPassword() {
                 <Button
                   type="submit"
                   className="bg-primary hover:bg-primary/90 h-12 w-full"
-                  disabled={isLoading}
+                  disabled={emailMutation.isPending}
                 >
-                  {isLoading ? 'Sending...' : 'Send Reset Code'}
+                  {emailMutation.isPending ? 'Sending...' : 'Send Reset Code'}
                 </Button>
 
                 <Button
@@ -182,14 +196,17 @@ export default function ForgotPassword() {
 
         {step === 'verify-otp' && (
           <>
-            <div className="space-y-2 text-center">
+            <div className="z-10 space-y-2 text-center">
+              <div className="from-primary/20 to-primary-glow/20 border-primary/20 inline-flex items-center justify-center rounded-2xl border bg-gradient-to-r p-3 backdrop-blur-sm">
+                <Brain className="text-primary h-8 w-8" />
+              </div>
               <h2 className="text-2xl font-bold text-white">Verify Code</h2>
               <p className="text-sm text-white/60">
                 We&#39;ve sent a 6-digit verification code to <br />
                 <span className="font-semibold text-white">{email}</span>
               </p>
             </div>
-            <Card className="max-h-[80vh] border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
+            <Card className="max-h-[80vh] w-full border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
               <form onSubmit={handleOtpVerify} className="space-y-6">
                 <div className="space-y-4">
                   <Label className="block text-center">
@@ -219,17 +236,17 @@ export default function ForgotPassword() {
                 <Button
                   type="submit"
                   className="bg-primary hover:bg-primary/90 h-12 w-full"
-                  disabled={isLoading || otp.length !== 6}
+                  disabled={otpMutation.isPending || otp.length !== 6}
                 >
-                  {isLoading ? 'Verifying...' : 'Verify Code'}
+                  {otpMutation.isPending ? 'Verifying...' : 'Verify Code'}
                 </Button>
 
                 <div className="text-center">
                   <button
                     type="button"
                     onClick={handleResendCode}
-                    disabled={isLoading}
-                    className="text-sm text-white/60 hover:text-white hover:underline disabled:opacity-50"
+                    disabled={otpMutation.isPending}
+                    className="cursor-pointer text-sm text-white/60 hover:text-white hover:underline disabled:opacity-50"
                   >
                     Didn&#39;t receive the code? Resend
                   </button>
@@ -251,7 +268,10 @@ export default function ForgotPassword() {
 
         {step === 'new-password' && (
           <>
-            <div className="space-y-2 text-center">
+            <div className="z-10 space-y-2 text-center">
+              <div className="from-primary/20 to-primary-glow/20 border-primary/20 inline-flex items-center justify-center rounded-2xl border bg-gradient-to-r p-3 backdrop-blur-sm">
+                <Brain className="text-primary h-8 w-8" />
+              </div>
               <h2 className="text-2xl font-bold text-white">
                 Create New Password
               </h2>
@@ -260,7 +280,7 @@ export default function ForgotPassword() {
                 passwords
               </p>
             </div>
-            <Card className="max-h-[80vh] border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
+            <Card className="max-h-[80vh] w-full border-white/10 bg-white/15 p-6 backdrop-blur-sm md:max-h-none lg:overflow-y-hidden">
               <form onSubmit={handlePasswordReset} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">New Password</Label>
@@ -286,7 +306,6 @@ export default function ForgotPassword() {
                     Must be at least 8 characters
                   </p>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
@@ -314,19 +333,28 @@ export default function ForgotPassword() {
                     </button>
                   </div>
                 </div>
-
                 {error && (
                   <span className="inline-block text-sm text-red-500">
                     {error}
                   </span>
                 )}
-
                 <Button
                   type="submit"
                   className="bg-primary hover:bg-primary/90 h-12 w-full"
-                  disabled={isLoading}
+                  disabled={passwordMutation.isPending}
                 >
-                  {isLoading ? 'Resetting...' : 'Reset Password'}
+                  {passwordMutation.isPending
+                    ? 'Resetting...'
+                    : 'Reset Password'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-white/60 hover:text-white"
+                  onClick={() => setStep('verify-otp')}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to code
                 </Button>
               </form>
             </Card>
@@ -335,7 +363,7 @@ export default function ForgotPassword() {
 
         {step === 'success' && (
           <>
-            <div className="space-y-4 text-center">
+            <div className="z-10 space-y-4 pt-10 text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
                 <svg
                   className="h-8 w-8 text-green-500"
@@ -362,13 +390,13 @@ export default function ForgotPassword() {
 
             <Button
               onClick={handleBackToLogin}
-              className="bg-primary hover:bg-primary/90 h-12 w-full"
+              className="bg-primary hover:bg-primary/90 z-0 h-12 w-full"
             >
               Back to Login
             </Button>
           </>
         )}
       </div>
-    </>
+    </div>
   )
 }

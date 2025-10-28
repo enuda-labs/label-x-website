@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { register } from '@/services/apis/auth'
-import { AxiosError } from 'axios'
+import { register, verifyPasswordResetCode } from '@/services/apis/auth'
+import { AxiosError, isAxiosError } from 'axios'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
 import Link from 'next/link'
 import { listReviewersDomains } from '@/services/apis/reviewers'
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp'
 
 export const Signup = () => {
   const [email, setEmail] = useState('')
@@ -29,6 +30,8 @@ export const Signup = () => {
   const [passwordTouched, setPasswordTouched] = useState(false)
   const [selectedDomains, setSelectedDomains] = useState<number[]>([])
   const [isDomainsOpen, setIsDomainsOpen] = useState(false)
+  const [needsVerify, setNeedsVerify] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -80,7 +83,7 @@ export const Signup = () => {
     },
     onSuccess: (data) => {
       if (data.status === 'success') {
-        router.push('/auth/login')
+        setNeedsVerify(true)
         toast('Account created successfully', {
           description: 'Welcome to Label X',
         })
@@ -153,7 +156,66 @@ export const Signup = () => {
       <X size={16} className="text-red-500" />
     )
 
-  return (
+  const otpMutation = useMutation({
+    mutationFn: verifyPasswordResetCode,
+    onSuccess: () => {
+      toast('Email verified', {
+        description: 'You can now log in with your credentials',
+      })
+      router.push('/auth/login')
+    },
+    onError: (err) => {
+      if (isAxiosError(err))
+        setError(err.response?.data?.error || 'Failed to verify code')
+    },
+  })
+
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (verificationCode.length !== 6) {
+      setError('Please enter a valid 6-digit code')
+      return
+    }
+
+    otpMutation.mutate({ email, otp: verificationCode })
+  }
+
+  return needsVerify ? (
+    <form onSubmit={handleOtpVerify} className="space-y-4">
+      <div>
+        <h3 className="mt-8 mb-4">
+          Enter the verification code sent to your email
+        </h3>
+        <div className="mb-10 flex justify-center">
+          <InputOTP
+            maxLength={6}
+            value={verificationCode}
+            onChange={setVerificationCode}
+          >
+            <InputOTPGroup>
+              {[...Array(6)].map((_, i) => (
+                <InputOTPSlot
+                  key={i}
+                  index={i}
+                  className="border-white/10 bg-white/5 text-white"
+                />
+              ))}
+            </InputOTPGroup>
+          </InputOTP>
+        </div>
+      </div>
+      <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
+      <Button
+        type="submit"
+        className="bg-primary hover:bg-primary/90 h-12 w-full"
+        disabled={otpMutation.isPending || verificationCode.length < 6}
+      >
+        {otpMutation.isPending ? 'Verifying...' : 'Verify Account'}
+      </Button>
+    </form>
+  ) : (
     <>
       <form onSubmit={handleSignup} className="space-y-4">
         <div className="grid w-full grid-cols-2 gap-3">
