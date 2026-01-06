@@ -132,10 +132,27 @@ export function AppSidebar({ userRole }: { userRole: string }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const { data } = useQuery({
+  const { data, error } = useQuery({
     queryKey: ['user'],
     queryFn: getUserDetails,
+    retry: false,
   })
+
+  // Handle deleted user or authentication errors
+  useEffect(() => {
+    if (error) {
+      const axiosError = error as any
+      if (
+        axiosError?.response?.status === 401 ||
+        axiosError?.response?.status === 403
+      ) {
+        // User is deleted or unauthorized - clear tokens and redirect to login
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        localStorage.removeItem(REFRESH_TOKEN_KEY)
+        router.push('/auth/login')
+      }
+    }
+  }, [error, router])
 
   useEffect(() => {
     if (data) {
