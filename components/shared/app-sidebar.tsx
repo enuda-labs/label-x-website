@@ -8,6 +8,7 @@ import {
   LogOut,
   ClipboardList,
   DollarSign,
+  HelpCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -45,6 +46,11 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       icon: Clock,
     },
     {
+      title: 'How it Works',
+      url: '/client/how-it-works',
+      icon: HelpCircle,
+    },
+    {
       title: 'Api Keys',
       url: '/client/api-keys',
       icon: Key,
@@ -76,6 +82,11 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       title: 'Available Clusters',
       url: '/label/available-tasks',
       icon: ClipboardList,
+    },
+    {
+      title: 'How it Works',
+      url: '/label/how-it-works',
+      icon: HelpCircle,
     },
     {
       title: 'Earnings',
