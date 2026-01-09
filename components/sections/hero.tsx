@@ -1,8 +1,11 @@
+'use client'
+
 import { ArrowUpRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AnimatedSection, AnimatedButton } from '../shared/animated-sections'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 
 const FloatingParticle = ({ delay = 0 }) => (
   <motion.div
@@ -24,6 +27,20 @@ const FloatingParticle = ({ delay = 0 }) => (
 )
 
 const Hero = () => {
+  const [particlePositions, setParticlePositions] = useState<
+    Array<{ left: number; top: number }>
+  >([])
+
+  // Generate positions only on client to avoid hydration mismatch
+  useEffect(() => {
+    setParticlePositions(
+      Array.from({ length: 20 }).map(() => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+      }))
+    )
+  }, [])
+
   return (
     <section
       className="background relative overflow-hidden pt-28 pb-12 md:pt-36"
@@ -37,13 +54,13 @@ const Hero = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          {Array.from({ length: 20 }).map((_, i) => (
+          {particlePositions.map((pos, i) => (
             <motion.div
               key={i}
               className="absolute"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: `${pos.left}%`,
+                top: `${pos.top}%`,
               }}
             >
               <FloatingParticle delay={i * 0.2} />
