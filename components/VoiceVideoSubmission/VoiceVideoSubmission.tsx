@@ -52,6 +52,7 @@ type Props = {
   type: 'voice' | 'video' | 'image'
   taskId: string
   setUploading?: (value: boolean) => void
+  onSuccess?: () => void
 }
 
 async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob | null> {
@@ -94,6 +95,7 @@ export default function VoiceVideoSubmission({
   type,
   taskId,
   setUploading,
+  onSuccess,
 }: Props) {
   // 🔧 Decode malformed taskId strings like "taskId%3D51" or "taskId=51"
   try {
@@ -237,15 +239,23 @@ export default function VoiceVideoSubmission({
     setImageCloudUrl(null)
     try {
       const url = await uploadToCloudinary(imageFile, 'image')
+
+      // Validate URL before sending annotation
+      if (!url || url.trim() === '') {
+        setError('Image upload failed. Please try again.')
+        return
+      }
+
       setImageCloudUrl(url)
 
       const payload = {
         task_id: Number(taskId),
-        labels: url ? [url] : [],
+        labels: [url], // Always send the URL as a label
       }
       await annotateTask(payload)
       setSuccessOpen(true)
       discardImage()
+      onSuccess?.() // Refresh task data after successful upload
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string }>
       console.error(error)
@@ -279,15 +289,23 @@ export default function VoiceVideoSubmission({
     setAudioCloudUrl(null)
     try {
       const url = await uploadToCloudinary(audioBlob, 'video') // ✅ keep video for audio uploads
+
+      // Validate URL before sending annotation
+      if (!url || url.trim() === '') {
+        setError('Audio upload failed. Please try again.')
+        return
+      }
+
       setAudioCloudUrl(url)
 
       const payload = {
         task_id: Number(taskId),
-        labels: url ? [url] : [],
+        labels: [url], // Always send the URL as a label
       }
       await annotateTask(payload)
       setSuccessOpen(true)
       discardAudio()
+      onSuccess?.() // Refresh task data after successful upload
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string }>
       console.error(error)
@@ -330,6 +348,12 @@ export default function VoiceVideoSubmission({
         uploadType as 'video' | 'image' | 'raw' | 'auto' | undefined
       )
 
+      // Validate URL before proceeding
+      if (!mediaUrl || mediaUrl.trim() === '') {
+        setError('Video upload failed. Please try again.')
+        return
+      }
+
       setVideoCloudUrl(mediaUrl)
 
       let subtitleUrl: string | null = null
@@ -352,9 +376,10 @@ export default function VoiceVideoSubmission({
       }
 
       // 3) build payload according to your schema
+      // mediaUrl is guaranteed to be non-empty at this point due to validation above
       const payload = {
         task_id: Number(taskId),
-        labels: mediaUrl ? [mediaUrl] : [],
+        labels: [mediaUrl], // Always send the URL as a label
         subtitles_url: subtitleUrl ?? '',
       }
 
@@ -364,6 +389,7 @@ export default function VoiceVideoSubmission({
       // 5) success cleanup
       setSuccessOpen(true)
       discardVideo()
+      onSuccess?.() // Refresh task data after successful upload
     } catch (err: unknown) {
       const error = err as AxiosError<{ detail?: string }>
       console.error(error)

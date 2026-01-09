@@ -737,7 +737,15 @@ const LabelTask = () => {
     if (currentItemIndex < totalItems - 1) {
       goToItemIndex(currentItemIndex + 1)
     } else {
-      toast('This is the last item in the cluster.')
+      // If it's the last item and it's already annotated, complete the task
+      const currentItemAnnotated =
+        responses[currentItemIndex]?.answer?.length > 0
+      if (currentItemAnnotated) {
+        toast('All items completed in this cluster.')
+        router.push('/label/overview')
+      } else {
+        toast('This is the last item in the cluster. Please complete it first.')
+      }
     }
   }
 
@@ -1153,6 +1161,7 @@ const LabelTask = () => {
                 type={inputType as 'video' | 'voice' | 'image'}
                 taskId={currentItem?.id ? String(currentItem.id) : ''}
                 setUploading={setUploading}
+                onSuccess={refreshTaskData}
               />
             ) : (
               <>
@@ -1271,7 +1280,13 @@ const LabelTask = () => {
               </Button>
 
               <Button onClick={handleNextTask} className="flex-1">
-                Next Task
+                {isLastItem &&
+                (inputType === 'voice' ||
+                  inputType === 'image' ||
+                  inputType === 'video') &&
+                responses[currentItemIndex]?.answer?.length > 0
+                  ? 'Complete Task'
+                  : 'Next Task'}
               </Button>
             </div>
           </div>
