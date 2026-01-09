@@ -42,6 +42,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${roboto.className} ${roboto.variable} ${spaceGrotesk.variable}`}
+        suppressHydrationWarning
       >
         <Providers>
           <main className="min-h-screen bg-gradient-to-b from-[#191c21] via-[#1e1e1e] to-[#111418] text-gray-200">
