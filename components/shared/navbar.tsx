@@ -92,17 +92,19 @@ function Header() {
                 </span>
               </Link>
             ) : (
-              <Link href={`/auth/role?returnTo=%2Fdashboard`}>
-                <span className="block rounded-md px-3 py-2 text-center text-base font-medium text-white hover:text-orange-500">
-                  Get Started
-                </span>
-              </Link>
+              <>
+                <Link href={`/auth/role?returnTo=%2Fdashboard`}>
+                  <span className="block rounded-md px-3 py-2 text-center text-base font-medium text-white hover:text-orange-500">
+                    Get Started
+                  </span>
+                </Link>
+                <Link href="/auth/login">
+                  <button className="cursor-pointer rounded-lg bg-orange-500 px-6 py-2 font-medium text-white transition-colors duration-300 hover:bg-orange-600">
+                    Login as client
+                  </button>
+                </Link>
+              </>
             )}
-            <Link href="/auth/login">
-              <button className="cursor-pointer rounded-lg bg-orange-500 px-6 py-2 font-medium text-white transition-colors duration-300 hover:bg-orange-600">
-                Login as client
-              </button>
-            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -162,27 +164,36 @@ function Header() {
               </a>
               <div className="pt-2">
                 {user?.id ? (
-                  <Link href="/dashboard">
+                  <Link
+                    href={
+                      user.is_admin
+                        ? '/admin'
+                        : user.is_reviewer
+                          ? '/label/overview'
+                          : '/client/overview'
+                    }
+                  >
                     <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
                       Go to Dashboard
                     </span>
                   </Link>
                 ) : (
-                  <Link href={`/auth/role?returnTo=%2Fdashboard`}>
-                    <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
-                      Get Started
-                    </span>
-                  </Link>
+                  <>
+                    <Link href={`/auth/role?returnTo=%2Fdashboard`}>
+                      <span className="block w-full rounded-md px-3 py-3 text-center text-base font-medium text-white hover:text-orange-500">
+                        Get Started
+                      </span>
+                    </Link>
+                    <Link href="/auth/login">
+                      <button
+                        onClick={handleScrollToPartner}
+                        className="block w-full rounded-md bg-orange-500 px-3 py-3 text-center text-base font-medium text-white hover:bg-orange-600"
+                      >
+                        Login as client
+                      </button>
+                    </Link>
+                  </>
                 )}
-
-                <Link href="/auth/login">
-                  <button
-                    onClick={handleScrollToPartner}
-                    className="block w-full rounded-md bg-orange-500 px-3 py-3 text-center text-base font-medium text-white hover:bg-orange-600"
-                  >
-                    Login as client
-                  </button>
-                </Link>
               </div>
             </div>
           </div>
