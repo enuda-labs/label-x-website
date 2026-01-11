@@ -20,7 +20,6 @@ import { toast } from 'sonner'
 import { Copy, Eye, EyeOff, Trash2, Plus, Key } from 'lucide-react'
 import { ACCESS_TOKEN_KEY } from '@/constants/index'
 import { BASE_API_URL } from '@/constants/env-vars'
-import { isAxiosError } from 'axios'
 import DeleteConfirmationModal from '@/components/ui/delete-confirm'
 
 interface ApiKey {
@@ -92,8 +91,8 @@ export default function ApiKeys() {
             name: string
             plain_api_key: string
             created: string
-            lastUsed: string
-            revoked: string
+            lastUsed: string | null
+            revoked: boolean | string
             key_type: string
           }) => ({
             id: raw.id,
@@ -101,7 +100,11 @@ export default function ApiKeys() {
             api_key: raw.plain_api_key,
             created: raw.created,
             lastUsed: raw.lastUsed ?? null,
-            revoked: raw.revoked ?? false,
+            // Properly convert revoked to boolean (handle both boolean and string values)
+            revoked:
+              typeof raw.revoked === 'boolean'
+                ? raw.revoked
+                : String(raw.revoked).toLowerCase() === 'true',
             key_type: raw.key_type ?? '',
           })
         )
@@ -109,7 +112,7 @@ export default function ApiKeys() {
         setApiKeys(mapped)
       } catch (err) {
         console.error('Error fetching API keys:', err)
-        toast('Error', { description: 'Failed to load API keys' })
+        toast.error('Failed to load API keys')
         setApiKeys([])
       } finally {
         setLoading(false)
@@ -121,7 +124,7 @@ export default function ApiKeys() {
 
   const generateApiKey = async () => {
     if (!newKeyName.trim()) {
-      toast('Error', { description: 'Please enter a name for your API key' })
+      toast.error('Please enter a name for your API key')
       return
     }
 
@@ -141,11 +144,47 @@ export default function ApiKeys() {
       try {
         payload = await res.json()
       } catch {
-        payload = await res.text()
+        const textPayload = await res.text()
+        payload =
+          typeof textPayload === 'string' ? { error: textPayload } : textPayload
       }
 
-      if (!res.ok || !payload.success) {
-        throw new Error(payload.error || `Server responded with ${res.status}`)
+      if (!res.ok || (payload && payload.success === false)) {
+        // Extract error message from various possible locations
+        let errorMessage = 'Failed to generate API key'
+
+        if (payload) {
+          if (typeof payload === 'string') {
+            errorMessage = payload
+          } else if (typeof payload === 'object') {
+            // Check all possible error message locations in the response
+            errorMessage = String(
+              payload.error || payload.message || payload.detail || errorMessage
+            )
+          }
+        }
+
+        // Ensure we have a valid error message
+        if (
+          !errorMessage ||
+          errorMessage.trim() === '' ||
+          errorMessage === 'Failed to generate API key'
+        ) {
+          errorMessage = `Server responded with ${res.status}`
+        }
+
+        // Don't throw for validation errors - just show toast and return to avoid console errors
+        const isValidationError =
+          errorMessage.includes('already have') ||
+          errorMessage.includes('Invalid')
+
+        if (isValidationError) {
+          toast.error(String(errorMessage))
+          return
+        }
+
+        // Only throw for unexpected errors
+        throw new Error(errorMessage)
       }
 
       const data = payload.data
@@ -156,7 +195,7 @@ export default function ApiKeys() {
         created: data.created,
         lastUsed: data.lastUsed ?? null,
         revoked: data.revoked ?? false,
-        key_type: data.key_type ?? '',
+        key_type: environment, // Backend doesn't return key_type, use environment state from the request
       }
 
       // setGeneratedKey(keyObj)
@@ -164,11 +203,18 @@ export default function ApiKeys() {
       setNewKeyName('')
       toast('API Key Generated', { description: 'Key created successfully' })
     } catch (err) {
-      console.error('Generate API key error:', err)
-      if (isAxiosError(err))
-        toast('Error', {
-          description: err.message || 'Failed to generate API key',
-        })
+      // Only log unexpected errors, not validation errors
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to generate API key'
+      const isValidationError =
+        errorMessage.includes('already have') ||
+        errorMessage.includes('Invalid')
+
+      if (!isValidationError) {
+        console.error('Generate API key error:', err)
+      }
+
+      toast.error(String(errorMessage))
     } finally {
       setIsGenerating(false)
     }
@@ -178,7 +224,7 @@ export default function ApiKeys() {
     try {
       setIsDeleting(true)
       const headers = buildHeaders()
-      const res = await fetch(`${BASE_API_URL}/keys/delete/${keyId}`, {
+      const res = await fetch(`${BASE_API_URL}/keys/delete/${keyId}/`, {
         method: 'DELETE',
         headers,
       })
@@ -193,10 +239,9 @@ export default function ApiKeys() {
       })
     } catch (err) {
       console.error('Delete API key error:', err)
-      if (isAxiosError(err))
-        toast('Error', {
-          description: err.message || 'Failed to delete API key',
-        })
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to delete API key'
+      toast.error(String(errorMessage))
     } finally {
       setIsDeleting(false)
     }
@@ -211,18 +256,97 @@ export default function ApiKeys() {
         body: JSON.stringify({ key_id: keyId }),
       })
 
-      if (!res.ok) throw new Error(`Server responded with ${res.status}`)
+      let payload
+      try {
+        payload = await res.json()
+      } catch {
+        const textPayload = await res.text()
+        payload =
+          typeof textPayload === 'string' ? { error: textPayload } : textPayload
+      }
 
-      setApiKeys((prev) =>
-        prev.map((key) => (key.id === keyId ? { ...key, revoked: true } : key))
-      )
+      if (!res.ok || (payload && payload.success === false)) {
+        let errorMessage = 'Failed to revoke API key'
+
+        if (payload) {
+          if (typeof payload === 'string') {
+            errorMessage = payload
+          } else if (typeof payload === 'object') {
+            errorMessage = payload.error || payload.message || errorMessage
+          }
+        }
+
+        throw new Error(errorMessage)
+      }
+
+      // Backend revokes the old key and creates a new one
+      // The response contains the new key's value but old key's metadata
+      const data = payload.data
+      const oldKey = apiKeys.find((k) => k.id === keyId)
+
+      // Update the old key to show as revoked and add the new key
+      setApiKeys((prev) => {
+        const updated = prev.map((key) =>
+          key.id === keyId ? { ...key, revoked: true } : key
+        )
+
+        // Add the new key at the beginning of the list
+        // Note: Backend returns old key's id/created but new key's value
+        // We'll use a temporary ID and current timestamp for the new key
+        const newKey: ApiKey = {
+          id: `new-${Date.now()}`, // Temporary ID until page reload
+          name: data.name || oldKey?.name || 'New Key',
+          api_key: data.api_key, // This is the new key's actual value
+          created: new Date().toISOString(), // Use current time for new key
+          lastUsed: null,
+          revoked: false,
+          key_type: oldKey?.key_type || 'production',
+        }
+
+        return [newKey, ...updated]
+      })
+
+      // Refresh the list to get the actual new key from backend
+      // This ensures we have the correct ID and metadata
+      setTimeout(() => {
+        const fetchApiKeys = async () => {
+          try {
+            const headers = buildHeaders()
+            const res = await fetch(`${BASE_API_URL}/keys/`, {
+              method: 'POST',
+              headers,
+            })
+            const payload = await res.json()
+            const list = payload.data || payload || []
+            const mapped: ApiKey[] = list.map((raw: any) => ({
+              id: raw.id,
+              name: raw.name,
+              api_key: raw.plain_api_key,
+              created: raw.created,
+              lastUsed: raw.lastUsed ?? null,
+              revoked:
+                typeof raw.revoked === 'boolean'
+                  ? raw.revoked
+                  : String(raw.revoked).toLowerCase() === 'true',
+              key_type: raw.key_type ?? '',
+            }))
+            setApiKeys(mapped)
+          } catch (err) {
+            console.error('Error refreshing API keys:', err)
+          }
+        }
+        fetchApiKeys()
+      }, 500)
 
       toast('API Key Revoked', {
-        description: 'The API key has been revoked successfully',
+        description:
+          'The API key has been revoked and a new key has been generated.',
       })
     } catch (err) {
       console.error('Revoke API key error:', err)
-      toast('Error', { description: 'Failed to revoke API key' })
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to revoke API key'
+      toast.error(errorMessage)
     }
   }
 
@@ -236,7 +360,7 @@ export default function ApiKeys() {
       .then(() =>
         toast('Copied', { description: 'API key copied to clipboard' })
       )
-      .catch(() => toast('Error', { description: 'Failed to copy API key' }))
+      .catch(() => toast.error('Failed to copy API key'))
   }
 
   const maskApiKey = (key: string | undefined) => {
@@ -405,6 +529,7 @@ export default function ApiKeys() {
             <TableHeader>
               <TableRow className="border-white/10 hover:bg-white/5">
                 <TableHead className="text-white/80">Name</TableHead>
+                <TableHead className="text-white/80">Environment</TableHead>
                 <TableHead className="text-white/80">API Key</TableHead>
                 <TableHead className="text-white/80">Created</TableHead>
                 <TableHead className="text-white/80">Last Used</TableHead>
@@ -421,6 +546,15 @@ export default function ApiKeys() {
                   {/* Name */}
                   <TableCell className="font-medium text-white">
                     {key.name}
+                  </TableCell>
+
+                  {/* Environment */}
+                  <TableCell className="text-white/60">
+                    {key.key_type
+                      ? key.key_type === 'production'
+                        ? 'Production'
+                        : 'Test'
+                      : '-'}
                   </TableCell>
 
                   {/* API Key */}
