@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
@@ -12,10 +12,11 @@ import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
 import { AxiosError, isAxiosError } from 'axios'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '../ui/input-otp'
 import { useGlobalStore } from '@/context/store'
+import { getUserDetails } from '@/services/apis/user'
 import Link from 'next/link'
 
 export const Login = () => {
-  const { setIsLoggedIn } = useGlobalStore()
+  const { setIsLoggedIn, user, setUser } = useGlobalStore()
   const [email, setEmail] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState('')
@@ -28,6 +29,43 @@ export const Login = () => {
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/client/overview'
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY)
+    if (token) {
+      // Check if user data is in store (from previous session)
+      if (user?.id) {
+        if (user.is_admin) {
+          router.push('/admin')
+        } else if (user.is_reviewer) {
+          router.push('/label/overview')
+        } else {
+          router.push(returnTo)
+        }
+        return
+      }
+
+      // If no user in store, try to fetch user details
+      getUserDetails()
+        .then((data) => {
+          if (data?.user) {
+            if (data.user.is_admin) {
+              router.push('/admin')
+            } else if (data.user.is_reviewer) {
+              router.push('/label/overview')
+            } else {
+              router.push(returnTo)
+            }
+          }
+        })
+        .catch(() => {
+          // If fetch fails, token might be invalid, clear it
+          localStorage.removeItem(ACCESS_TOKEN_KEY)
+          localStorage.removeItem(REFRESH_TOKEN_KEY)
+        })
+    }
+  }, [user, router, returnTo])
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginBody) => {
@@ -46,6 +84,7 @@ export const Login = () => {
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh)
       queryClient.clear()
       setIsLoggedIn(true)
+      setUser(data.user_data) // Set user data in global store
       toast('Login successful', {
         description: 'Welcome back to Label X',
       })
