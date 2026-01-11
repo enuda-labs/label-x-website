@@ -408,7 +408,7 @@ const Dashboard = () => {
       </h2>
       {isCheckingPlan ? (
         <Skeleton className="h-40 bg-white/5" />
-      ) : myPlan && !showPlans ? (
+      ) : myPlan && myPlan.plan && !showPlans ? (
         <div>
           <Card className="border-primary/20 bg-white/5 p-6">
             <div className="flex flex-col justify-between md:flex-row md:items-center">
@@ -432,12 +432,16 @@ const Dashboard = () => {
                 </p>
 
                 <div className="space-y-2">
-                  {planFeats(myPlan.plan.name).map((feat) => (
-                    <div className="flex items-start" key={feat}>
-                      <Check className="mt-0.5 mr-2 h-4 w-4 text-green-400" />
-                      <span className="text-sm text-white/80">{feat}</span>
-                    </div>
-                  ))}
+                  {(myPlan.plan.features && myPlan.plan.features.length > 0
+                    ? myPlan.plan.features
+                    : planFeats(myPlan.plan.name)
+                  ) // Fallback to hardcoded features if not in DB
+                    .map((feat) => (
+                      <div className="flex items-start" key={feat}>
+                        <Check className="mt-0.5 mr-2 h-4 w-4 text-green-400" />
+                        <span className="text-sm text-white/80">{feat}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
 
@@ -495,9 +499,13 @@ const Plan: FC<{ plan: SubscriptionPlan }> = ({ plan }) => {
         <span className="text-lg text-white/60">/mo</span>
       </div>
       <ul className="mb-8 space-y-3 text-left text-white/70">
-        {planFeats(plan.name).map((feat) => (
-          <li key={feat}>• {feat}</li>
-        ))}
+        {(plan.features && plan.features.length > 0
+          ? plan.features
+          : planFeats(plan.name)
+        ) // Fallback to hardcoded features if not in DB
+          .map((feat) => (
+            <li key={feat}>• {feat}</li>
+          ))}
       </ul>
       <Button
         className="bg-primary hover:bg-primary/90 w-full cursor-pointer"
