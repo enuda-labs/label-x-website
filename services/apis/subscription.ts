@@ -7,6 +7,7 @@ export interface SubscriptionPlan {
   name: string
   monthly_fee: string
   cost_per_extra_request: string
+  features?: string[] // Features list from the database
 }
 
 interface MyPlanResponse {
