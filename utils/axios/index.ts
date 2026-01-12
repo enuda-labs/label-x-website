@@ -41,17 +41,34 @@ export class AxiosClient {
     try {
       // if (useGlobalStore.getState().isRefreshingToken) return;
       // useGlobalStore.getState().setIsRefreshingToken(true);
+      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+
+      // Don't attempt refresh if there's no refresh token
+      if (!refreshToken) {
+        console.log('No refresh token available, redirecting to login')
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        const pathname = window.location.pathname
+        if (!this.isPublicPage(pathname)) {
+          redirect('/auth/login')
+        }
+        return Promise.reject(error)
+      }
+
       const refreshTokenResponse = await this._axiosClient.post(
         this.refreshTokenUrl,
         {
-          refresh: localStorage.getItem(REFRESH_TOKEN_KEY),
+          refresh: refreshToken,
         }
       )
 
       if (refreshTokenResponse.status === 200) {
         const { access, refresh } = refreshTokenResponse.data
-        localStorage.setItem(ACCESS_TOKEN_KEY, access)
-        localStorage.setItem(REFRESH_TOKEN_KEY, refresh)
+        if (access) {
+          localStorage.setItem(ACCESS_TOKEN_KEY, access)
+        }
+        if (refresh) {
+          localStorage.setItem(REFRESH_TOKEN_KEY, refresh)
+        }
         try {
           const retryConfig = { ...error.config }
           const headers = new axios.AxiosHeaders(retryConfig.headers)
@@ -65,11 +82,14 @@ export class AxiosClient {
       }
     } catch (error) {
       console.log('Error refreshing access token:', error)
+      // Clear tokens on refresh failure
       localStorage.removeItem(ACCESS_TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
       const pathname = window.location.pathname
       if (!this.isPublicPage(pathname)) {
         redirect('/auth/login')
       }
+      return Promise.reject(error)
     } finally {
     }
   }
@@ -93,9 +113,10 @@ export class AxiosClient {
           error.config &&
           error?.response?.status === 401 &&
           !this.isPublicRoute(error.config?.url || '') &&
-          error.config.url !== this.refreshTokenUrl
+          error.config.url !== this.refreshTokenUrl &&
+          localStorage.getItem(REFRESH_TOKEN_KEY) // Only try refresh if refresh token exists
         ) {
-          this._onAccessTokenExpire?.(error)
+          await this._onAccessTokenExpire?.(error)
         }
 
         return Promise.reject(error)

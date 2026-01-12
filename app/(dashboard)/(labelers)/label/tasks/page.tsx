@@ -3,6 +3,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
 import {
   User,
   Search,
@@ -73,16 +74,42 @@ const ProjectsContent = () => {
   }
 
   // fetch user details
-  const { data: userData, isLoading: userLoading } = useQuery({
+  const {
+    data: userData,
+    isLoading: userLoading,
+    error,
+  } = useQuery({
     queryKey: ['user'],
     queryFn: getUserDetails,
+    retry: false,
   })
+
+  // Handle deleted user or authentication errors
+  useEffect(() => {
+    if (error) {
+      const axiosError = error as any
+      if (
+        axiosError?.response?.status === 401 ||
+        axiosError?.response?.status === 403
+      ) {
+        // User is deleted or unauthorized - clear tokens and redirect to login
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        localStorage.removeItem(REFRESH_TOKEN_KEY)
+        router.push('/auth/login')
+      }
+    }
+  }, [error, router])
+
+  // Don't render if user data is missing or error occurred
+  if (error && (error as any)?.response?.status === 401) {
+    return null // Will redirect in useEffect
+  }
 
   const username = userData?.user?.username ?? 'Unknown User'
 
   // derive role
   let role = 'No role'
-  if (userData?.user?.is_admin) role = 'Admin'
+  if (userData?.user?.is_staff) role = 'Admin'
   else if (userData?.user?.is_reviewer) role = 'Reviewer'
   else role = 'User'
 

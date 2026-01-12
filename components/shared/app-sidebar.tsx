@@ -8,6 +8,7 @@ import {
   LogOut,
   ClipboardList,
   DollarSign,
+  HelpCircle,
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -45,6 +46,11 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       icon: Clock,
     },
     {
+      title: 'How it Works',
+      url: '/client/how-it-works',
+      icon: HelpCircle,
+    },
+    {
       title: 'Api Keys',
       url: '/client/api-keys',
       icon: Key,
@@ -76,6 +82,11 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       title: 'Available Clusters',
       url: '/label/available-tasks',
       icon: ClipboardList,
+    },
+    {
+      title: 'How it Works',
+      url: '/label/how-it-works',
+      icon: HelpCircle,
     },
     {
       title: 'Earnings',
@@ -132,10 +143,27 @@ export function AppSidebar({ userRole }: { userRole: string }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  const { data } = useQuery({
+  const { data, error } = useQuery({
     queryKey: ['user'],
     queryFn: getUserDetails,
+    retry: false,
   })
+
+  // Handle deleted user or authentication errors
+  useEffect(() => {
+    if (error) {
+      const axiosError = error as any
+      if (
+        axiosError?.response?.status === 401 ||
+        axiosError?.response?.status === 403
+      ) {
+        // User is deleted or unauthorized - clear tokens and redirect to login
+        localStorage.removeItem(ACCESS_TOKEN_KEY)
+        localStorage.removeItem(REFRESH_TOKEN_KEY)
+        router.push('/auth/login')
+      }
+    }
+  }, [error, router])
 
   useEffect(() => {
     if (data) {

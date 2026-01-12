@@ -98,9 +98,13 @@ const Plan = ({ plan, user }: { plan: SubscriptionPlan; user?: UserData }) => {
         <span className="text-lg text-white/60">/mo</span>
       </div>
       <ul className="mb-8 space-y-3 text-left text-white/70">
-        {planFeats(plan.name).map((feat) => (
-          <li key={feat}>• {feat}</li>
-        ))}
+        {(plan.features && plan.features.length > 0
+          ? plan.features
+          : planFeats(plan.name)
+        ) // Fallback to hardcoded features if not in DB
+          .map((feat) => (
+            <li key={feat}>• {feat}</li>
+          ))}
       </ul>
       <Button
         className="bg-primary hover:bg-primary/90 w-full cursor-pointer"
