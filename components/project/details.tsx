@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { CalendarDays, Clock } from 'lucide-react'
+import { CalendarDays, Clock, Plus } from 'lucide-react'
 import { ProjectCharts } from './charts'
 import { ProjectLogs } from './logs'
 import DashboardLayout from '../shared/dashboard-layout'
@@ -142,7 +142,17 @@ const ProjectDetail = ({ id }: { id: number }) => {
                 </div>
               </div>
             </div>
-            <div className="mt-3 md:mt-0">
+            <div className="mt-3 flex gap-2 md:mt-0">
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 h-8"
+                onClick={() =>
+                  router.push(`/client/projects/${project.id}/tasks/new`)
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Task
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
