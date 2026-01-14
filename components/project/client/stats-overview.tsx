@@ -1,18 +1,30 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { mockProjects } from '@/constants'
 import { CheckCircle2, Clock, FileText, Users } from 'lucide-react'
 import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { getProjects, Project } from '@/services/apis/project'
 
 function StatsOverview() {
+  const { data: projectsData } = useQuery({
+    queryKey: ['projects'],
+    queryFn: getProjects,
+  })
+
+  const projects: Project[] = projectsData?.projects || []
+
+  // Calculate statistics from real data
   const stats = {
-    totalProjects: mockProjects.length,
-    activeProjects: mockProjects.filter(
-      (p) => p.status === 'in_progress' || p.status === 'in_review'
+    totalProjects: projects.length,
+    activeProjects: projects.filter(
+      (p) =>
+        p.task_stats.completion_percentage > 0 &&
+        p.task_stats.completion_percentage < 100
     ).length,
-    completedProjects: mockProjects.filter((p) => p.status === 'completed')
-      .length,
-    totalLabelers: mockProjects.reduce(
-      (sum, p) => sum + p.assigned_labelers,
+    completedProjects: projects.filter(
+      (p) => p.task_stats.completion_percentage === 100
+    ).length,
+    totalLabelers: projects.reduce(
+      (sum, p) => sum + (p.members?.length || 0),
       0
     ),
   }
