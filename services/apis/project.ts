@@ -11,6 +11,32 @@ interface ProjectResponse {
   projects: Project[]
 }
 
+export interface ProjectMember {
+  id: number
+  user: {
+    id: number
+    username: string
+    email: string
+  }
+  role: string
+  joined_at: string
+}
+
+export interface ProjectInvitation {
+  id: number
+  email: string
+  role: string
+  invited_by: {
+    id: number
+    username: string
+    email: string
+  }
+  token: string
+  status: string
+  created_at: string
+  expires_at: string
+}
+
 export interface Project {
   id: number
   name: string
@@ -18,6 +44,8 @@ export interface Project {
   description: string
   created_at: string
   members: { id: number; username: string; email: string }[]
+  team_members?: ProjectMember[]
+  pending_invitations?: ProjectInvitation[]
   status: string
   task_stats: {
     total_tasks: number
@@ -201,6 +229,128 @@ export const updateProject = async (
 export const getStats = async () => {
   const response = await axiosClient.get<StatsResponse>(
     'tasks/completion-stats/'
+  )
+  return response.data
+}
+
+// Team Access Features API Functions
+
+export interface AddMemberPayload {
+  email?: string
+  user_id?: number
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+}
+
+export interface InviteMemberPayload {
+  email: string
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+}
+
+export interface UpdateMemberRolePayload {
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+}
+
+export interface ProjectMembersResponse {
+  status: string
+  members: ProjectMember[]
+}
+
+export interface ProjectInvitationsResponse {
+  status: string
+  invitations: ProjectInvitation[]
+}
+
+export interface ProjectMemberResponse {
+  status: string
+  member: ProjectMember
+}
+
+export interface ProjectInvitationResponse {
+  status: string
+  invitation: ProjectInvitation
+}
+
+export interface AcceptInvitationResponse {
+  status: string
+  message: string
+  member: ProjectMember
+  project: {
+    id: number
+    name: string
+  }
+}
+
+export const listProjectMembers = async (projectId: number) => {
+  const response = await axiosClient.get<ProjectMembersResponse>(
+    `account/projects/${projectId}/members/`
+  )
+  return response.data
+}
+
+export const addProjectMember = async (
+  projectId: number,
+  payload: AddMemberPayload
+) => {
+  const response = await axiosClient.post<
+    AddMemberPayload,
+    ProjectMemberResponse
+  >(`account/projects/${projectId}/members/add/`, payload)
+  return response.data
+}
+
+export const removeProjectMember = async (
+  projectId: number,
+  userId: number
+) => {
+  const response = await axiosClient.delete(
+    `account/projects/${projectId}/members/${userId}/`
+  )
+  return response.data
+}
+
+export const updateProjectMemberRole = async (
+  projectId: number,
+  userId: number,
+  payload: UpdateMemberRolePayload
+) => {
+  const response = await axiosClient.patch<
+    UpdateMemberRolePayload,
+    ProjectMemberResponse
+  >(`account/projects/${projectId}/members/${userId}/role/`, payload)
+  return response.data
+}
+
+export const inviteProjectMember = async (
+  projectId: number,
+  payload: InviteMemberPayload
+) => {
+  const response = await axiosClient.post<
+    InviteMemberPayload,
+    ProjectInvitationResponse
+  >(`account/projects/${projectId}/invitations/send/`, payload)
+  return response.data
+}
+
+export const listProjectInvitations = async (projectId: number) => {
+  const response = await axiosClient.get<ProjectInvitationsResponse>(
+    `account/projects/${projectId}/invitations/`
+  )
+  return response.data
+}
+
+export const cancelProjectInvitation = async (
+  projectId: number,
+  invitationId: number
+) => {
+  const response = await axiosClient.delete(
+    `account/projects/${projectId}/invitations/${invitationId}/`
+  )
+  return response.data
+}
+
+export const acceptProjectInvitation = async (token: string) => {
+  const response = await axiosClient.post<AcceptInvitationResponse>(
+    `account/projects/invitations/${token}/accept/`
   )
   return response.data
 }
