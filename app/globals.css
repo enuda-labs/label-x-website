@@ -122,3 +122,14 @@ h6 {
     @apply bg-background text-foreground;
   }
 }
+
+/* Style the calendar picker indicator for datetime-local inputs to orange */
+input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  filter: invert(0.4) sepia(1) saturate(5) hue-rotate(5deg) brightness(1.1);
+  cursor: pointer;
+  opacity: 1;
+}
+
+input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.8;
+}
