@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CalendarDays, Clock, Plus } from 'lucide-react'
 import { ProjectCharts } from './charts'
 import { ProjectLogs } from './logs'
+import TeamMembers from './team-members'
 import DashboardLayout from '../shared/dashboard-layout'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getProject, updateProject } from '@/services/apis/project'
@@ -187,6 +188,10 @@ const ProjectDetail = ({ id }: { id: number }) => {
       </Card>
 
       <ProjectStats project={project} />
+      <TeamMembers
+        projectId={project.id}
+        projectCreatedBy={project.created_by}
+      />
       <ProjectCharts projectId={project.id} />
       <ProjectLogs logs={project.project_logs} />
     </DashboardLayout>
