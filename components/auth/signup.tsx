@@ -37,6 +37,7 @@ export const Signup = () => {
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') || 'free'
   const role = searchParams.get('role')
+  const invitationToken = searchParams.get('invitation_token')
 
   const MAX_DOMAINS = 5
 
@@ -78,6 +79,7 @@ export const Signup = () => {
         password: userData.password,
         role: isLabeler ? 'reviewer' : 'organization',
         domains: selectedDomains,
+        invitation_token: invitationToken || undefined,
       })
       return response
     },
@@ -85,8 +87,12 @@ export const Signup = () => {
       if (data.status === 'success') {
         setNeedsVerify(true)
         toast('Account created successfully', {
-          description: 'Welcome to Label X',
+          description: invitationToken
+            ? 'Welcome to Label X! Your invitation will be accepted after email verification.'
+            : 'Welcome to Label X',
         })
+        // If invitation token exists, it will be handled after email verification
+        // The backend should auto-accept the invitation after registration
       } else {
         toast('Signup failed', {
           description: 'Please try again later',

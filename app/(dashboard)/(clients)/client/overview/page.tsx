@@ -151,11 +151,13 @@ const Dashboard = () => {
 
   const { mutate: createMutation, isPending } = useMutation({
     mutationFn: createProject,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setNewProject({ name: '', description: '' })
       setOpen(false)
       setError('')
+      // Redirect to the tasks page for the newly created project
+      router.push(`/client/projects/${data.id}/tasks`)
     },
     onError: (err) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })

@@ -29,6 +29,7 @@ export const Login = () => {
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/client/overview'
+  const invitationToken = searchParams.get('invitation_token')
 
   // Redirect if already logged in
   useEffect(() => {
@@ -79,15 +80,39 @@ export const Login = () => {
       const response = await login(body)
       return response
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       localStorage.setItem(ACCESS_TOKEN_KEY, data.access)
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh)
       queryClient.clear()
       setIsLoggedIn(true)
       setUser(data.user_data) // Set user data in global store
-      toast('Login successful', {
-        description: 'Welcome back to Label X',
-      })
+
+      // Auto-accept invitation if token is present
+      if (invitationToken) {
+        try {
+          const { acceptProjectInvitation } = await import(
+            '@/services/apis/project'
+          )
+          await acceptProjectInvitation(invitationToken)
+          toast('Login successful', {
+            description: 'Welcome back! Invitation accepted.',
+          })
+          // Redirect will be handled by the invitation acceptance
+          return
+        } catch (error: any) {
+          // If invitation acceptance fails, still proceed with login
+          console.error('Failed to accept invitation:', error)
+          toast('Login successful', {
+            description:
+              error?.response?.data?.error || 'Welcome back to Label X',
+          })
+        }
+      } else {
+        toast('Login successful', {
+          description: 'Welcome back to Label X',
+        })
+      }
+
       if (data.user_data.is_admin) {
         router.push('/admin?tab=projects')
       } else if (data.user_data.is_reviewer) {

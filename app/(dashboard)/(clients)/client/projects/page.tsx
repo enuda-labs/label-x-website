@@ -69,11 +69,13 @@ const Projects = () => {
               dataPoints: 10000,
             }))
           )
-
-          setLoading(false)
+        } else {
+          setProjects([])
         }
+        setLoading(false)
       } catch (error) {
         console.error('Error fetching projects:', error)
+        setProjects([])
         setLoading(false)
       }
     }
@@ -111,11 +113,13 @@ const Projects = () => {
 
   const { mutate: createMutation, isPending } = useMutation({
     mutationFn: createProject,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setNewProject({ name: '', description: '' })
       setOpen(false)
       setError('')
+      // Redirect to the tasks page for the newly created project
+      router.push(`/client/projects/${data.id}/tasks`)
     },
     onError: (err) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
@@ -240,9 +244,8 @@ const Projects = () => {
 
                   <div className="mt-3 md:mt-0">
                     <Button
-                      variant="outline"
                       size="sm"
-                      className="hover:bg-primary h-8 border-white/10"
+                      className="bg-primary hover:bg-primary/90 h-8"
                     >
                       View Details
                     </Button>
@@ -273,15 +276,15 @@ const Projects = () => {
               </div>
             </Card>
           ))
-        ) : projects.length ? (
+        ) : searchQuery && projects.length > 0 ? (
           <div className="py-8 text-center">
-            <p className="text-white/60">{`No projects found matching "{searchQuery}"`}</p>
+            <p className="text-white/60">{`No projects found matching "${searchQuery}"`}</p>
           </div>
-        ) : (
+        ) : !loading && projects.length === 0 ? (
           <div className="my-20 flex items-center justify-center">
             No project has been created for this account
           </div>
-        )}
+        ) : null}
       </div>
     </DashboardLayout>
   )
