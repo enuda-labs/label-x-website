@@ -42,6 +42,7 @@ export interface RegisterBody {
   password: string
   role?: string
   domains?: number[]
+  invitation_token?: string
 }
 
 export interface RegisterResponse {

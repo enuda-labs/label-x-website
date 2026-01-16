@@ -133,3 +133,14 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
 input[type='datetime-local']::-webkit-calendar-picker-indicator:hover {
   opacity: 0.8;
 }
+
+/* Style toast notifications to have white text */
+[data-sonner-toast],
+[data-sonner-toast] * {
+  color: white !important;
+}
+
+[data-sonner-toast] [data-title],
+[data-sonner-toast] [data-description] {
+  color: white !important;
+}
