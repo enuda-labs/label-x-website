@@ -34,6 +34,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { useGlobalStore } from '@/context/store'
 import { getUserDetails } from '@/services/apis/user'
 import { useEffect } from 'react'
@@ -53,6 +69,12 @@ const TeamMembers: React.FC<TeamMembersProps> = ({
   const [cancelInvitationId, setCancelInvitationId] = useState<number | null>(
     null
   )
+  const [roleChangeMemberId, setRoleChangeMemberId] = useState<number | null>(
+    null
+  )
+  const [selectedRole, setSelectedRole] = useState<
+    'owner' | 'admin' | 'member' | 'viewer'
+  >('member')
   const queryClient = useQueryClient()
   const { user, setUser } = useGlobalStore()
 
@@ -232,45 +254,41 @@ const TeamMembers: React.FC<TeamMembersProps> = ({
                         </Badge>
                       )}
                   </div>
-                  {canManageMembers &&
-                    projectCreatedBy !== member.user.id &&
-                    currentUser?.id === member.user.id && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              const newRole =
-                                member.role === 'viewer'
-                                  ? 'member'
-                                  : member.role === 'member'
-                                    ? 'admin'
-                                    : 'viewer'
-                              updateRoleMutation.mutate({
-                                userId: member.user.id,
-                                role: newRole as any,
-                              })
-                            }}
-                          >
-                            Change Role
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-red-400"
-                            onClick={() => setRemoveMemberId(member.user.id)}
-                          >
-                            Remove
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                  {canManageMembers && projectCreatedBy !== member.user.id && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedRole(
+                              (member.role as
+                                | 'owner'
+                                | 'admin'
+                                | 'member'
+                                | 'viewer') || 'member'
+                            )
+                            setRoleChangeMemberId(member.user.id)
+                          }}
+                        >
+                          Change Role
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-400"
+                          onClick={() => setRemoveMemberId(member.user.id)}
+                        >
+                          Remove
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
               ))}
             </div>
@@ -401,6 +419,71 @@ const TeamMembers: React.FC<TeamMembersProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Change Role Dialog */}
+      <Dialog
+        open={roleChangeMemberId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRoleChangeMemberId(null)
+            setSelectedRole('member')
+          }
+        }}
+      >
+        <DialogContent className="border-white/10 bg-[#0A0A0A] text-white">
+          <DialogHeader>
+            <DialogTitle>Change Member Role</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Select a new role for this team member.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select
+                value={selectedRole}
+                onValueChange={(value: any) => setSelectedRole(value)}
+              >
+                <SelectTrigger className="border-white/10 bg-white/5 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRoleChangeMemberId(null)
+                setSelectedRole('member')
+              }}
+              className="border-white/10"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => {
+                if (roleChangeMemberId) {
+                  updateRoleMutation.mutate({
+                    userId: roleChangeMemberId,
+                    role: selectedRole,
+                  })
+                  setRoleChangeMemberId(null)
+                  setSelectedRole('member')
+                }
+              }}
+            >
+              Update Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
