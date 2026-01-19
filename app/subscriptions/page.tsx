@@ -57,9 +57,18 @@ const Subscriptions = () => {
 
             <div className="mt-12 grid gap-8 md:grid-cols-3">
               {data?.detail &&
-                data.detail.map((plan) => (
-                  <Plan plan={plan} key={plan.id} user={user?.user} />
-                ))}
+                data.detail
+                  .filter((plan) => {
+                    // Hide free plan for logged-in users
+                    if (user?.user) {
+                      return plan.name.toLowerCase() !== 'free'
+                    }
+                    // Show all plans for non-logged-in users
+                    return true
+                  })
+                  .map((plan) => (
+                    <Plan plan={plan} key={plan.id} user={user?.user} />
+                  ))}
             </div>
           </div>
         </div>

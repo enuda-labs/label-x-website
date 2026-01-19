@@ -373,7 +373,9 @@ const Dashboard = () => {
       ) : (
         <div className="mt-12 grid gap-8 md:grid-cols-3">
           {data?.detail &&
-            data.detail.map((plan) => <Plan key={plan.id} plan={plan} />)}
+            data.detail
+              .filter((plan) => plan.name.toLowerCase() !== 'free')
+              .map((plan) => <Plan key={plan.id} plan={plan} />)}
         </div>
       )}
     </DashboardLayout>

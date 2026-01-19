@@ -80,7 +80,9 @@ const InvitationAcceptancePage = () => {
               <Button
                 variant="outline"
                 onClick={() =>
-                  router.push(`/auth/signup?invitation_token=${token}`)
+                  router.push(
+                    `/auth/signup?invitation_token=${token}&role=individual`
+                  )
                 }
                 className="border-white/10"
               >

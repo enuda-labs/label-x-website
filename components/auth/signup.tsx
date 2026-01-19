@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { register, verifyPasswordResetCode } from '@/services/apis/auth'
+import {
+  register,
+  verifyPasswordResetCode,
+  resendVerificationEmail,
+} from '@/services/apis/auth'
 import { AxiosError, isAxiosError } from 'axios'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/constants'
 import Link from 'next/link'
@@ -32,12 +36,17 @@ export const Signup = () => {
   const [isDomainsOpen, setIsDomainsOpen] = useState(false)
   const [needsVerify, setNeedsVerify] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
 
   const router = useRouter()
   const searchParams = useSearchParams()
   const plan = searchParams.get('plan') || 'free'
-  const role = searchParams.get('role')
+  const roleParam = searchParams.get('role')
   const invitationToken = searchParams.get('invitation_token')
+  const isInvitedUser = !!invitationToken
+
+  // Default to 'individual' (client) role if there's an invitation token but no role specified
+  const role = roleParam || (invitationToken ? 'individual' : null)
 
   const MAX_DOMAINS = 5
 
@@ -61,10 +70,14 @@ export const Signup = () => {
   })
 
   useEffect(() => {
+    // Don't redirect invited users - they don't need role selection
+    if (isInvitedUser) return
+
+    // Redirect to role selection if role is missing or invalid
     if (!role || (role !== 'individual' && role !== 'labeler')) {
       router.push('/auth/role')
     }
-  }, [router, role])
+  }, [router, role, isInvitedUser])
 
   const signupMutation = useMutation({
     mutationFn: async (userData: {
@@ -73,12 +86,18 @@ export const Signup = () => {
       name: string
       company: string
     }) => {
+      // For invited users, always use 'organization' role (they're joining an existing org)
+      const userRole = isInvitedUser
+        ? 'organization'
+        : isLabeler
+          ? 'reviewer'
+          : 'organization'
       const response = await register({
         username: userData.name,
         email: userData.email,
         password: userData.password,
-        role: isLabeler ? 'reviewer' : 'organization',
-        domains: selectedDomains,
+        role: userRole,
+        domains: isInvitedUser ? [] : selectedDomains, // Invited users don't need domains
         invitation_token: invitationToken || undefined,
       })
       return response
@@ -101,13 +120,21 @@ export const Signup = () => {
     },
     onError: (err: unknown) => {
       if (err instanceof AxiosError) {
-        setError(err.response?.data?.error || err.message)
+        const errorMsg = err.response?.data?.error || err.message
+        setError(errorMsg)
+        toast.error('Signup failed', {
+          description: errorMsg,
+          duration: 10000,
+          className: 'text-white [&>div]:text-white',
+        })
       } else {
         setError('An unexpected error occurred')
+        toast.error('Signup failed', {
+          description: 'Please try again later',
+          duration: 10000,
+          className: 'text-white [&>div]:text-white',
+        })
       }
-      toast('Signup failed', {
-        description: 'Please try again later',
-      })
     },
   })
 
@@ -115,7 +142,10 @@ export const Signup = () => {
     e.preventDefault()
     setError('')
 
-    if (!isClient && !isLabeler) return router.push('/auth/role')
+    // For invited users, skip role validation
+    if (!isInvitedUser) {
+      if (!isClient && !isLabeler) return router.push('/auth/role')
+    }
 
     if (!isPasswordValid) {
       setError('Please ensure your password meets all requirements')
@@ -176,6 +206,46 @@ export const Signup = () => {
     },
   })
 
+  const resendMutation = useMutation({
+    mutationFn: () => resendVerificationEmail({ email }),
+    onSuccess: () => {
+      setResendCooldown(60) // Start 1-minute cooldown
+      toast.success('Verification code resent', {
+        description: 'Please check your email for the new code',
+        duration: 5000,
+      })
+    },
+    onError: (err) => {
+      if (isAxiosError(err)) {
+        const errorMsg =
+          err.response?.data?.error || 'Failed to resend verification code'
+        setError(errorMsg)
+        toast.error('Failed to resend code', {
+          description: errorMsg,
+          duration: 10000,
+          className: 'text-white [&>div]:text-white',
+        })
+      }
+    },
+  })
+
+  // Handle cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [resendCooldown])
+
+  // Start cooldown when verification step is shown
+  useEffect(() => {
+    if (needsVerify) {
+      setResendCooldown(60) // Start with 1-minute cooldown
+    }
+  }, [needsVerify])
+
   const handleOtpVerify = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -220,7 +290,182 @@ export const Signup = () => {
       >
         {otpMutation.isPending ? 'Verifying...' : 'Verify Account'}
       </Button>
+      <div className="mt-4 flex items-center justify-center gap-2">
+        <p className="text-sm text-white/60">Didn't receive the code?</p>
+        <Button
+          type="button"
+          variant="link"
+          onClick={() => resendMutation.mutate()}
+          disabled={resendCooldown > 0 || resendMutation.isPending}
+          className="text-primary hover:text-primary/80 h-auto p-0 text-sm font-normal"
+        >
+          {resendCooldown > 0
+            ? `Resend code in ${resendCooldown}s`
+            : resendMutation.isPending
+              ? 'Sending...'
+              : 'Resend code'}
+        </Button>
+      </div>
     </form>
+  ) : isInvitedUser ? (
+    <>
+      <div className="mb-6 rounded-lg border border-white/10 bg-white/5 p-4">
+        <p className="text-sm text-white/80">
+          You've been invited to join an existing organization. Please create
+          your account to accept the invitation.
+        </p>
+      </div>
+      <form onSubmit={handleSignup} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Username *</Label>
+          <Input
+            id="name"
+            type="text"
+            placeholder="johndoe"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            className="border-white/10 bg-white/5 text-white"
+          />
+          <p className="mt-1 text-xs text-white/60">
+            Choose a unique username (no spaces recommended)
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="signupEmail">Email *</Label>
+          <Input
+            id="signupEmail"
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border-white/10 bg-white/5 text-white"
+          />
+          <p className="mt-1 text-xs text-white/60">
+            Use the email address you were invited with
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="signupPassword">Password *</Label>
+          <div className="relative">
+            <Input
+              id="signupPassword"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                if (!passwordTouched) setPasswordTouched(true)
+              }}
+              onBlur={() => setPasswordTouched(true)}
+              required
+              className={`w-full border-white/10 bg-white/5 py-3 pr-12 text-white ${
+                passwordTouched && !isPasswordValid ? 'border-red-500/50' : ''
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-black/20 p-1 text-white hover:bg-black/30"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
+          {/* Password Requirements */}
+          {passwordTouched && password && (
+            <div className="mt-3 space-y-2 text-sm">
+              <div className="font-medium text-white/80">
+                Password Requirements:
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.minLength} />
+                  <span
+                    className={
+                      passwordValidation.minLength
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    At least 8 characters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasUppercase} />
+                  <span
+                    className={
+                      passwordValidation.hasUppercase
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    One uppercase letter
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasLowercase} />
+                  <span
+                    className={
+                      passwordValidation.hasLowercase
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    One lowercase letter
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasNumber} />
+                  <span
+                    className={
+                      passwordValidation.hasNumber
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    One number
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ValidationIcon isValid={passwordValidation.hasSpecialChar} />
+                  <span
+                    className={
+                      passwordValidation.hasSpecialChar
+                        ? 'text-green-500'
+                        : 'text-red-500'
+                    }
+                  >
+                    {`One special character (!@#$%^&*()_+-=[]{}|;':",./<>?)`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <span className="mb-2 inline-block text-sm text-red-500">{error}</span>
+        <Button
+          type="submit"
+          className="bg-primary hover:bg-primary/90 h-12 w-full"
+          disabled={signupMutation.isPending || !isPasswordValid}
+        >
+          {signupMutation.isPending
+            ? 'Creating account...'
+            : 'Create Account & Join'}
+        </Button>
+      </form>
+      <div className="flex items-end justify-end">
+        Have an account?{' '}
+        <Link
+          href="/auth/login"
+          className="text-primary ml-2 font-semibold hover:underline"
+        >
+          Login
+        </Link>
+      </div>
+    </>
   ) : (
     <>
       <form onSubmit={handleSignup} className="space-y-4">
