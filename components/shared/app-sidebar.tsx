@@ -74,7 +74,7 @@ export function AppSidebar({ userRole }: { userRole: string }) {
       icon: LayoutDashboard,
     },
     {
-      title: 'Clusters',
+      title: 'My Clusters',
       url: '/label/tasks',
       icon: Clock,
     },
