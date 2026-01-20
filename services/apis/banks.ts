@@ -109,20 +109,44 @@ export const fetchStripeAccount = async (): Promise<any | null> => {
     const response = await axiosClient.get('/account/banks/stripe/')
     const result = unwrap<any>(response)
     return result
-  } catch (error) {
+  } catch (error: any) {
+    // 404 is expected when user doesn't have a Stripe account yet
+    if (error?.response?.status === 404) {
+      return null
+    }
     console.error('Error fetching Stripe account:', error)
     return null
   }
 }
 
 // --- Initialize Stripe connection ---
-export const initializeStripeAccount = async (): Promise<string | null> => {
+export const initializeStripeAccount = async (): Promise<{
+  link: string | null
+  error?: string
+}> => {
   try {
     const response = await axiosClient.post('/account/banks/stripe/initialize/')
     const result = unwrap<{ link: string }>(response)
-    return result?.link ?? null
-  } catch (error) {
+    return { link: result?.link ?? null }
+  } catch (error: any) {
     console.error('Error initializing Stripe account:', error)
-    return null
+
+    // Extract error message from response, but use generic message for user-facing errors
+    const backendMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.response?.data?.detail
+
+    // Use backend message if it's a generic user-friendly message, otherwise use default
+    // This prevents exposing sensitive information like API keys
+    const errorMessage =
+      backendMessage &&
+      !backendMessage.toLowerCase().includes('api key') &&
+      !backendMessage.toLowerCase().includes('sk_') &&
+      !backendMessage.toLowerCase().includes('secret')
+        ? backendMessage
+        : 'Unable to connect to payment service. Please try again later.'
+
+    return { link: null, error: errorMessage }
   }
 }

@@ -33,11 +33,15 @@ export const BanksContent = () => {
         } else {
           setStripeAccount(null)
         }
-      } catch (err) {
-        console.error('Error fetching Stripe account:', err)
-        toast('Error', {
-          description: 'Failed to load Stripe connection status.',
-        })
+      } catch (err: any) {
+        // 404 is expected when user doesn't have a Stripe account yet
+        if (err?.response?.status !== 404) {
+          console.error('Error fetching Stripe account:', err)
+          toast('Error', {
+            description: 'Failed to load Stripe connection status.',
+          })
+        }
+        setStripeAccount(null)
       }
     }
     loadStripeAccount()
@@ -46,17 +50,41 @@ export const BanksContent = () => {
   const handleConnectStripe = async () => {
     setLoading(true)
     try {
-      const link = await initializeStripeAccount()
-      if (link) {
-        window.location.href = link
+      const result = await initializeStripeAccount()
+      if (result.link) {
+        window.location.href = result.link
       } else {
-        toast('Error', {
-          description: 'Unable to initialize Stripe connection.',
+        const errorMessage =
+          result.error ||
+          'Unable to connect to payment service. Please try again later.'
+        toast.error('Connection Failed', {
+          description: errorMessage,
+          duration: 10000,
         })
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error initializing Stripe:', err)
-      toast('Error', { description: 'Stripe initialization failed.' })
+
+      // Extract error message but filter out sensitive information
+      const backendMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message
+
+      // Use generic message if error contains sensitive information
+      const errorMessage =
+        backendMessage &&
+        !backendMessage.toLowerCase().includes('api key') &&
+        !backendMessage.toLowerCase().includes('sk_') &&
+        !backendMessage.toLowerCase().includes('secret') &&
+        !backendMessage.toLowerCase().includes('invalid')
+          ? backendMessage
+          : 'Unable to connect to payment service. Please try again later.'
+
+      toast.error('Connection Failed', {
+        description: errorMessage,
+        duration: 10000,
+      })
     } finally {
       setLoading(false)
     }

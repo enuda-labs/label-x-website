@@ -508,7 +508,7 @@ const LabelTask = () => {
       const payload = {
         task_id: currentTaskIdToSend,
         labels: labelsToSend,
-        notes: notes || '',
+        notes: notes?.trim() || undefined,
       }
 
       const resp = await annotateTask(payload)
