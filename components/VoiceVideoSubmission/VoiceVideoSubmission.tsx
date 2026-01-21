@@ -53,6 +53,7 @@ type Props = {
   taskId: string
   setUploading?: (value: boolean) => void
   onSuccess?: () => void
+  language?: string // Language for subtitle annotation
 }
 
 async function extractAudioFromVideo(videoBlob: Blob): Promise<Blob | null> {
@@ -96,6 +97,7 @@ export default function VoiceVideoSubmission({
   taskId,
   setUploading,
   onSuccess,
+  language = 'Language',
 }: Props) {
   // 🔧 Decode malformed taskId strings like "taskId%3D51" or "taskId=51"
   try {
@@ -907,14 +909,14 @@ export default function VoiceVideoSubmission({
           videoStreamRef={videoStreamRef}
           subtitleSegments={subtitleSegments}
           onSegmentsChange={setSubtitleSegments}
+          language={language}
         />
       </div>
 
       <div className="text-sm text-white/60">
-        Tips: Keep clips short (under {maxAudioSec}s / {maxVideoSec}s). The
-        component records in webm if supported; server should accept webm or
-        transcode. If permissions are blocked, open Chrome → lock icon → Site
-        settings → Allow Camera & Microphone for localhost.
+        Tips: Keep clips short (under {maxAudioSec}s / {maxVideoSec}s). If
+        permissions are blocked, open Chrome → lock icon → Site settings → Allow
+        Camera & Microphone for localhost.
       </div>
 
       <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
