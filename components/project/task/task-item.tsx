@@ -61,9 +61,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
     url: string,
     type: 'audio' | 'video'
   ) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const extension = type === 'audio' ? 'webm' : 'webm'
+    const fileName = `${type}_record_${timestamp}.${extension}`
+
     onUpdate({
       ...task,
-      data: `video_record_${new Date().toISOString()}`,
+      data: fileName,
       recordedBlob: blob,
       recordedUrl: url,
       recordingType: type,
