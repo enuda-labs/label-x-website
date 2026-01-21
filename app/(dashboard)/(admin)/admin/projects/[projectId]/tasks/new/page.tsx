@@ -51,6 +51,7 @@ const Annotate = () => {
     labellersRequired: 1,
     tasks: [{ id: '1', data: '', file: null }],
     deadline: new Date(),
+    language: 'English',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -78,12 +79,37 @@ const Annotate = () => {
       case AnnotationStep.DATA_TYPE:
         return !!dataType
       case AnnotationStep.CONFIGURE:
+        const hasValidTasks =
+          taskConfig.tasks.length > 0 &&
+          taskConfig.tasks.every((task) => {
+            // For TEXT tasks, data must be provided
+            if (dataType === 'TEXT') {
+              return task.data.trim().length > 0
+            }
+            // For CSV tasks, need either file or data (description)
+            if (dataType === 'CSV') {
+              return (
+                task.file !== null || (task.data && task.data.trim().length > 0)
+              )
+            }
+            // For IMAGE and PDF tasks, file is required (no recording option)
+            if (dataType === 'IMAGE' || dataType === 'PDF') {
+              return task.file !== null
+            }
+            // For AUDIO and VIDEO tasks, need either file or recordedBlob
+            if (dataType === 'AUDIO' || dataType === 'VIDEO') {
+              return task.file !== null || task.recordedBlob !== null
+            }
+            // Default: require file
+            return task.file !== null
+          })
+
         return !!(
           taskConfig.taskName &&
           taskConfig.description &&
           taskConfig.instructions &&
-          taskConfig.tasks.length > 0 &&
-          taskConfig.tasks.every((task) => task.data.trim()) &&
+          taskConfig.language &&
+          hasValidTasks &&
           (taskConfig.inputType === 'text' ||
             taskConfig.labellingChoices.length > 0) &&
           taskConfig.deadline
@@ -123,8 +149,10 @@ const Annotate = () => {
 
     setIsSubmitting(true)
     let uploadedFileUrl = ''
-    if (dataType !== 'TEXT') {
-      const fileTask = taskConfig.tasks[0].file
+    // CSV can have either file or data, so it's handled separately
+    if (dataType !== 'TEXT' && dataType !== 'CSV') {
+      const fileTask =
+        taskConfig.tasks[0].file || taskConfig.tasks[0].recordedBlob
       if (fileTask) {
         try {
           uploadedFileUrl = await uploadToCloudinary(fileTask)
@@ -143,29 +171,103 @@ const Annotate = () => {
           setIsSubmitting(false)
           return
         }
+      } else {
+        // For IMAGE and PDF, file is strictly required
+        if (dataType === 'IMAGE') {
+          toast('File Upload Error', {
+            description: 'Please upload an image file to proceed.',
+          })
+        } else if (dataType === 'PDF') {
+          toast('File Upload Error', {
+            description: 'Please upload a PDF file to proceed.',
+          })
+        } else {
+          const fileType =
+            dataType === 'AUDIO'
+              ? 'audio'
+              : dataType === 'VIDEO'
+                ? 'video'
+                : 'file'
+          toast('File Upload Error', {
+            description: `No ${fileType} file or recording found. Please record or upload a ${fileType} file.`,
+          })
+        }
+        setIsSubmitting(false)
+        return
       }
+    } else if (dataType === 'CSV') {
+      // CSV: upload file if provided, otherwise use data
+      const fileTask = taskConfig.tasks[0].file
+      if (fileTask) {
+        try {
+          uploadedFileUrl = await uploadToCloudinary(fileTask)
+
+          setTaskConfig((prev) => ({
+            ...prev,
+            tasks: [
+              {
+                ...prev.tasks[0],
+              },
+            ],
+          }))
+        } catch (err) {
+          console.log(err)
+          toast('File Upload Error', {
+            description: 'Failed to upload CSV file.',
+          })
+          setIsSubmitting(false)
+          return
+        }
+      }
+      // If no file, CSV will use data field (description)
     }
     try {
-      if (dataType !== 'TEXT' && !uploadedFileUrl) {
+      // Only require uploadedFileUrl for file-based types (not TEXT or CSV without file)
+      if (dataType !== 'TEXT' && dataType !== 'CSV' && !uploadedFileUrl) {
         toast('File Upload Error', { description: 'File upload not found' })
         setIsSubmitting(false)
         return
       }
 
-      const taskBody = (task: TaskItem) =>
-        dataType === 'TEXT'
-          ? {
-              data: task.data,
-            }
-          : {
+      const taskBody = (task: TaskItem) => {
+        if (dataType === 'TEXT') {
+          return { data: task.data }
+        }
+
+        if (dataType === 'CSV') {
+          // CSV can have either file or data
+          if (uploadedFileUrl && task.file) {
+            return {
               data: task.data,
               file: {
                 file_url: uploadedFileUrl,
-                file_name: task.file?.name || '',
-                file_size_bytes: task.file?.size || 0,
-                file_type: task.file?.type || '',
+                file_name: task.file.name,
+                file_size_bytes: task.file.size,
+                file_type: task.file.type,
               },
             }
+          } else {
+            // CSV with just data (description)
+            return { data: task.data }
+          }
+        }
+
+        // For other file types (AUDIO, VIDEO, IMAGE, PDF)
+        return {
+          data: task.data,
+          file: {
+            file_url: uploadedFileUrl,
+            file_name:
+              task.file?.name ||
+              task.data ||
+              (task.recordedBlob
+                ? `${dataType.toLowerCase()}_recording.${task.recordedBlob.type.split('/')[1]?.split(';')[0] || 'webm'}`
+                : ''),
+            file_size_bytes: task.file?.size || task.recordedBlob?.size || 0,
+            file_type: task.file?.type || task.recordedBlob?.type || '',
+          },
+        }
+      }
 
       await createTaskCluster({
         tasks: taskConfig.tasks.map((task) => taskBody(task)),
@@ -180,6 +282,7 @@ const Annotate = () => {
         labeler_domain: taskConfig.labeler_domain,
         name: taskConfig.taskName,
         description: taskConfig.description,
+        language: taskConfig.language || 'English',
         ...(uploadedFileUrl ? { file_url: uploadedFileUrl } : {}),
       })
 
@@ -564,10 +667,12 @@ const Annotate = () => {
               </p>
               <div className="space-y-3">
                 <Button
-                  onClick={() => router.push('/client/overview')}
+                  onClick={() =>
+                    router.push(`/admin/projects/${projectId}/tasks`)
+                  }
                   className="h-12 w-full"
                 >
-                  Go to Dashboard
+                  Go to Project
                 </Button>
                 <Button
                   onClick={() => {

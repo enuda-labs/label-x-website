@@ -14,7 +14,6 @@ import {
   Image as ImageIcon,
   Video,
   Database,
-  Clock,
   User,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -184,36 +183,93 @@ const AvailableClustersPage = () => {
             className="shadow-soft bg-card/20 hover:shadow-glow transition-all duration-300"
           >
             <CardHeader>
-              <div className="flex items-start gap-3">
-                <div className="bg-primary/10 rounded-lg p-2">
-                  {getTypeIcon(cluster.task_type)}
+              <div className="flex flex-col space-y-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 rounded-lg p-2">
+                        {getTypeIcon(cluster.task_type)}
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">
+                          {cluster.name || `${cluster.task_type} Task`}
+                        </CardTitle>
+                        {cluster.description && (
+                          <p className="text-muted-foreground mt-1 text-sm">
+                            {cluster.description}
+                          </p>
+                        )}
+                        {cluster.labeller_instructions && (
+                          <p className="text-muted-foreground mt-1 text-xs">
+                            Instructions: {cluster.labeller_instructions}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant="outline">{cluster.task_type}</Badge>
                 </div>
-                <div>
-                  <CardTitle className="text-lg">
-                    {cluster.labeller_instructions}
-                  </CardTitle>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    Cluster #{cluster.id}
-                  </p>
-                  <Badge variant="outline" className="mt-2">
-                    {cluster.task_type}
-                  </Badge>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                  <div>
+                    <p className="text-muted-foreground mb-1 text-xs">
+                      Task Type
+                    </p>
+                    <p className="text-sm">{cluster.task_type}</p>
+                  </div>
+                  {cluster.project_name && (
+                    <div>
+                      <p className="text-muted-foreground mb-1 text-xs">
+                        Project
+                      </p>
+                      <p className="text-sm">{cluster.project_name}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-muted-foreground mb-1 text-xs">
+                      Input Type
+                    </p>
+                    <p className="text-sm capitalize">
+                      {cluster.input_type === 'multiple_choice'
+                        ? 'Multiple Choice'
+                        : cluster.input_type === 'text'
+                          ? 'Text Input'
+                          : cluster.input_type}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1 text-xs">
+                      Deadline
+                    </p>
+                    <p className="text-sm">
+                      {new Date(cluster.deadline).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1 text-xs">
+                      Labellers Required
+                    </p>
+                    <p className="text-sm">{cluster.labeller_per_item_count}</p>
+                  </div>
                 </div>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4" />
-                Deadline: {new Date(cluster.deadline).toLocaleDateString()}
-              </div>
+              {cluster.choices && cluster.choices.length > 0 && (
+                <div>
+                  <p className="mb-2 text-sm font-medium">Label Options:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {cluster.choices.map((choice, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {choice.label || choice.value}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                <User className="h-4 w-4" />
-                Labellers allowed: {cluster.labeller_per_item_count}
-              </div>
-
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 <Button
                   onClick={() => setSelectedCluster(cluster)}
                   disabled={assigning === cluster.id}
@@ -246,7 +302,10 @@ const AvailableClustersPage = () => {
             <DialogTitle>Confirm Assignment</DialogTitle>
             <DialogDescription>
               Are you sure you want to assign cluster{' '}
-              <b>{selectedCluster?.labeller_instructions}</b> (#
+              <b>
+                {selectedCluster?.name || `${selectedCluster?.task_type} Task`}
+              </b>{' '}
+              (#
               {selectedCluster?.id}) to yourself?
             </DialogDescription>
           </DialogHeader>

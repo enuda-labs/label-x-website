@@ -64,6 +64,7 @@ interface ApiTaskResponse {
   labeller_instructions?: string
   task_type?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'PDF' | 'CSV'
   my_labels?: Array<{ id: number; label: string; notes?: string }>
+  language?: string // Language for subtitle annotation
 }
 
 interface Label {
@@ -449,6 +450,37 @@ const LabelTask = () => {
   const choicesToShow =
     labellingChoices.length > 0 ? labellingChoices : FALLBACK_LABELS
   const itemType = currentItem?.task_type ?? taskData.task_type ?? 'TEXT'
+
+  // Helper to extract language from domain name or default to generic
+  const getLanguageFromDomain = (domainName?: string): string => {
+    if (!domainName) return 'Language'
+    // Common language names that might appear in domain names
+    const languageMap: Record<string, string> = {
+      igbo: 'Igbo',
+      hausa: 'Hausa',
+      yoruba: 'Yoruba',
+      swahili: 'Swahili',
+      french: 'French',
+      english: 'English',
+      spanish: 'Spanish',
+      portuguese: 'Portuguese',
+    }
+
+    const lowerDomain = domainName.toLowerCase()
+    for (const [key, value] of Object.entries(languageMap)) {
+      if (lowerDomain.includes(key)) {
+        return value
+      }
+    }
+
+    // If no match, capitalize first letter of domain name
+    return (
+      domainName.charAt(0).toUpperCase() + domainName.slice(1).toLowerCase()
+    )
+  }
+
+  // Extract language from task data
+  const language = taskData?.language || 'Language'
 
   // helper to go to an item index and restore saved response (if present)
   const goToItemIndex = (index: number) => {
@@ -1074,7 +1106,15 @@ const LabelTask = () => {
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div className="w-full space-y-6 lg:w-[360px]">
+          <div
+            className={`w-full space-y-6 ${
+              inputType === 'video' ||
+              inputType === 'voice' ||
+              inputType === 'image'
+                ? 'lg:w-[500px]'
+                : 'lg:w-[360px]'
+            }`}
+          >
             <Card className="bg-card/20 border-primary border">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -1156,12 +1196,15 @@ const LabelTask = () => {
                 )
               })()}
 
-            {inputType === 'voice' || inputType === 'image' ? (
+            {inputType === 'voice' ||
+            inputType === 'image' ||
+            inputType === 'video' ? (
               <VoiceVideoSubmission
                 type={inputType as 'video' | 'voice' | 'image'}
                 taskId={currentItem?.id ? String(currentItem.id) : ''}
                 setUploading={setUploading}
                 onSuccess={refreshTaskData}
+                language={language}
               />
             ) : (
               <>

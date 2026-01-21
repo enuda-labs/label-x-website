@@ -12,6 +12,8 @@ export interface AssignedCluster {
   pending_tasks: number
   user_labels_count: number
   choices?: { option_text: string }[]
+  name?: string
+  description?: string
   // add this if backend includes it
   status?: 'pending' | 'in_progress' | 'completed' | string
 }

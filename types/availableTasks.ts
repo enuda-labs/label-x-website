@@ -12,7 +12,7 @@ export interface AvailableCluster {
   labeller_instructions: string
   deadline: string
   labeller_per_item_count: number
-  task_type: 'IMAGE' | 'TEXT'
+  task_type: 'IMAGE' | 'TEXT' | 'VIDEO' | 'PDF' | 'CSV'
   annotation_method: string
   created_at: string
   updated_at: string
@@ -20,4 +20,7 @@ export interface AvailableCluster {
   project: number
   created_by: number
   assigned_reviewers: number[]
+  name?: string
+  description?: string
+  project_name?: string
 }

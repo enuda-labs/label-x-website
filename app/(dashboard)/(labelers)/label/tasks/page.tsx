@@ -206,19 +206,31 @@ const ProjectsContent = () => {
         className="shadow-soft bg-card/20 hover:shadow-glow transition-all duration-300"
       >
         <CardHeader>
-          <div className="flex items-start gap-3">
-            {/* 🔹 Type Icon */}
-            <div className="bg-primary/10 rounded-lg p-2">
-              {getTypeIcon(task.task_type)}
-            </div>
-
-            <div>
-              <CardTitle className="text-lg">{task.project_name}</CardTitle>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {task.labeller_instructions}
-              </p>
-
-              <div className="mt-2 flex items-center gap-2 text-sm">
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 rounded-lg p-2">
+                    {getTypeIcon(task.task_type)}
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                      {task.name || `${task.task_type} Task`}
+                    </CardTitle>
+                    {task.description && (
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        {task.description}
+                      </p>
+                    )}
+                    {task.labeller_instructions && (
+                      <p className="text-muted-foreground mt-1 text-xs">
+                        Instructions: {task.labeller_instructions}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
                 {(() => {
                   const status = getStatus(task)
                   const safeStatus = status ?? 'pending' // fallback if undefined
@@ -237,9 +249,29 @@ const ProjectsContent = () => {
                     </Badge>
                   )
                 })()}
+              </div>
+            </div>
 
-                {/* Example extra badge for difficulty */}
-                <span className="text-muted-foreground text-xs">MEDIUM</span>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div>
+                <p className="text-muted-foreground mb-1 text-xs">Task Type</p>
+                <p className="text-sm">{task.task_type}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1 text-xs">Project</p>
+                <p className="text-sm">{task.project_name}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1 text-xs">Deadline</p>
+                <p className="text-sm">
+                  {new Date(task.deadline).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1 text-xs">Progress</p>
+                <p className="text-sm">
+                  {completedTasks} / {totalTasks} items
+                </p>
               </div>
             </div>
           </div>
@@ -248,12 +280,6 @@ const ProjectsContent = () => {
         <CardContent className="space-y-4">
           {/* Progress */}
           <div>
-            <div className="mb-2 flex justify-between text-sm">
-              <span>Progress</span>
-              <span>
-                {completedTasks} / {totalTasks} items
-              </span>
-            </div>
             <Progress value={progress} className="h-2" />
           </div>
 
@@ -280,14 +306,8 @@ const ProjectsContent = () => {
             </div>
           </div>
 
-          {/* Footer with Status + Button */}
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center gap-3">
-              <div className="text-muted-foreground text-sm">
-                <Clock className="mr-1 inline h-4 w-4" />
-                Due: {new Date(task.deadline).toLocaleDateString()}
-              </div>
-            </div>
+          {/* Footer with Button */}
+          <div className="flex items-center justify-end pt-2">
             <Link href={`/label/${task.id}`}>
               <Button variant="default">
                 {task.pending_tasks === 0
