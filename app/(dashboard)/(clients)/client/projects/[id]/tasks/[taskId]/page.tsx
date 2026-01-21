@@ -16,6 +16,7 @@ import {
   Calendar,
   Users,
   ArrowLeft,
+  Edit,
 } from 'lucide-react'
 import Image from 'next/image'
 import { Label } from '@/constants'
@@ -52,7 +53,7 @@ const ProjectReviews = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => router.back()}
+                  onClick={() => router.push(`/client/projects/${id}/tasks`)}
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
@@ -219,7 +220,11 @@ const ProjectReviews = () => {
         <div className="container mx-auto px-2 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push(`/client/projects/${id}/tasks`)}
+              >
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
@@ -298,11 +303,24 @@ const ProjectReviews = () => {
                   {project.labeller_instructions}
                 </p>
               </div>
-              <Badge
-                variant={project.status === 'pending' ? 'secondary' : 'default'}
-              >
-                {project.status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    router.push(`/client/projects/${id}/tasks/${taskId}/edit`)
+                  }
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Task
+                </Button>
+                <Badge
+                  variant={
+                    project.status === 'pending' ? 'secondary' : 'default'
+                  }
+                >
+                  {project.status}
+                </Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
