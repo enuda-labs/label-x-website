@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -45,13 +45,24 @@ const Projects = () => {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
   const queryClient = useQueryClient()
-  const { data: projectsData } = useQuery({
+  const { data: projectsData, isPending: isQueryPending } = useQuery({
     queryKey: ['projects'],
     queryFn: getProjects,
   })
 
+  // Track initial mount time for minimum loading duration
+  const mountTimeRef = useRef<number | null>(null)
+
   useEffect(() => {
-    const fetchProjects = async () => {
+    if (mountTimeRef.current === null) {
+      mountTimeRef.current = Date.now()
+    }
+  }, [])
+
+  useEffect(() => {
+    const minLoadingTime = 3000 // 3 seconds minimum
+
+    const processData = () => {
       try {
         if (projectsData) {
           setProjects(
@@ -72,16 +83,29 @@ const Projects = () => {
         } else {
           setProjects([])
         }
-        setLoading(false)
       } catch (error) {
-        console.error('Error fetching projects:', error)
+        console.error('Error processing projects:', error)
         setProjects([])
+      }
+
+      // Ensure minimum loading time of 3 seconds from mount
+      if (mountTimeRef.current !== null) {
+        const elapsed = Date.now() - mountTimeRef.current
+        const remainingTime = Math.max(0, minLoadingTime - elapsed)
+
+        setTimeout(() => {
+          setLoading(false)
+        }, remainingTime)
+      } else {
         setLoading(false)
       }
     }
 
-    fetchProjects()
-  }, [projectsData])
+    // Process data when query completes (not pending)
+    if (!isQueryPending) {
+      processData()
+    }
+  }, [projectsData, isQueryPending])
 
   const filteredProjects = projects.filter(
     (project) =>
@@ -206,7 +230,7 @@ const Projects = () => {
       <StatsOverview />
       {/* Projects List */}
       <div className="space-y-4">
-        {loading ? (
+        {loading || isQueryPending ? (
           <>
             <Skeleton className="h-28 bg-white/5" />
             <Skeleton className="h-28 bg-white/5" />
