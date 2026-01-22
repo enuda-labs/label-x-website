@@ -161,3 +161,18 @@ export const resetPassword = async (
     payload
   )
 }
+
+/** ----- Email Verification ----- **/
+
+export interface ResendVerificationEmailBody {
+  email: string
+}
+
+export const resendVerificationEmail = async (
+  payload: ResendVerificationEmailBody
+): Promise<void> => {
+  await axiosClient.post<ResendVerificationEmailBody>(
+    '/account/email/resend/',
+    payload
+  )
+}

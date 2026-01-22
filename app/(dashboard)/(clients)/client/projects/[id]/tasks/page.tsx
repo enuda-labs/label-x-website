@@ -158,46 +158,45 @@ const Cluster = ({
       onClick={() => router.push(`tasks/${cluster.id}`)}
     >
       <div className="flex flex-col space-y-4">
-        <div className="flex flex-col justify-between md:flex-row md:items-center">
-          <div>
-            <div className="flex items-center">
-              <h3 className="text-lg font-medium text-white">
-                {cluster.task_type} Task
+        <div className="flex flex-col justify-between md:flex-row md:items-start">
+          <div className="flex-1">
+            <div className="mb-2 flex items-center gap-3">
+              <h3 className="text-xl font-semibold text-white">
+                {cluster.name || `${cluster.task_type} Task`}
               </h3>
               <span
-                className={`ml-3 rounded-full px-2 py-1 text-xs ${getStatusColor(
-                  project.status
+                className={`rounded-full px-2 py-1 text-xs ${getStatusColor(
+                  cluster.status || project.status
                 )}`}
               >
-                {project.status
+                {(cluster.status || project.status)
                   .replace('_', ' ')
                   .replace(/\b\w/g, (l) => l.toUpperCase())}
               </span>
             </div>
-            <p className="mt-1 text-sm text-white/60">
+            {cluster.description && (
+              <p className="mb-2 text-sm text-white/70">
+                {cluster.description}
+              </p>
+            )}
+            <p className="text-sm text-white/60">
               {cluster.labeller_instructions}
             </p>
           </div>
-
-          {/* <div className="mt-3 md:mt-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="hover:bg-primary h-8 border-white/10"
-                      >
-                        View Details
-                      </Button>
-                    </div> */}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 border-t border-white/10 pt-2 md:grid-cols-4">
           <div>
-            <p className="mb-1 grid text-xs text-white/40">
-              Assigned Reviewers
+            <p className="mb-1 text-xs text-white/40">Task Type</p>
+            <p className="text-sm font-medium text-white">
+              {cluster.task_type}
             </p>
-            <div className="flex items-center">
+          </div>
+          <div>
+            <p className="mb-1 text-xs text-white/40">Assigned Reviewers</p>
+            <p className="text-sm font-medium text-white">
               {cluster.assigned_reviewers.length}
-            </div>
+            </p>
           </div>
           <div>
             <p className="mb-1 text-xs text-white/40">Created on</p>
@@ -209,14 +208,20 @@ const Cluster = ({
             <p className="mb-1 text-xs text-white/40">Deadline</p>
             <p className="text-sm text-white">{formatDate(cluster.deadline)}</p>
           </div>
-          <div className="flex justify-end">
-            <Button
-              onClick={() => exportMutation.mutate(cluster.id)}
-              disabled={exportMutation.isPending}
-            >
-              {exportMutation.isPending ? 'Exporting...' : 'Export Labels'}
-            </Button>
-          </div>
+        </div>
+
+        <div className="flex justify-end border-t border-white/10 pt-2">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation()
+              exportMutation.mutate(cluster.id)
+            }}
+            disabled={exportMutation.isPending}
+            variant="outline"
+            size="sm"
+          >
+            {exportMutation.isPending ? 'Exporting...' : 'Export Labels'}
+          </Button>
         </div>
       </div>
     </Card>

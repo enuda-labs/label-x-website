@@ -7,7 +7,11 @@ import { ProjectLogs } from './logs'
 import TeamMembers from './team-members'
 import DashboardLayout from '../shared/dashboard-layout'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getProject, updateProject } from '@/services/apis/project'
+import {
+  getProject,
+  updateProject,
+  listProjectMembers,
+} from '@/services/apis/project'
 import { ProjectStats } from './stats'
 import {
   DropdownMenu,
@@ -18,15 +22,66 @@ import {
 import { toast } from 'sonner'
 import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'
+import { useGlobalStore } from '@/context/store'
+import { getUserDetails } from '@/services/apis/user'
+import { useEffect } from 'react'
 
 const ProjectDetail = ({ id }: { id: number }) => {
   const queryClient = useQueryClient()
   const router = useRouter()
+  const { user, setUser } = useGlobalStore()
 
   const { data: project, isPending } = useQuery({
     queryKey: ['project', id],
     queryFn: () => getProject(id),
   })
+
+  // Fetch user details if not available in store
+  const { data: userData } = useQuery({
+    queryKey: ['user'],
+    queryFn: getUserDetails,
+    enabled: !user?.id, // Only fetch if user.id is not available
+  })
+
+  // Update user in store if fetched
+  useEffect(() => {
+    if (userData?.user && (!user?.id || user.id !== userData.user.id)) {
+      setUser(userData.user)
+    }
+  }, [userData, user, setUser])
+
+  // Use the user from store, or fallback to fetched user
+  const currentUser = user?.id ? user : userData?.user
+
+  // Fetch project members to check user role
+  const { data: membersData, isLoading: isLoadingMembers } = useQuery({
+    queryKey: ['project-members', id],
+    queryFn: () => listProjectMembers(id),
+    enabled: !!project && !!currentUser?.id,
+  })
+
+  const members = membersData?.members || []
+  const currentUserMember = members.find(
+    (m) => Number(m.user.id) === Number(currentUser?.id)
+  )
+
+  // Check if current user is the project owner
+  const isProjectOwner =
+    project?.created_by != null &&
+    currentUser?.id != null &&
+    Number(project.created_by) === Number(currentUser.id)
+
+  // Check if current user can view activity logs (owner or admin)
+  const canViewActivityLogs =
+    isProjectOwner ||
+    currentUserMember?.role === 'admin' ||
+    currentUserMember?.role === 'owner'
+
+  // Check if current user can see team members section (owner or admin)
+  const canSeeTeamMembers =
+    isProjectOwner ||
+    currentUserMember?.role === 'admin' ||
+    currentUserMember?.role === 'owner'
 
   const { mutate: updateStatus } = useMutation({
     mutationFn: (status: string) => updateProject(id, { status }),
@@ -188,12 +243,14 @@ const ProjectDetail = ({ id }: { id: number }) => {
       </Card>
 
       <ProjectStats project={project} />
-      <TeamMembers
-        projectId={project.id}
-        projectCreatedBy={project.created_by}
-      />
+      {canSeeTeamMembers && (
+        <TeamMembers
+          projectId={project.id}
+          projectCreatedBy={project.created_by}
+        />
+      )}
       <ProjectCharts projectId={project.id} />
-      <ProjectLogs logs={project.project_logs} />
+      {canViewActivityLogs && <ProjectLogs logs={project.project_logs} />}
     </DashboardLayout>
   )
 }

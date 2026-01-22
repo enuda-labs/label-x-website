@@ -12,6 +12,8 @@ import {
   ChevronRight,
   User,
   ImageIcon,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import DashboardLayout from '@/components/shared/dashboard-layout'
@@ -244,13 +246,32 @@ const LabelerDashboard = () => {
                       <div className="bg-primary/10 rounded-lg p-2">
                         {getTypeIcon(task.task_type)}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <CardTitle className="text-lg">
                           {task.project_name}
                         </CardTitle>
                         <p className="text-muted-foreground mt-1 text-sm">
                           {task.labeller_instructions}
                         </p>
+                        <div className="mt-2 flex items-center gap-2 text-sm">
+                          {task.pending_tasks === 0 ? (
+                            <Badge
+                              variant="default"
+                              className="flex items-center bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle2 className="mr-1 h-4 w-4" />
+                              Completed
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="destructive"
+                              className="flex items-center"
+                            >
+                              <AlertCircle className="mr-1 h-4 w-4" />
+                              In Progress
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

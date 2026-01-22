@@ -54,6 +54,7 @@ export interface TaskConfig {
   deadline: Date
   labellersRequired: number
   tasks: TaskItemType[]
+  language?: string // Language for subtitle annotation
 }
 
 const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
@@ -71,6 +72,7 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
     deadline: initialConfig.deadline || new Date(),
     labellersRequired: initialConfig.labellersRequired || 15,
     tasks: initialConfig.tasks || [{ id: '1', data: '', file: null }],
+    language: initialConfig.language || 'English',
   })
 
   const [newChoice, setNewChoice] = useState('')
@@ -233,6 +235,41 @@ const TaskConfiguration: React.FC<TaskConfigurationProps> = ({
                     {domain.domain}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Language Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="language" className="text-sm font-medium">
+              Language *
+            </Label>
+            <Select
+              onValueChange={(value) => updateConfig({ language: value })}
+              value={config.language || 'English'}
+            >
+              <SelectTrigger className="w-full" style={{ height: 44 }}>
+                <SelectValue placeholder="Select Language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="English">English</SelectItem>
+                <SelectItem value="Igbo">Igbo</SelectItem>
+                <SelectItem value="Hausa">Hausa</SelectItem>
+                <SelectItem value="Yoruba">Yoruba</SelectItem>
+                <SelectItem value="Swahili">Swahili</SelectItem>
+                <SelectItem value="French">French</SelectItem>
+                <SelectItem value="Spanish">Spanish</SelectItem>
+                <SelectItem value="Portuguese">Portuguese</SelectItem>
+                <SelectItem value="Arabic">Arabic</SelectItem>
+                <SelectItem value="Chinese">Chinese</SelectItem>
+                <SelectItem value="Hindi">Hindi</SelectItem>
+                <SelectItem value="Japanese">Japanese</SelectItem>
+                <SelectItem value="Korean">Korean</SelectItem>
+                <SelectItem value="German">German</SelectItem>
+                <SelectItem value="Italian">Italian</SelectItem>
+                <SelectItem value="Russian">Russian</SelectItem>
+                <SelectItem value="Turkish">Turkish</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>

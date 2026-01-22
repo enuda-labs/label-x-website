@@ -99,6 +99,17 @@ export const createTaskCluster = async (payload: TaskClusterPayload) => {
   return response.data
 }
 
+export const updateTaskCluster = async (
+  clusterId: number,
+  payload: TaskClusterUpdatePayload
+) => {
+  const response = await axiosClient.put(
+    `/tasks/cluster/${clusterId}/update/`,
+    payload
+  )
+  return response.data
+}
+
 export const listTasksClusterInProject = async (projectId: string) => {
   const response = await axiosClient.get<TaskClusterItem[]>(
     `/tasks/project/${projectId}/clusters/`
@@ -233,4 +244,16 @@ interface TaskClusterPayload {
   labeler_domain: number
   name: string
   description: string
+  language?: string // Language for subtitle annotation
+}
+
+interface TaskClusterUpdatePayload {
+  name?: string
+  description?: string
+  labeller_instructions?: string
+  deadline?: string
+  labeller_per_item_count?: number
+  language?: string
+  labeler_domain?: number
+  labelling_choices?: LabellingChoice[]
 }
